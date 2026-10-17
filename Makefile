@@ -1,9 +1,19 @@
 PYTHON ?= python3
 
-.PHONY: reset run-a run-b scorecard aisvs-catalog test test-container demo versions container-build container-run-a container-run-b container-scenario-a container-scenario-b s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s7-a s7-b stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
+PROMPT_GUARD_MODEL := vendor/models/prompt-guard-2-22m/model.safetensors
+RUNB_MEMORY := $(if $(wildcard $(PROMPT_GUARD_MODEL)),1g,128m)
+RUNB_PROMPT_GUARD := $(if $(wildcard $(PROMPT_GUARD_MODEL)),--env OPS_DEMO_PROMPT_GUARD=1 --env OPS_DEMO_PROMPT_GUARD_MODEL=/models/prompt-guard-2-22m --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1 --volume "$(CURDIR)/vendor/models:/models:ro",)
+
+.PHONY: reset run-a run-b scorecard aisvs-catalog test test-container test-policy demo versions fetch-tools container-build container-run-a container-run-b container-scenario-a container-scenario-b s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s7-a s7-b stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
 
 reset:
 	$(PYTHON) -m app.cli reset
+
+fetch-tools:
+	$(PYTHON) -m tools.fetch_tools
+
+fetch-models:
+	$(PYTHON) -m tools.fetch_models
 
 run-a:
 	$(PYTHON) -m app.cli reset
@@ -13,14 +23,14 @@ run-b:
 	$(PYTHON) -m app.cli reset --preserve-evidence
 	$(MAKE) container-run-b
 
-container-build:
+container-build: fetch-tools
 	docker build --pull=false --network none --tag demo-devsecops-ai:local .
 
 container-run-a: container-build
 	docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 128m --cpus 0.5 --pids-limit 32 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_IN_CONTAINER=1 --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local run --run A $(if $(SCENARIO),--scenario $(SCENARIO))
 
 container-run-b: container-build
-	docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 128m --cpus 0.5 --pids-limit 32 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_IN_CONTAINER=1 --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local run --run B $(if $(SCENARIO),--scenario $(SCENARIO))
+	docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory $(RUNB_MEMORY) --cpus 0.5 --pids-limit 64 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_IN_CONTAINER=1 --env OPS_DEMO_FICKLING=1 --env OPS_DEMO_MODELSCAN=1 --env OPS_DEMO_COSIGN=1 --env OPS_DEMO_OPA=1 --env OPS_DEMO_PRESIDIO=1 $(RUNB_PROMPT_GUARD) --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local run --run B $(if $(SCENARIO),--scenario $(SCENARIO))
 
 container-scenario-a:
 	$(MAKE) SCENARIO=$(SCENARIO) container-run-a
@@ -40,6 +50,9 @@ test:
 
 test-container:
 	$(PYTHON) -m unittest discover -s tests -p 'checks_container.py' -v
+
+test-policy: fetch-tools
+	env -i ./vendor/opa test policies/
 
 versions:
 	$(PYTHON) -c 'import pathlib; print(pathlib.Path("versions.lock").read_text())'

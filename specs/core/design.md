@@ -9,10 +9,15 @@ boundary validates an exact schema and deterministic descriptor digest before
 it evaluates a one-use grant. It returns a decision but never executes a
 high-impact action.
 
-The standard-library model scan and integrity functions are deliberately named
-fallback controls. They let the test harness demonstrate the boundary while
-third-party admission remains incomplete. They must be replaced, not relabeled,
-when ModelScan and Cosign are admitted.
+The standard-library model scan, integrity, PII and injection functions remain
+as explicitly labelled fallbacks for the host-only test harness. In the Docker
+runner, Run B replaces them with the admitted tools: Fickling and ModelScan for
+the S1 static scan, Cosign for offline blob integrity, Presidio for S3 PII
+masking and Prompt Guard 2 22M for S2 injection detection, each gated by an
+environment flag and failing closed. All runtime Python wheels are resolved
+together and hash-pinned (D-007); the gated Prompt Guard weights are mounted
+read-only and only activate the ML path when present. Remaining fallbacks must be
+replaced, not relabeled, when their tools are admitted.
 
 GitHub Actions has a read-only workflow token. It checks out with credentials
 disabled, runs unit tests, pulls the pinned public base image on the CI host,

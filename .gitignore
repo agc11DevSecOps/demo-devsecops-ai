@@ -9,3 +9,11 @@ record/**/*.webm
 *.key
 *.sig
 *.bundle
+vendor/opa
+vendor/cosign
+vendor/python/
+vendor/models
+vendor/promptguard
+vendor/.*.part
+vendor/**/.*.part
+.agents/skills/complexity-budget/

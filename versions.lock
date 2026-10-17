@@ -11,6 +11,127 @@
       "commit": "61fcec9c2a37c24c1fb12d84ede30fe248a364bd",
       "wheel_sha256": "a1997df2368628daa1b3f394f5660a338b1debc623dec67b38f665ba04ad967e",
       "status": "not-installed"
+    },
+    "fickling": {
+      "version": "0.1.12",
+      "commit": "c3c695cdcce451c04dfe892802675161614287a2",
+      "tree": "cee56b756cbe13a2556f5596e91117ee7d83ed39",
+      "status": "not-installed"
+    },
+    "opa": {
+      "version": "1.21.2",
+      "commit": "3f7474e6b3c631821d8aac25ca444f7e75a56483",
+      "tree": "1153bce6f53705c3ade355714c13de1e31b7eb95",
+      "binary_sha256": "830ab11f61ffec760b5e19db0d7ad02bf037e13f5ef4d665faeaf17632177527",
+      "status": "not-installed"
+    },
+    "cosign": {
+      "version": "3.1.3",
+      "tag_object": "2f3a85b04907df5b770eb049d7e4d08d4b018d86",
+      "commit": "11926fa5bbbbde47e88fc006b625a17769b743b2",
+      "tree": "ffb2d2076b725abbeff294d5c02897a0da7a5f15",
+      "commit_signature": "verified-valid",
+      "binary_sha256": "4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71",
+      "status": "not-installed"
+    },
+    "presidio": {
+      "version": "2.2.364",
+      "publisher": "Microsoft",
+      "license": "MIT",
+      "wheel_sha256": "0a9eeb60ccc416c505367b4989d056becb84ef082703ee3361c046fb75941739",
+      "status": "not-installed"
+    },
+    "spacy": {
+      "version": "3.7.5",
+      "publisher": "Explosion",
+      "license": "MIT",
+      "wheel_sha256": "faa1e2b6234ae33c0b1f8dfa5a8dcb66fb891f19231725dfcff4b2666125c250",
+      "model": "en_core_web_sm-3.7.1-py3-none-any.whl",
+      "model_sha256": "86cc141f63942d4b2c5fcee06630fd6f904788d2f0ab005cce45aadb8fb73889",
+      "status": "not-installed"
+    },
+    "prompt_guard": {
+      "model": "meta-llama/Llama-Prompt-Guard-2-22M",
+      "revision": "11614a155199674a0a95e6602d6ab0417b790ed0",
+      "gated": "manual",
+      "license": "Llama-4-Community",
+      "provisioning": "make fetch-models (HF_TOKEN required)",
+      "status": "not-installed"
+    }
+  },
+  "c1_rejected": {
+    "modelscan": {
+      "version": "0.8.8",
+      "status": "superseded-by-admission-after-fixture-redesign",
+      "report_sha256": "bbf3fd75435c04c504073b410180cbf5195e555b18972226131368dafaf89ff9",
+      "runtime_wheels": {
+        "click-8.5.0-py3-none-any.whl": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360",
+        "markdown_it_py-4.2.0-py3-none-any.whl": "9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a",
+        "mdurl-0.1.2-py3-none-any.whl": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+        "numpy-2.2.6-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl": "fc7b73d02efb0e18c000e9ad8b83480dfcd5dfd11065997ed4c6747470ae8915",
+        "pygments-2.21.0-py3-none-any.whl": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+        "rich-14.3.4-py3-none-any.whl": "07e7adb4690f68864777b1450859253bed81a99a31ac321ac1817b2313558952",
+        "tomlkit-0.13.3-py3-none-any.whl": "c89c649d79ee40629a9fda55f8ace8c6a1b42deb912b2a8fd8d942ddadb606b0"
+      }
+    }
+  },
+  "c1_admitted": {
+    "python_wheels": {
+      "manifest": "vendor/python.lock.json",
+      "requirements": "vendor/requirements.lock",
+      "fetch": "make fetch-tools",
+      "python": "3.12",
+      "numpy_pin": "1.26.4",
+      "note": "unified wheel set for Fickling, ModelScan, Presidio, spaCy, torch 2.9.1+cpu and transformers 4.57.6; numpy 1.26.4 satisfies ModelScan (>=1.24.3) and spaCy/thinc (<2); torch comes from download.pytorch.org/whl/cpu"
+    },
+    "fickling": {
+      "version": "0.1.12",
+      "wheel": "vendor/python (see vendor/python.lock.json)",
+      "wheel_sha256": "6232b72857e6ee9d729922811b681132d49dc39abc896581390dad1c0eada814",
+      "python": "3.12",
+      "scope": "S1-static-pickle-scan"
+    },
+    "modelscan": {
+      "version": "0.8.8",
+      "wheel": "vendor/python (see vendor/python.lock.json)",
+      "wheel_sha256": "a1997df2368628daa1b3f394f5660a338b1debc623dec67b38f665ba04ad967e",
+      "python": "3.12",
+      "scope": "S1-static-pickle-scan"
+    },
+    "presidio": {
+      "version": "2.2.364",
+      "wheel": "vendor/python (see vendor/python.lock.json)",
+      "wheel_sha256": "0a9eeb60ccc416c505367b4989d056becb84ef082703ee3361c046fb75941739",
+      "spacy": "3.7.5",
+      "model": "en_core_web_sm-3.7.1",
+      "python": "3.12",
+      "scope": "S3-pii-redaction"
+    },
+    "prompt_guard": {
+      "model": "meta-llama/Llama-Prompt-Guard-2-22M",
+      "revision": "11614a155199674a0a95e6602d6ab0417b790ed0",
+      "model_sha256": "5120e30bcd536ce285345d9ec104bea6bd6e8f94365b99a340c764f417ea5fa1",
+      "torch": "2.9.1+cpu",
+      "transformers": "4.57.6",
+      "threshold": "0.5",
+      "provisioning": "make fetch-models (HF_TOKEN required)",
+      "weights_path": "vendor/models/prompt-guard-2-22m (git-ignored, mounted read-only)",
+      "scope": "S2-prompt-injection",
+      "status": "admitted"
+    },
+    "cosign": {
+      "version": "3.1.3",
+      "binary": "vendor/cosign",
+      "binary_sha256": "4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71",
+      "scope": "S1-offline-blob-integrity",
+      "provisioning": "make fetch-tools"
+    },
+    "opa": {
+      "version": "1.21.2",
+      "binary": "vendor/opa",
+      "binary_sha256": "830ab11f61ffec760b5e19db0d7ad02bf037e13f5ef4d665faeaf17632177527",
+      "scope": "S5-tool-authorization",
+      "provisioning": "make fetch-tools"
     }
   },
   "aisvs": {
