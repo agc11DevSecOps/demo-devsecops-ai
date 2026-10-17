@@ -7,7 +7,7 @@ Catalog status: `PINNED: OWASP AISVS v1.01 local snapshot verified`
 | C1 | NOT TESTED (0/13) | NOT TESTED (0/13) |
 | C10 | below L1 (1/39) | below L1 (3/39) |
 | C11 | NOT TESTED (0/19) | NOT TESTED (0/19) |
-| C12 | NOT TESTED (0/21) | below L1 (7/21) |
+| C12 | NOT TESTED (0/21) | below L1 (2/21) |
 | C2 | below L1 (1/12) | below L1 (5/12) |
 | C3 | NOT TESTED (0/15) | below L1 (2/15) |
 | C4 | NOT TESTED (0/14) | NOT TESTED (0/14) |
@@ -213,11 +213,11 @@ Catalog status: `PINNED: OWASP AISVS v1.01 local snapshot verified`
 | v1.01-C11.4.1 | NOT TESTED | NOT TESTED |
 | v1.01-C11.4.2 | NOT TESTED | NOT TESTED |
 | v1.01-C11.4.3 | NOT TESTED | NOT TESTED |
-| v1.01-C12.1.1 | NOT TESTED | PASS |
-| v1.01-C12.1.2 | NOT TESTED | PASS |
-| v1.01-C12.1.3 | NOT TESTED | PASS |
-| v1.01-C12.1.4 | NOT TESTED | PASS |
-| v1.01-C12.2.1 | NOT TESTED | PASS |
+| v1.01-C12.1.1 | NOT TESTED | NOT TESTED |
+| v1.01-C12.1.2 | NOT TESTED | NOT TESTED |
+| v1.01-C12.1.3 | NOT TESTED | NOT TESTED |
+| v1.01-C12.1.4 | NOT TESTED | NOT TESTED |
+| v1.01-C12.2.1 | NOT TESTED | NOT TESTED |
 | v1.01-C12.2.2 | NOT TESTED | NOT TESTED |
 | v1.01-C12.2.3 | NOT TESTED | NOT TESTED |
 | v1.01-C12.2.4 | NOT TESTED | NOT TESTED |

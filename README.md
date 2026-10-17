@@ -68,9 +68,24 @@ fallback and the demo runs in the reduced 512 MiB profile. Everything else,
 including the Docker
 runs, executes offline.
 
+## Ops Assist Workload
+
+`make fetch-workload-model` provisions the public, revision-pinned FLAN-T5
+files and verifies every SHA-256. `make workload` then runs the loopback-only
+Ops Assist contract in the restricted 2 GiB profile. It requires the admitted
+Prompt Guard weights as well, so provision those first with `HF_TOKEN=... make
+fetch-models`. The workload accepts bounded JSON, applies input inspection and
+PII redaction, retrieves only provenance-approved Qdrant documents, and returns
+a bounded answer with code-generated citations. It never invokes a tool or
+authorizes an action. The host-side scripted adapter exists only for contract
+tests and is always labelled `SCRIPTED`; with both local models available, Run B
+S0 executes the real path and is labelled `MEASURED`.
+
 The initial standard-library runner is a deterministic development fallback.
-Before a public presentation, the admissions in `third_party_tools.md` must be
-completed for Garak. In Run B, S1 executes two admitted scanners (Fickling 0.1.12
+Garak C1 is currently rejected because its mandatory dependency graph cannot be
+resolved as Python 3.12 wheels alongside the admitted runtime; S7 therefore
+reports `NOT TESTED` rather than synthetic campaign or kill-switch results. In
+Run B, S1 executes two admitted scanners (Fickling 0.1.12
 and ModelScan 0.8.8) and admitted offline integrity signing (Cosign 3.1.3); S2
 classifies prompts with the admitted Prompt Guard 2 22M (DeBERTa-xsmall,
 `torch`/`transformers` CPU); S3 masks PII with the admitted Presidio 2.2.364
@@ -82,6 +97,11 @@ was initially rejected on a private-marker fixture and is now admitted after the
 S1 fixture was redesigned to a canonical unsafe pickle payload (D-008). Remaining
 fallbacks are always labelled honestly and never presented as named external
 tools.
+
+The sandbox-only inference stop control is independently measured: `make kill`
+causes Ops Assist to return `503 inference_stopped` before input inspection,
+retrieval or model inference; `make unkill` removes that marker. This is not a
+production emergency-stop mechanism or an authorization control.
 
 ## Honest Labels
 

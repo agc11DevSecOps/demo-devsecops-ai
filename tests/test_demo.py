@@ -29,6 +29,13 @@ class DemoTests(unittest.TestCase):
         events = (EVIDENCE / "B" / "s1.jsonl").read_text(encoding="utf-8")
         self.assertIn('"decision":"DENIED"', events)
 
+    def test_s7_is_not_tested_without_an_admitted_campaign(self) -> None:
+        run("B", scenarios=("S7",))
+        records = [json.loads(line) for line in (EVIDENCE / "B" / "s7.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([record["decision"] for record in records], ["NOT TESTED", "BLOCKED"])
+        self.assertEqual([record["label"] for record in records], ["NOT TESTED", "MEASURED"])
+        self.assertFalse((SANDBOX / "kill-switch").exists())
+
     def test_s1_b_uses_fickling_when_enabled(self) -> None:
         with mock.patch.dict(os.environ, {"OPS_DEMO_FICKLING": "1"}):
             with mock.patch("app.demo._fickling_scan", return_value="LIKELY_UNSAFE") as scan:

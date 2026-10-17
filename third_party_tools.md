@@ -13,7 +13,8 @@ new repository needs its own provenance and isolated review.
 | Prompt Guard 2 22M | local classifier | C1 admitted for S2 | gated weights mounted read-only; `OPS_DEMO_PROMPT_GUARD` gates the ML path |
 | Qdrant | local vector store | C1 admitted for S4 | in-memory client in the restricted Docker runner; provenance-filtered retrieval |
 | MCP Python SDK | direct-stdio local server | C1 admitted for S5 | local subprocess over stdio; every call gated by the tool boundary |
-| Garak/Giskard/PyRIT | bounded red-team stage | planned | separate admission per tool |
+| Garak | bounded red-team stage | C1 rejected | fixed REST campaign remains unavailable in the current runner |
+| Giskard/PyRIT | bounded red-team stage | planned | separate admission per tool |
 
 ## C0-2026-10-17-Docker-Synthetic-Runner
 
@@ -252,6 +253,56 @@ truthful fallback control name and never claims the external tool executed.
 | Decision boundary | Admitted only for the fixed local stdio server and the two synthetic tools. The boundary decides every call; a denial means the request is never forwarded. A missing server, an empty tool list, an exception or an unexpected result fails closed. |
 | Status | Admitted for S5 in the fixed Docker runner. Any SDK major, command, tool set, runner or scope change requires a new C0/C1 review. |
 
+## C0-2026-10-17-FLAN-T5-Small
+
+| Field | Value |
+| --- | --- |
+| Publisher/source | Google, `https://huggingface.co/google/flan-t5-small`, Apache-2.0. |
+| Immutable source | Hugging Face revision `0fc9ddf78a1e988dac52e2dac162b0ede4fd74ab`; public, non-gated model repository. |
+| Candidate files | `config.json`, `generation_config.json`, `model.safetensors`, `special_tokens_map.json`, `spiece.model`, `tokenizer.json`, `tokenizer_config.json`. Pickle-based `pytorch_model.bin` is explicitly excluded. |
+| Runtime | Existing admitted CPU `torch 2.9.1+cpu` and `transformers 4.57.6`; loading must use `local_files_only=True`, `use_safetensors=True` and `trust_remote_code=False`. |
+| Review date | 2026-10-17 |
+| Review findings | The model is a text-to-text Transformer suitable only for bounded synthetic runbook responses. It is not an authorization component and can hallucinate or follow hostile text. The C1 path must download only the pinned revision, record every file SHA-256, run offline inside the restricted container and prove output controls. |
+| Decision boundary | Candidate only for the fixed Ops Assist workload. Prompt Guard, provenance-filtered retrieval, output validation and OPA remain independent controls. Missing files, unsupported formats, an exception or invalid output must deny the request. |
+| Status | C0 reviewed; see the C1 admission below. |
+
+## C1-2026-10-17-FLAN-T5-Small
+
+| Field | Value |
+| --- | --- |
+| Requirement | CORE-7/CORE-8: bounded Ops Assist generation must use the admitted local model and fail closed on a missing/tampered file, unavailable control or invalid output. |
+| Source tree | Uncommitted workload tree atop `8a56eb4b0a3a2ccd06be415d61b195d9aeeb1ba7`; reviewed 2026-10-17 by OpenCode. |
+| Environment | Restricted Docker runner: `--network none`, read-only root, 2 GiB memory, 0.5 CPU, 64 PIDs, all capabilities dropped, `no-new-privileges`, non-root UID, writable synthetic `/sandbox` only. Model directory is a read-only bind mount. |
+| Command/configuration | `make demo`; Run B enables local-only Prompt Guard, Presidio, Qdrant, OPA, MCP and `google/flan-t5-small` with `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, `local_files_only=True`, `use_safetensors=True`, `trust_remote_code=False`. All seven FLAN files are SHA-256 verified before loading. |
+| Artifact | `artifacts/ops-assist.jsonl`, SHA-256 `f47a4c97dd017a22fe074543155ef687300e21c710e7973bcce35f17202a6f36`; it contains hash-only request/requester fields, the exact model revision, decision and source identifiers. |
+| Fixture sensitivity | Synthetic rollback question and synthetic trusted/quarantined runbooks only. No credentials, production data or network endpoint was available. |
+| Result | Run B S0 emitted `MEASURED` and returned `revert the release and drain traffic.` with three verified citations. S2 blocked 10/10 attack fixtures, S3 redacted PII, S4 excluded quarantined provenance, and S5 denied high-impact tools before forwarding. |
+| Decision boundary | Generation remains untrusted data. The workload validates bounded JSON, rate-limits, normalizes and inspects input, redacts PII, retrieves only `writer=trusted` documents, validates/redacts output and emits code-generated citations. It has no tool invocation path; missing/tampered model files, control failure or invalid output return an error without an action. |
+| Status | Admitted only for the fixed local Ops Assist workflow and runner configuration. Revisions, model files, prompt format, controls, runner profile or exposure beyond loopback require a new C0/C1 review. |
+
 ## Unified Python runtime wheels
 
 To avoid a NumPy version conflict (ModelScan requires `numpy>=1.24.3` while spaCy/thinc require `numpy<2`), all Python runtime wheels for Fickling, ModelScan, Presidio, spaCy, Qdrant, MCP, `torch 2.9.1+cpu` and `transformers 4.57.6` are resolved together and pinned in `vendor/python.lock.json` (URLs + SHA-256) and `vendor/requirements.lock` (pip hash-checking format), with NumPy pinned to `1.26.4`. The CPU-only PyTorch wheels come from the allowlisted `download.pytorch.org/whl/cpu` index (the PyPI build would pull CUDA and gigabytes of extras). `make fetch-tools` downloads them into the git-ignored `vendor/python/`, and the Docker build installs them with `pip --require-hashes`. The manifest and requirements file are tracked; the wheels are not. The gated Prompt Guard weights are fetched separately by `make fetch-models` (requires `HF_TOKEN`) into the git-ignored `vendor/models/`.
+
+## C0-2026-10-17-Garak
+
+| Field | Value |
+| --- | --- |
+| Publisher/source | NVIDIA Garak contributors, `https://github.com/NVIDIA/garak`; PyPI package `garak`. |
+| Immutable source | Git tag `v0.10.3.1`, commit `bef37d98366296045d9fb220d7c4910b2d958ddc`; PyPI wheel `garak-0.10.3.1-py3-none-any.whl`, SHA-256 `e4876a17522f865fbbe7c66421f52249544b5ef62f8ec3883676c9aeca6deeb7`. |
+| License/runtime | Apache-2.0; Python `>=3.10`, tested candidate is the existing Python 3.12 runner. The source requires `transformers>=4.43.0`, compatible with the pinned `4.57.6`; newer Garak `0.17.1` is rejected for this scope because it requires Transformers 5.x and a substantially changed dependency graph. |
+| Scope | At most five serial prompt-injection probes through Garak's REST generator to `http://127.0.0.1:8080/v1/ops-assist` inside the existing no-network container. `403` is a controlled block and must be configured as a skipped response; no provider credential, external target, tool call or model download is permitted. |
+| Review findings | Garak is alpha-status software with a broad optional-provider dependency graph. The C1 evaluation must resolve every runtime dependency into the existing hash-locked wheel set, reject incompatible or non-wheel artifacts, run the fixed REST configuration offline, bound execution and normalize only aggregate results. Raw probes/responses and generated reports must remain git-ignored. |
+| Decision boundary | Garak is an assessment input, never an authorization or safety decision. A missing package, config/report drift, unexpected exit, timeout, malformed report or unbounded campaign must fail closed and yield no positive security verdict. |
+| Review date/status | 2026-10-17; C0 reviewed, see C1 rejection below. |
+
+## C1-2026-10-17-Garak-Rejected
+
+| Field | Value |
+| --- | --- |
+| Requirement | S7 must run a bounded, pinned red-team campaign against the loopback Ops Assist endpoint without weakening the offline runner or existing model/control locks. |
+| Tree/configuration | Uncommitted workload tree atop `8a56eb4b0a3a2ccd06be415d61b195d9aeeb1ba7`; candidate `garak==0.10.3.1`, source commit `bef37d98366296045d9fb220d7c4910b2d958ddc`, Python 3.12, existing `torch==2.9.1+cpu`, `transformers==4.57.6`, `numpy==1.26.4` and `huggingface-hub==0.36.2`. |
+| Command | `python3 -m pip download --dest /tmp/opencode/garak-resolve-py312 --only-binary=:all: --python-version 3.12 --find-links vendor/python --find-links https://download.pytorch.org/whl/cpu garak==0.10.3.1 torch==2.9.1+cpu transformers==4.57.6 numpy==1.26.4 huggingface-hub==0.36.2 pydantic==2.14.1` in an isolated temporary directory with no credentials or production access. |
+| Result | Rejected: resolver reached Garak's mandatory `ecoji>=0.1.1` dependency and found no compatible binary distribution for Python 3.12. Garak 0.13.3 also cannot be substituted because it requires `numpy>=2.0.0` and `transformers<4.57.0`, conflicting with the admitted Presidio/Prompt Guard runtime. |
+| Decision boundary | No Garak artifact, partial dependency set, custom dependency override or network/runner relaxation is admitted. S7 emits `NOT TESTED` for the campaign; its separately implemented sandbox inference-stop control is measured without claiming an external campaign. |
+| Status | C1 rejected on 2026-10-17. Reconsider only after a fully hash-pinned, wheel-compatible release can coexist with the admitted Python 3.12 runtime. |
