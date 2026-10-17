@@ -19,7 +19,7 @@ GitLab CI is not used.
 
 ## Scope
 
-The live flow covers S0-S5 and S7. S6 is a separately executed Strix campaign
+The live flow covers S0-S5, S7 and S8. S6 is a separately executed Strix campaign
 admitted as a recorded evidence package under `record/s6/`; this repository
 does not install or execute Strix.
 
@@ -92,9 +92,14 @@ admitted Garak 0.10.3.1 campaign over the complete `encoding.InjectBase64`
 corpus (55 prompts, no truncation) against the loopback endpoint, letting
 Garak's backoff honour the endpoint's real rate limit; it writes only a
 hash-only aggregate summary to `artifacts/garak-s7.json` (about 13 minutes per
-run). S7 then reports `MEASURED` for C12.1.1-C12.1.4 and C12.2.1, as `BLOCKED`
-when every prompt is blocked or `FAIL` when any prompt is breached. Without that
-summary, S7 reports the campaign as `NOT TESTED` rather than a synthetic result. In
+run). S7 then reports `MEASURED` for C3.2.1, C11.1.3, C12.1.1-C12.1.4 and
+C12.2.1, as `BLOCKED` when every prompt is blocked or `FAIL` when any prompt is
+breached. Without that summary, S7 reports the campaign as `NOT TESTED` rather
+than a synthetic result (see D-011 for the coverage mapping). S8 exercises the
+admitted workload's own bounds deterministically: it rejects an over-length
+question (C2.1.4), a model output that leaks a source marker (C7.1.1) and an
+over-length answer (C7.1.2), and confirms the returned citations are derived from
+retrieval metadata (C7.4.1). In
 Run B, S1 executes two admitted scanners (Fickling 0.1.12
 and ModelScan 0.8.8) and admitted offline integrity signing (Cosign 3.1.3); S2
 classifies prompts with the admitted Prompt Guard 2 22M (DeBERTa-xsmall,

@@ -128,6 +128,12 @@ _RATE_LIMITER = _RateLimiter()
 _EVIDENCE_LOCK = threading.Lock()
 
 
+def reset_rate_limiter() -> None:
+    """Clear per-requester rate-limit state so each isolated run starts fresh."""
+    with _RATE_LIMITER._lock:
+        _RATE_LIMITER._events.clear()
+
+
 def activate_stop() -> None:
     """Enable the demo-only stop control without following a sandbox symlink."""
     STOP_FILE.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

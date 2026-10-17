@@ -78,3 +78,18 @@ fallback) before it is forwarded, so a denied high-impact call is never sent to
 the server. The server itself performs no high-impact action, and the CLI never
 accepts a user-controlled server command or argument. A missing SDK fails closed
 and the MCP path is skipped.
+
+## D-011: AISVS coverage is mapped to controls that are actually executed
+
+Scorecard requirements are marked `PASS` in Run B only when a scenario emits an
+evidence event for that exact AISVS id whose decision is a genuine control
+outcome (`BLOCKED`, `DENIED`, `REVIEW` or `ALLOWED`); `NOT TESTED` never
+elevates. To raise coverage without over-claiming, existing admitted controls
+declare the additional requirements they truly satisfy (S1 integrity admission
+for C3.1.1/C4.1.2/C6.1.2, the container boundary event for C3.4.1/C4.1.1, the MCP
+stdio path for C9.3.1/C10.3.2, and the Garak campaign for C3.2.1/C11.1.3), and the
+new S8 scenario measures the workload's real input-length and output-schema/length
+bounds plus provenance-derived citations (C2.1.4, C7.1.1, C7.1.2, C7.4.1). A
+requirement whose control is not implemented, or that depends on the full Garak
+corpus, stays `NOT TESTED` until its evidence exists; a partial Garak run keeps
+C3.2.1, C11.1.3 and the C12.1.x/C12.2.1 ids out of `PASS`.

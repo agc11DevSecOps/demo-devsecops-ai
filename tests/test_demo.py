@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from app.demo import ARTIFACTS, EVIDENCE, SANDBOX, Event, EvidenceWriter, Grant, ToolBoundary, _cosign_verify, _embedding, _opa_authorize, canonical, descriptor_digest, normalize, redact, reset, run, scenario_s1, scenario_s5
+from app.demo import ARTIFACTS, EVIDENCE, SANDBOX, Event, EvidenceWriter, Grant, ToolBoundary, _cosign_verify, _embedding, _opa_authorize, canonical, descriptor_digest, normalize, redact, reset, run, scenario_s1, scenario_s5, scenario_s8
 from app.garak_campaign import SUMMARY_NAME, load_summary
 from app.scorecard import build, write
 
@@ -78,6 +78,19 @@ class DemoTests(unittest.TestCase):
         records = [json.loads(line) for line in (EVIDENCE / "B" / "s7.jsonl").read_text(encoding="utf-8").splitlines()]
         self.assertEqual(records[0]["decision"], "NOT TESTED")
         self.assertEqual(records[0]["label"], "PARTIAL")
+
+    def test_s8_measures_bounded_workload_controls(self) -> None:
+        scenario_s8("B", self.writer)
+        records = [json.loads(line) for line in (EVIDENCE / "B" / "s8.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([record["decision"] for record in records], ["BLOCKED", "BLOCKED", "BLOCKED", "ALLOWED"])
+        covered = {item for record in records for item in record["aisvs_ids"]}
+        self.assertEqual(covered, {"v1.01-C2.1.4", "v1.01-C7.1.1", "v1.01-C7.1.2", "v1.01-C7.4.1"})
+
+    def test_s8_a_records_the_unbounded_baseline(self) -> None:
+        scenario_s8("A", self.writer)
+        records = [json.loads(line) for line in (EVIDENCE / "A" / "s8.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertTrue(records)
+        self.assertTrue(all(record["decision"] == "EXECUTED" for record in records))
 
     def test_s1_b_uses_fickling_when_enabled(self) -> None:
         with mock.patch.dict(os.environ, {"OPS_DEMO_FICKLING": "1"}):
