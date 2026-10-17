@@ -5,7 +5,7 @@ new repository needs its own provenance and isolated review.
 
 | Tool | Intended profile | Status | Required before use |
 | --- | --- | --- | --- |
-| ModelScan | local static scan | planned | fixed release, hash, source review |
+| ModelScan | local static scan | C0 reviewed; not installed | C1 wheel/dependency verification and sandbox test |
 | Cosign | offline key-pair signing | planned | fixed binary, hash, key handling review |
 | OPA | local deterministic policy | planned | fixed binary, hash, Rego tests |
 | Prompt Guard | local classifier | planned | fixed model revision, local-only load |
@@ -42,3 +42,16 @@ truthful fallback control name and never claims the external tool executed.
 | Trigger boundary | Any `push`, `pull_request` and manual dispatch; no `pull_request_target`, secrets, write token, deployments or privileged runner are configured. |
 | Network boundary | Only the CI host pulls the pinned public base image before the demo. The demo container retains `--network none`. |
 | Status | Admitted only for `.github/workflows/ci.yml`; version or scope changes require a new review record. |
+
+## C0-2026-10-17-ModelScan
+
+| Field | Value |
+| --- | --- |
+| Publisher/source | Protect AI, `https://github.com/protectai/modelscan`, Apache-2.0 |
+| Immutable source | `v0.8.8` resolves to commit `61fcec9c2a37c24c1fb12d84ede30fe248a364bd`, tree `e6210e4fe2680134117e63c98bf4cfb63cb437a4`; GitHub reported a verified commit signature. The mutable tag itself is not trusted. |
+| Candidate artifact | `modelscan-0.8.8-py3-none-any.whl`, SHA-256 `a1997df2368628daa1b3f394f5660a338b1debc623dec67b38f665ba04ad967e` from PyPI. Source distribution SHA-256: `34b134084370eb9832e0a7571297c3054ebfbff9f005992fe6f28ffc10135514`. |
+| Compatibility/dependencies | Python `>=3.10,<3.13`; requires Click, NumPy, Rich and tomlkit. Optional TensorFlow/HDF5 extras are excluded from this candidate. |
+| Review date | 2026-10-17 |
+| Review findings | Static pickle disassembly avoids unpickling, but parsing untrusted model containers can consume resources. ZIP expansion limits are not evident. Settings files can select dynamically imported modules; the C1 runner must use a trusted working directory, empty `PYTHONPATH`, no settings file, resource limits and no secrets. |
+| Decision boundary | A clean scan is only detection evidence and never authorizes loading a model. Unsupported formats, scan errors, drift or missing tool must deny admission. |
+| Status | C0 only. Do not download, install, import or invoke until C1 records the locally verified wheel, full dependency lock and isolated runtime evidence. |

@@ -5,6 +5,14 @@
     "runner": "stdlib-fallback",
     "external_tools": "unadmitted"
   },
+  "c0_reviewed": {
+    "modelscan": {
+      "version": "0.8.8",
+      "commit": "61fcec9c2a37c24c1fb12d84ede30fe248a364bd",
+      "wheel_sha256": "a1997df2368628daa1b3f394f5660a338b1debc623dec67b38f665ba04ad967e",
+      "status": "not-installed"
+    }
+  },
   "aisvs": {
     "version": "1.01",
     "source": "https://github.com/OWASP/AISVS",

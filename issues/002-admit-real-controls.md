@@ -1,6 +1,6 @@
 # 002: Admit and integrate real control implementations
 
-Status: ready-for-agent
+Status: in-progress
 
 Blockers: Separate C0/C1 admission records for every selected tool, including
 publisher, immutable version, hash, isolated review result and retrieval date.
