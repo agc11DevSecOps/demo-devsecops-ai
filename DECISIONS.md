@@ -63,6 +63,18 @@ recorded per-file SHA-256) and mounted **read-only** into the restricted runner
 rather than baked into the image. The Makefile detects the weights and only then
 enables the ML path (`OPS_DEMO_PROMPT_GUARD=1`, offline loading, CUDA-free
 `torch` CPU) and raises that run to a 1 GiB profile; without them S2 stays on the
-labelled fallback within 128 MiB, so CI never needs the gated model. The Python
+labelled fallback within a reduced 512 MiB profile (run B loads the real
+scanners and PII engine), so CI never needs the gated model. The Python
 ML wheels (`torch` CPU, `transformers`) follow D-007 and are fetched and
 hash-pinned, never committed.
+
+## D-010: MCP is transport only; the tool boundary decides
+
+The MCP Python SDK (2.3.0) is admitted only as a local stdio transport to the
+fixed command `python -m app.mcp_server`. Tool descriptions, arguments and
+results are untrusted data: the client never derives authorization from them.
+Every MCP call is decided by the same tool boundary (OPA or the deterministic
+fallback) before it is forwarded, so a denied high-impact call is never sent to
+the server. The server itself performs no high-impact action, and the CLI never
+accepts a user-controlled server command or argument. A missing SDK fails closed
+and the MCP path is skipped.

@@ -57,6 +57,20 @@
       "license": "Llama-4-Community",
       "provisioning": "make fetch-models (HF_TOKEN required)",
       "status": "not-installed"
+    },
+    "qdrant": {
+      "version": "1.19.1",
+      "publisher": "Qdrant",
+      "license": "Apache-2.0",
+      "wheel_sha256": "fca1a96c3f90f5fff853f6ee6877838a5768a04c963df9891a655a63313af8a0",
+      "status": "not-installed"
+    },
+    "mcp": {
+      "version": "2.3.0",
+      "publisher": "Model Context Protocol project",
+      "license": "MIT",
+      "wheel_sha256": "dd0c44c089d16453e8ae31a3877a0054d7a2314caaa81f5e0541b9b1734b2377",
+      "status": "not-installed"
     }
   },
   "c1_rejected": {
@@ -82,7 +96,7 @@
       "fetch": "make fetch-tools",
       "python": "3.12",
       "numpy_pin": "1.26.4",
-      "note": "unified wheel set for Fickling, ModelScan, Presidio, spaCy, torch 2.9.1+cpu and transformers 4.57.6; numpy 1.26.4 satisfies ModelScan (>=1.24.3) and spaCy/thinc (<2); torch comes from download.pytorch.org/whl/cpu"
+      "note": "unified wheel set for Fickling, ModelScan, Presidio, spaCy, Qdrant, MCP, torch 2.9.1+cpu and transformers 4.57.6; numpy 1.26.4 satisfies ModelScan (>=1.24.3) and spaCy/thinc (<2); torch comes from download.pytorch.org/whl/cpu"
     },
     "fickling": {
       "version": "0.1.12",
@@ -132,6 +146,22 @@
       "binary_sha256": "830ab11f61ffec760b5e19db0d7ad02bf037e13f5ef4d665faeaf17632177527",
       "scope": "S5-tool-authorization",
       "provisioning": "make fetch-tools"
+    },
+    "qdrant": {
+      "version": "1.19.1",
+      "wheel": "vendor/python (see vendor/python.lock.json)",
+      "wheel_sha256": "fca1a96c3f90f5fff853f6ee6877838a5768a04c963df9891a655a63313af8a0",
+      "mode": "in-memory (no server, no network)",
+      "scope": "S4-provenance-filtered-retrieval",
+      "status": "admitted"
+    },
+    "mcp": {
+      "version": "2.3.0",
+      "wheel": "vendor/python (see vendor/python.lock.json)",
+      "wheel_sha256": "dd0c44c089d16453e8ae31a3877a0054d7a2314caaa81f5e0541b9b1734b2377",
+      "transport": "local stdio (python -m app.mcp_server)",
+      "scope": "S5-mcp-tool-boundary",
+      "status": "admitted"
     }
   },
   "aisvs": {

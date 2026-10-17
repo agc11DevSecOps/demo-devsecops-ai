@@ -11,8 +11,8 @@ new repository needs its own provenance and isolated review.
 | OPA | local deterministic policy | C1 admitted for S5 | fixed offline `opa eval` invocation in the restricted Docker runner |
 | Presidio + spaCy | local PII masking | C1 admitted for S3 | fixed offline recognizer set in the restricted Docker runner |
 | Prompt Guard 2 22M | local classifier | C1 admitted for S2 | gated weights mounted read-only; `OPS_DEMO_PROMPT_GUARD` gates the ML path |
-| Qdrant | local vector store | planned | image digest and isolated network profile |
-| MCP Python SDK | direct-stdio local server | planned | wheel provenance and sandbox test |
+| Qdrant | local vector store | C1 admitted for S4 | in-memory client in the restricted Docker runner; provenance-filtered retrieval |
+| MCP Python SDK | direct-stdio local server | C1 admitted for S5 | local subprocess over stdio; every call gated by the tool boundary |
 | Garak/Giskard/PyRIT | bounded red-team stage | planned | separate admission per tool |
 
 ## C0-2026-10-17-Docker-Synthetic-Runner
@@ -23,7 +23,7 @@ new repository needs its own provenance and isolated review.
 | Base image | `python:3.12-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f`; local image ID `sha256:9f1eefd374c99041f1f7e974848791522e9957a9686def3209731bce1622083c` |
 | Source | Repository-local Dockerfile and application source only |
 | Scope | Offline build and one synthetic scenario runner |
-| Runtime boundary | Non-root UID, read-only root, `--network none`, 128 MiB, 0.5 CPU, 32 PIDs, all capabilities dropped, no-new-privileges, only `/sandbox` writable |
+| Runtime boundary | Non-root UID, read-only root, `--network none`, run A 128 MiB / run B 512 MiB (1 GiB with the ML path), 0.5 CPU, run A 32 PIDs / run B 64 PIDs, all capabilities dropped, no-new-privileges, only `/sandbox` writable |
 | Forbidden | Docker socket, host home, SSH agent, credentials, ports, arbitrary image or command, package installation and network access |
 | Status | Admitted for the fixed local runner command below; any image, source or runtime-profile drift needs a new record. |
 
@@ -125,7 +125,7 @@ truthful fallback control name and never claims the external tool executed.
 | Artifact | `fickling-0.1.12-py3-none-any.whl`, SHA-256 `6232b72857e6ee9d729922811b681132d49dc39abc896581390dad1c0eada814`, part of the unified Python wheel set pinned in `vendor/python.lock.json` and fetched by `make fetch-tools`. The wheel metadata has no mandatory runtime dependencies for Python 3.12. |
 | Compatibility finding | The wheel omits `typing_extensions` despite requiring it on Python 3.10. The admitted runner is the pinned Python 3.12 image, where the required `typing.Buffer` is in the standard library. Python 3.10 is not admitted for this tool. |
 | Build command/configuration | Docker build runs offline (`--network none`) and installs the unified wheel set with `pip install --no-index --require-hashes`; every wheel is hash-checked. The final image runs non-root. |
-| Runtime command/configuration | `fickling --check-safety --json-output /sandbox/artifacts/fickling-s1.json /sandbox/models/incoming/model_malicious.pkl`; no shell, inherited environment, network, settings file or user-controlled command/path is used. The outer runner remains read-only, networkless, 128 MiB, 0.5 CPU, 32 PIDs, no capabilities and no-new-privileges. |
+| Runtime command/configuration | `fickling --check-safety --json-output /sandbox/artifacts/fickling-s1.json /sandbox/models/incoming/model_malicious.pkl`; no shell, inherited environment, network, settings file or user-controlled command/path is used. The outer runner remains read-only, networkless, 512 MiB, 0.5 CPU, 64 PIDs, no capabilities and no-new-privileges. |
 | Fixture sensitivity | Self-created malicious pickle only. It carries a canonical `os.system` payload (pickled as the `posix` global) that only writes `sandbox/PWNED_BY_MODEL` when deliberately unpickled by Run A; the effect is confined to `sandbox/`. No secrets or production artifacts are supplied. |
 | Result | The restricted Python 3.12 container completed the scan and reported `LIKELY_OVERTLY_MALICIOUS`; Run B emitted `Fickling static scan -> BLOCKED` and never created the marker. |
 | Decision boundary | Fickling is admitted only for the fixed S1 static scan. Its result is detection evidence, never authorization to load a model. `LIKELY_SAFE`, malformed/missing reports, timeout, missing binary, unexpected exit status or dependency drift fail closed. |
@@ -151,7 +151,7 @@ truthful fallback control name and never claims the external tool executed.
 | Fetch command/configuration | `make fetch-tools` requests only the pinned HTTPS URL on the allowlisted host `github.com` and compares the streamed SHA-256 before the file is written. A mismatch aborts and the partial file is deleted. `vendor/opa` is git-ignored; the pinned hash is the integrity anchor. |
 | Build command/configuration | Docker build runs offline (`--network none`), validates the OPA SHA-256 with `sha256sum`, installs the binary, and copies the reviewed `policies/` directory into the read-only image. |
 | Policy tests | `env -i ./vendor/opa test policies/` reports `PASS: 9/9` for `policies/tool_boundary_test.rego` (allow only reads, deny-by-default, grant-gated `delete_branch`, `export_customers` never allowed, descriptor drift denied, missing context denied). |
-| Runtime command/configuration | `opa eval --format json --stdin-input --data /app/policies/tool_boundary.rego data.ops.copilot.allow`. Invoked with a fixed argv, no shell, no inherited environment, `cwd=/tmp`, `stdin=DEVNULL` for stderr, a machine-built JSON input and a 10 s timeout. The outer runner stays read-only, networkless, 128 MiB, 0.5 CPU, 32 PIDs, no capabilities and `no-new-privileges`. |
+| Runtime command/configuration | `opa eval --format json --stdin-input --data /app/policies/tool_boundary.rego data.ops.copilot.allow`. Invoked with a fixed argv, no shell, no inherited environment, `cwd=/tmp`, `stdin=DEVNULL` for stderr, a machine-built JSON input and a 10 s timeout. The outer runner stays read-only, networkless, 512 MiB, 0.5 CPU, 64 PIDs, no capabilities and `no-new-privileges`. |
 | Fixture sensitivity | The policy input carries only a tool name and two booleans. No secrets, model output or free-form text reach OPA, and OPA output is not stored. |
 | Result | In the restricted container, S5 Run B produced `delete_branch -> DENIED`, `export_customers -> DENIED` and the granted `delete_branch -> REVIEW` with reason tagged `OPA policy`. The `release/2.4` branch was preserved and no export file was written. |
 | Decision boundary | OPA is admitted only for the fixed S5 tool-authorization decision. It returns `allow` for two read-only tools and for a grant-gated `delete_branch`; the caller maps an allowed `delete_branch` to human review. Missing binary, non-zero exit, oversized/absent output, parse error or a non-boolean value fail closed to deny. |
@@ -173,10 +173,10 @@ truthful fallback control name and never claims the external tool executed.
 
 | Field | Value |
 | --- | --- |
-| Environment | The fixed restricted Docker runner: read-only root, `--network none`, 128 MiB, 0.5 CPU, 64 PIDs, all capabilities dropped, `no-new-privileges`, non-root UID, only `/sandbox` writable. |
+| Environment | The fixed restricted Docker runner: read-only root, `--network none`, 512 MiB, 0.5 CPU, 64 PIDs, all capabilities dropped, `no-new-privileges`, non-root UID, only `/sandbox` writable. |
 | Command/configuration | `_presidio_redact` constructs an `AnalyzerEngine` with a spaCy `en_core_web_sm` NLP engine and a registry of `IbanRecognizer`, `PhoneRecognizer`, a deterministic `EMAIL_ADDRESS` pattern and a demo `API_KEY` pattern; spans are replaced with `<ENTITY_TYPE>`. |
 | Fixture sensitivity | Only the self-created synthetic S3 document is analysed. It contains a fake IBAN, a fake `.test` email, a fake phone number and a demo canary; no real secrets or production data are supplied. |
-| Result | The restricted container reported `Presidio 2.2.364 masked 4 entity type(s): API_KEY, EMAIL_ADDRESS, IBAN_CODE, PHONE_NUMBER`, and the masked index contained none of `ES91`, `CANARY` or `demo@`. The run stayed within the 128 MiB limit. |
+| Result | The restricted container reported `Presidio 2.2.364 masked 4 entity type(s): API_KEY, EMAIL_ADDRESS, IBAN_CODE, PHONE_NUMBER`, and the masked index contained none of `ES91`, `CANARY` or `demo@`. The run stayed within the 512 MiB limit. |
 | Decision boundary | Admitted only for the fixed S3 recognizer set. A missing engine/model, no detected entity on the known fixture, an exception, or residual sensitive tokens fails closed. |
 | Status | Admitted for S3 in the fixed Docker runner. Any wheel, model, recognizer set, runner or scope change requires a new C0/C1 review. |
 
@@ -204,6 +204,54 @@ truthful fallback control name and never claims the external tool executed.
 | Decision boundary | Admitted only for the fixed S2 corpus and threshold. A missing model, a load/exception error, a benign false positive or a missed attack fails closed. The result is detection evidence, never authorization. |
 | Status | Admitted for S2 in the fixed Docker runner. Any model revision, threshold, wheel set, corpus, runner or scope change requires a new C0/C1 review. |
 
+## C0-2026-10-17-Qdrant
+
+| Field | Value |
+| --- | --- |
+| Publisher/source | Qdrant, `https://github.com/qdrant/qdrant-client`, Apache-2.0. |
+| Immutable source | PyPI `qdrant-client==1.19.1`; the admitted artifact is pinned by version and SHA-256 rather than a git commit, because the release is consumed from PyPI. |
+| Candidate artifact | `qdrant_client-1.19.1-py3-none-any.whl` SHA-256 `fca1a96c3f90f5fff853f6ee6877838a5768a04c963df9891a655a63313af8a0`. |
+| Review date | 2026-10-17 |
+| Review findings | The client supports a remote gRPC/REST server and an embedded local mode (`QdrantClient(":memory:")`) that keeps vectors in process. Only the in-memory mode is usable offline; it needs no socket and no service. The package declares `grpcio`, `httpx`, `portalocker`, `numpy` and `pydantic`, all resolved in the unified hash-pinned wheel set. |
+| Decision boundary | Admitted only for an in-memory vector store over fixed synthetic documents. Retrieved text is data, never authorization; a provenance payload (writer) is stored so untrusted writers can be filtered. A missing import fails closed to the labelled file-based fallback. |
+| Status | Superseded by the C1 admission below. |
+
+## C1-2026-10-17-Qdrant-S4
+
+| Field | Value |
+| --- | --- |
+| Environment | The fixed restricted Docker runner: read-only root, `--network none`, 512 MiB, 0.5 CPU, 64 PIDs, all capabilities dropped, `no-new-privileges`, non-root UID, only `/sandbox` writable. `OPS_DEMO_VECTOR=1` gates the path. |
+| Artifact | `qdrant_client-1.19.1-py3-none-any.whl` SHA-256 `fca1a96c3f90f5fff853f6ee6877838a5768a04c963df9891a655a63313af8a0` from the unified wheel set; vectors use a deterministic 32-dimension bag-of-tokens embedding computed locally (demo only, not a model). |
+| Command/configuration | `_vector_index` builds `QdrantClient(":memory:")` and upserts `(writer, text)` payloads; `_vector_search` queries with an optional `writer` payload filter. No server, URL, credential or socket is used. |
+| Fixture sensitivity | Only the fixed synthetic S4 documents (one trusted runbook and the quarantined poisoned guide) are indexed. No secrets or production data are supplied. |
+| Result | In the restricted container, the unfiltered query returned the untrusted document (`forced retrieval test -> REVIEW`), while the provenance-filtered query returned only trusted hits (`provenance-filtered retrieval -> BLOCKED :: Qdrant 1.19.1 returned 1 trusted hit(s)`). The run stayed within 512 MiB. |
+| Decision boundary | Admitted only for the fixed S4 retrieval. The caller asserts the untrusted writer is retrievable without the filter and absent with it; a missing untrusted hit or a non-trusted hit under the filter fails closed. Retrieval is evidence, never authorization to act. |
+| Status | Admitted for S4 in the fixed Docker runner. Any wheel, embedding, runner or scope change requires a new C0/C1 review. |
+
+## C0-2026-10-17-MCP
+
+| Field | Value |
+| --- | --- |
+| Publisher/source | Model Context Protocol project, `https://github.com/modelcontextprotocol/python-sdk`, MIT. |
+| Immutable source | PyPI `mcp==2.3.0`; the admitted artifact is pinned by version and SHA-256 rather than a git commit, because the release is consumed from PyPI. In 2.x the high-level server class is `mcp.server.mcpserver.MCPServer` (the v1 `FastMCP` name was removed). |
+| Candidate artifact | `mcp-2.3.0-py3-none-any.whl` SHA-256 `dd0c44c089d16453e8ae31a3877a0054d7a2314caaa81f5e0541b9b1734b2377`. |
+| Review date | 2026-10-17 |
+| Review findings | The SDK can spawn an arbitrary command as an MCP server and negotiate over stdio, SSE or HTTP. Only the local stdio transport with a fixed command is used; no URL, token or network transport is configured. The CLI must never accept a user-controlled command or argument. |
+| Decision boundary | Admitted only as a local stdio transport for the fixed `python -m app.mcp_server` command. Tool results are data, never authorization; every call is decided by the tool boundary before it is forwarded. A missing import fails closed and the MCP path is skipped. |
+| Status | Superseded by the C1 admission below. |
+
+## C1-2026-10-17-MCP-S5
+
+| Field | Value |
+| --- | --- |
+| Environment | The fixed restricted Docker runner: read-only root, `--network none`, 512 MiB, 0.5 CPU, 64 PIDs, all capabilities dropped, `no-new-privileges`, non-root UID, only `/sandbox` writable. `OPS_DEMO_MCP=1` gates the path. |
+| Artifact | `mcp-2.3.0-py3-none-any.whl` SHA-256 `dd0c44c089d16453e8ae31a3877a0054d7a2314caaa81f5e0541b9b1734b2377` from the unified wheel set. |
+| Command/configuration | `_mcp_call` connects with `StdioServerParameters(command=sys.executable, args=["-m", "app.mcp_server"])`. The server exposes `search_docs` (in-memory Qdrant over approved docs) and `delete_branch` (returns a refusal and never acts). The client calls `ToolBoundary.decide` first and only forwards an allowed call. |
+| Fixture sensitivity | Only synthetic tools and documents are exchanged. No secrets, credentials or production endpoints are supplied. |
+| Result | In the restricted container, S5 Run B listed `search_docs, delete_branch`, allowed and executed the read-only `search_docs` call (`MCP search_docs -> ALLOWED`), and denied `delete_branch` before forwarding (`MCP delete_branch -> BLOCKED :: boundary denied the high-impact MCP call before it was forwarded`). The run stayed within 512 MiB and the subprocess within the PID limit. |
+| Decision boundary | Admitted only for the fixed local stdio server and the two synthetic tools. The boundary decides every call; a denial means the request is never forwarded. A missing server, an empty tool list, an exception or an unexpected result fails closed. |
+| Status | Admitted for S5 in the fixed Docker runner. Any SDK major, command, tool set, runner or scope change requires a new C0/C1 review. |
+
 ## Unified Python runtime wheels
 
-To avoid a NumPy version conflict (ModelScan requires `numpy>=1.24.3` while spaCy/thinc require `numpy<2`), all Python runtime wheels for Fickling, ModelScan, Presidio, spaCy, `torch 2.9.1+cpu` and `transformers 4.57.6` are resolved together and pinned in `vendor/python.lock.json` (URLs + SHA-256) and `vendor/requirements.lock` (pip hash-checking format), with NumPy pinned to `1.26.4`. The CPU-only PyTorch wheels come from the allowlisted `download.pytorch.org/whl/cpu` index (the PyPI build would pull CUDA and gigabytes of extras). `make fetch-tools` downloads them into the git-ignored `vendor/python/`, and the Docker build installs them with `pip --require-hashes`. The manifest and requirements file are tracked; the wheels are not. The gated Prompt Guard weights are fetched separately by `make fetch-models` (requires `HF_TOKEN`) into the git-ignored `vendor/models/`.
+To avoid a NumPy version conflict (ModelScan requires `numpy>=1.24.3` while spaCy/thinc require `numpy<2`), all Python runtime wheels for Fickling, ModelScan, Presidio, spaCy, Qdrant, MCP, `torch 2.9.1+cpu` and `transformers 4.57.6` are resolved together and pinned in `vendor/python.lock.json` (URLs + SHA-256) and `vendor/requirements.lock` (pip hash-checking format), with NumPy pinned to `1.26.4`. The CPU-only PyTorch wheels come from the allowlisted `download.pytorch.org/whl/cpu` index (the PyPI build would pull CUDA and gigabytes of extras). `make fetch-tools` downloads them into the git-ignored `vendor/python/`, and the Docker build installs them with `pip --require-hashes`. The manifest and requirements file are tracked; the wheels are not. The gated Prompt Guard weights are fetched separately by `make fetch-models` (requires `HF_TOKEN`) into the git-ignored `vendor/models/`.

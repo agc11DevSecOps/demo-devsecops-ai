@@ -64,17 +64,20 @@ use (see D-007 and `vendor/python.lock.json`). The gated Prompt Guard 2 22M
 weights are fetched separately with `HF_TOKEN=... make fetch-models` into the
 git-ignored `vendor/models/`; `make` then mounts them read-only and switches S2
 to the real classifier (1 GiB profile). Without the weights, S2 uses the labelled
-fallback and the demo stays within 128 MiB. Everything else, including the Docker
+fallback and the demo runs in the reduced 512 MiB profile. Everything else,
+including the Docker
 runs, executes offline.
 
 The initial standard-library runner is a deterministic development fallback.
 Before a public presentation, the admissions in `third_party_tools.md` must be
-completed for Qdrant, the MCP Python SDK and Garak. In Run B, S1 executes two
-admitted scanners (Fickling 0.1.12 and ModelScan 0.8.8) and admitted offline
-integrity signing (Cosign 3.1.3); S2 classifies prompts with the admitted Prompt
-Guard 2 22M (DeBERTa-xsmall, `torch`/`transformers` CPU); S3 masks PII with the
-admitted Presidio 2.2.364 engine (spaCy `en_core_web_sm`); and S5 tool
-authorization is decided by the admitted policy engine (OPA 1.21.2). ModelScan
+completed for Garak. In Run B, S1 executes two admitted scanners (Fickling 0.1.12
+and ModelScan 0.8.8) and admitted offline integrity signing (Cosign 3.1.3); S2
+classifies prompts with the admitted Prompt Guard 2 22M (DeBERTa-xsmall,
+`torch`/`transformers` CPU); S3 masks PII with the admitted Presidio 2.2.364
+engine (spaCy `en_core_web_sm`); S4 filters retrieval through the admitted
+in-memory Qdrant 1.19.1 store using per-document provenance; and S5 tool
+authorization is decided by the admitted policy engine (OPA 1.21.2), including
+MCP tool calls made over the admitted local stdio server (MCP 2.3.0). ModelScan
 was initially rejected on a private-marker fixture and is now admitted after the
 S1 fixture was redesigned to a canonical unsafe pickle payload (D-008). Remaining
 fallbacks are always labelled honestly and never presented as named external

@@ -44,11 +44,23 @@ admitted for S2. The gated weights are provisioned with `HF_TOKEN=... make
 fetch-models` into the git-ignored `vendor/models/` and mounted read-only; the
 Makefile then switches run B to the real classifier with a 1 GiB profile and
 offline (`HF_HUB_OFFLINE`/`TRANSFORMERS_OFFLINE`) loading, and falls back to the
-labelled deterministic rules (128 MiB) when the weights are absent. In the
+labelled deterministic rules (512 MiB) when the weights are absent. In the
 restricted container the classifier flagged 8/10 normalized attacks, with the
 deterministic rules covering the two special-token prompts, so the layered result
 is 10/10 blocked and the benign paraphrase is allowed. CPU PyTorch and
 Transformers are part of the unified hash-pinned wheel set.
+
+2026-10-17 update: Qdrant 1.19.1 (in-memory local mode) completed C1 and is
+admitted for S4, and the MCP Python SDK 2.3.0 is admitted for S5. S4 now builds a
+real in-process vector index with per-document provenance: without the filter the
+untrusted document is retrievable (`forced retrieval test -> REVIEW`), and with a
+`writer` payload filter only trusted hits are returned
+(`provenance-filtered retrieval -> BLOCKED`). S5 connects to a real local stdio
+MCP server (`python -m app.mcp_server`), lists `search_docs`/`delete_branch`,
+allows the read-only `search_docs` call and denies `delete_branch` before it is
+forwarded (`MCP search_docs -> ALLOWED`, `MCP delete_branch -> BLOCKED`). Both run
+inside the restricted container within 512 MiB and the PID limit; both wheels are
+part of the unified hash-pinned set.
 
 Acceptance criteria:
 - Each tool has an evidence record and exact lock entry before installation.
