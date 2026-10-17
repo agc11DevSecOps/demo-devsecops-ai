@@ -53,7 +53,13 @@ def build() -> dict[str, Any]:
         chapter_status = {}
         for run in ("A", "B"):
             tested = sum(value[run] != "NOT TESTED" for value in values)
-            level = "L1" if all(value[run] == "PASS" for value in values if value["level"] <= 1) else "below L1"
+            level_one = [value for value in values if value["level"] == 1]
+            if level_one and all(value[run] == "PASS" for value in level_one):
+                level = "L1"
+            elif tested == 0:
+                level = "NOT TESTED"
+            else:
+                level = "below L1"
             chapter_status[run] = {"level": level, "tested": tested, "applicable": len(values)}
         chapters.append({"chapter": chapter, **chapter_status})
     return {"catalog_status": catalog["source_status"], "requirements": rows, "chapters": chapters}

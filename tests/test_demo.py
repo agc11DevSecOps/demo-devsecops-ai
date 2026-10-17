@@ -108,6 +108,12 @@ class DemoTests(unittest.TestCase):
         self.assertEqual(status_before, "PASS")
         self.assertEqual(status_after, "NOT TESTED")
 
+    def test_scorecard_does_not_claim_l1_without_evidence(self) -> None:
+        report = build()
+        chapter = next(item for item in report["chapters"] if item["chapter"] == "C5")
+        self.assertEqual(chapter["A"]["level"], "NOT TESTED")
+        self.assertEqual(chapter["B"]["level"], "NOT TESTED")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -23,6 +23,20 @@ The live flow covers S0-S5 and S7. S6 is a separately executed Strix campaign
 admitted as a recorded evidence package under `record/s6/`; this repository
 does not install or execute Strix.
 
+## AISVS Catalog
+
+The scorecard uses the complete, pinned OWASP AISVS v1.01 catalog (213
+requirements). Its source commit, tree, license and snapshot hash are recorded
+in `third_party_sources.md`. To regenerate it from an already reviewed local
+`1.01/en` snapshot, run:
+
+```bash
+make AISVS_SOURCE_DIR=/absolute/path/to/1.01/en aisvs-catalog
+```
+
+The importer does not retrieve content over the network and rejects a snapshot
+whose structure, digest or requirement count differs from the pin.
+
 ## Quick Start
 
 ```bash

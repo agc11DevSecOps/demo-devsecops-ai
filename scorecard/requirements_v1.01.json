@@ -1,40 +1,1293 @@
 {
-  "source_status": "PROVISIONAL: replace through the pinned OWASP AISVS 1.01 importer before release",
+  "format_version": 2,
   "requirements": [
-    {"id": "v1.01-C2.1.1", "chapter": "C2", "level": 1, "text": "Input normalization"},
-    {"id": "v1.01-C2.1.2", "chapter": "C2", "level": 1, "text": "Encoded input handling"},
-    {"id": "v1.01-C2.1.3", "chapter": "C2", "level": 1, "text": "Injection detection"},
-    {"id": "v1.01-C2.1.6", "chapter": "C2", "level": 1, "text": "Instruction separation"},
-    {"id": "v1.01-C2.1.7", "chapter": "C2", "level": 1, "text": "Reserved token handling"},
-    {"id": "v1.01-C3.1.2", "chapter": "C3", "level": 1, "text": "Artifact integrity"},
-    {"id": "v1.01-C3.1.3", "chapter": "C3", "level": 1, "text": "Artifact verification"},
-    {"id": "v1.01-C6.1.1", "chapter": "C6", "level": 1, "text": "Unsafe model artifact rejection"},
-    {"id": "v1.01-C6.1.3", "chapter": "C6", "level": 1, "text": "Model admission"},
-    {"id": "v1.01-C6.2.1", "chapter": "C6", "level": 1, "text": "Model BOM"},
-    {"id": "v1.01-C7.3.2", "chapter": "C7", "level": 1, "text": "Output data protection"},
-    {"id": "v1.01-C7.4.2", "chapter": "C7", "level": 1, "text": "Source attribution"},
-    {"id": "v1.01-C8.1.2", "chapter": "C8", "level": 1, "text": "Immutable retrieval metadata"},
-    {"id": "v1.01-C8.1.3", "chapter": "C8", "level": 1, "text": "Retrieval provenance filtering"},
-    {"id": "v1.01-C8.2.1", "chapter": "C8", "level": 1, "text": "PII before embedding"},
-    {"id": "v1.01-C8.2.4", "chapter": "C8", "level": 1, "text": "Malicious retrieval content"},
-    {"id": "v1.01-C8.3.3", "chapter": "C8", "level": 1, "text": "Poisoned context handling"},
-    {"id": "v1.01-C9.2.1", "chapter": "C9", "level": 1, "text": "Human approval"},
-    {"id": "v1.01-C9.2.2", "chapter": "C9", "level": 1, "text": "Approval context"},
-    {"id": "v1.01-C9.2.3", "chapter": "C9", "level": 1, "text": "Approval binding"},
-    {"id": "v1.01-C9.2.4", "chapter": "C9", "level": 1, "text": "Approval evidence"},
-    {"id": "v1.01-C9.5.1", "chapter": "C9", "level": 1, "text": "Deterministic authorization"},
-    {"id": "v1.01-C9.5.3", "chapter": "C9", "level": 1, "text": "Least privilege grants"},
-    {"id": "v1.01-C9.6.1", "chapter": "C9", "level": 1, "text": "Kill switch"},
-    {"id": "v1.01-C9.6.2", "chapter": "C9", "level": 1, "text": "Approval timeout"},
-    {"id": "v1.01-C10.2.5", "chapter": "C10", "level": 1, "text": "MCP tool authorization"},
-    {"id": "v1.01-C10.4.3", "chapter": "C10", "level": 1, "text": "Tool parameter validation"},
-    {"id": "v1.01-C10.4.8", "chapter": "C10", "level": 1, "text": "Tool descriptor pinning"},
-    {"id": "v1.01-C12.1.1", "chapter": "C12", "level": 1, "text": "Structured request logging"},
-    {"id": "v1.01-C12.1.2", "chapter": "C12", "level": 1, "text": "Decision logging"},
-    {"id": "v1.01-C12.1.3", "chapter": "C12", "level": 1, "text": "Model telemetry"},
-    {"id": "v1.01-C12.1.4", "chapter": "C12", "level": 1, "text": "Retrieval logging"},
-    {"id": "v1.01-C12.2.1", "chapter": "C12", "level": 1, "text": "Security alerts"},
-    {"id": "v1.01-C12.4.3", "chapter": "C12", "level": 1, "text": "Kill switch audit"},
-    {"id": "v1.01-C12.5.4", "chapter": "C12", "level": 1, "text": "Document provenance"}
-  ]
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.1.1",
+      "level": 1,
+      "text": "**Verify that** training data includes only features, attributes, and fields required for the model's stated purpose."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.1.2",
+      "level": 2,
+      "text": "**Verify that** an up-to-date inventory is kept of every training-data source, including its origin, responsible party, license, collection method, intended use constraints, and processing history."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.1.3",
+      "level": 2,
+      "text": "**Verify that** data integrity is provided when training data is stored and transferred."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.1.4",
+      "level": 2,
+      "text": "**Verify that** integrity monitoring is applied to guard against unauthorized modifications or corruption of training data."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.1.5",
+      "level": 3,
+      "text": "**Verify that** datasets are watermarked so their use can be attributed and any unauthorized use detected."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.2.1",
+      "level": 1,
+      "text": "**Verify that** labeling platforms enforce access controls that restrict who can create, modify, or approve annotations."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.2.2",
+      "level": 2,
+      "text": "**Verify that** cryptographic integrity is applied to labeling artifacts."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.2.3",
+      "level": 2,
+      "text": "**Verify that** sensitive information in labels is redacted, anonymized, or encrypted before being used in any labeling artifact."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.3.1",
+      "level": 2,
+      "text": "**Verify that** training and fine-tuning pipelines implement poisoning detection techniques to identify potential data poisoning or unintentional corruption in training data."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.3.2",
+      "level": 2,
+      "text": "**Verify that** automatically generated labels are subject to confidence thresholds and consistency checks to detect misleading or low-confidence labels."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.3.3",
+      "level": 2,
+      "text": "**Verify that** models used in security-relevant decisions are evaluated for bias patterns."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.3.4",
+      "level": 2,
+      "text": "**Verify that** disallowed content is detected and removed before training."
+    },
+    {
+      "chapter": "C1",
+      "id": "v1.01-C1.3.5",
+      "level": 3,
+      "text": "**Verify that** defenses against clean-label poisoning attacks are implemented."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.1.1",
+      "level": 1,
+      "text": "**Verify that** input normalization is applied before tokenization or embedding."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.1.2",
+      "level": 1,
+      "text": "**Verify that** encoding and representation smuggling in inputs is detected and mitigated. Approved mitigations include canonicalization, strict schema validation, policy-based rejection, or explicit marking."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.1.3",
+      "level": 1,
+      "text": "**Verify that** all inputs that could steer model behavior are treated as untrusted and screened by a prompt injection detection ruleset or classifier, with flagged inputs blocked."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.1.4",
+      "level": 1,
+      "text": "**Verify that** input length controls prevent content from exceeding the context window. The controls must reject inputs that exceed token limits rather than truncating them."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.1.5",
+      "level": 1,
+      "text": "**Verify that** the system implements a character set restriction for all inputs. The restriction must use an allow-list approach derived from the languages and use cases the system supports, permitting only characters that are explicitly required."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.1.6",
+      "level": 2,
+      "text": "**Verify that** the system enforces an instruction hierarchy in which system and developer messages override user instructions and other untrusted inputs, even after user instructions have been processed. Untrusted content cannot acquire higher instruction priority through retrieval, tool processing, or persistence across conversation turns."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.1.7",
+      "level": 2,
+      "text": "**Verify that** reserved special tokens are encoded as literal characters and cannot be injected into the model context."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.1.8",
+      "level": 3,
+      "text": "**Verify that** the system can detect many-shot jailbreaking patterns."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.2.1",
+      "level": 1,
+      "text": "**Verify that** every prompt is scored by a content classifier for violence, self-harm, hate, and sexual content against configurable thresholds. Prompts that exceed those thresholds are rejected or sanitized before reaching the model context."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.2.2",
+      "level": 1,
+      "text": "**Verify that** prompt content classification is evaluated for unsupported languages."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.2.3",
+      "level": 2,
+      "text": "**Verify that** non-text inputs (image/video/audio) are checked for adversarial perturbations, steganographic payloads, hidden or embedded content, or known attack patterns."
+    },
+    {
+      "chapter": "C2",
+      "id": "v1.01-C2.2.4",
+      "level": 3,
+      "text": "**Verify that** coordinated attacks spanning multiple input types (e.g., steganographic payloads in images combined with prompt injection in text) are detected and blocked."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.1.1",
+      "level": 1,
+      "text": "**Verify that** a model registry maintains an inventory of all deployed model artifacts and their origin."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.1.2",
+      "level": 2,
+      "text": "**Verify that** all model artifacts (weights, configurations, tokenizers, base models, fine-tunes, adapters, and safety/policy models) are cryptographically signed by authorized entities."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.1.3",
+      "level": 2,
+      "text": "**Verify that** model cryptographic signatures are verified at deployment admission and on load."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.2.1",
+      "level": 1,
+      "text": "**Verify that** models undergo automated input validation testing, safety evaluation testing, and output sanitization testing before deployment."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.2.2",
+      "level": 2,
+      "text": "**Verify that** models subjected to post-training quantization are re-evaluated against the same safety and alignment test suite on the compressed artifact before deployment."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.2.3",
+      "level": 3,
+      "text": "**Verify that** provider model, version, or routing changes trigger security re-evaluation before continued use."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.3.1",
+      "level": 2,
+      "text": "**Verify that** production deployments implement rollout mechanisms with automated rollback triggers."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.3.2",
+      "level": 2,
+      "text": "**Verify that** rollback capabilities restore the complete model state."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.3.3",
+      "level": 2,
+      "text": "**Verify that** model versions running in parallel use isolated runtime state so that AI-specific shared resources are not shared across deployments."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.4.1",
+      "level": 1,
+      "text": "**Verify that** AI-specific runtime components are not shared across environment boundaries (e.g., development, staging, production)."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.4.2",
+      "level": 2,
+      "text": "**Verify that** model training and fine-tuning environments are isolated from production environments."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.5.1",
+      "level": 2,
+      "text": "**Verify that** models used in RLHF fine-tuning are versioned and integrity-verified before use in a training run."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.5.2",
+      "level": 3,
+      "text": "**Verify that** RLHF training stages include automated detection of reward hacking or reward model over-optimization."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.5.3",
+      "level": 3,
+      "text": "**Verify that** in multi-stage fine-tuning pipelines, each stage's output is integrity-verified before it is consumed by the next stage."
+    },
+    {
+      "chapter": "C3",
+      "id": "v1.01-C3.5.4",
+      "level": 3,
+      "text": "**Verify that** fine-tuning checkpoints are registered as distinct artifacts."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.1.1",
+      "level": 1,
+      "text": "**Verify that** AI models execute in isolated sandboxes."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.1.2",
+      "level": 1,
+      "text": "**Verify that** model artifact loading enforces an explicit allow-list of serialization formats that do not permit arbitrary code execution during deserialization."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.1.3",
+      "level": 3,
+      "text": "**Verify that** workload attestation is performed before model loading to provide proof that the execution environment has not been tampered with."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.1.4",
+      "level": 3,
+      "text": "**Verify that** confidential inference services protect model weights during runtime through isolated execution environments."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.2.1",
+      "level": 2,
+      "text": "**Verify that** AI accelerator (GPU) firmware is version-pinned, signed, and attested at boot."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.2.2",
+      "level": 3,
+      "text": "**Verify that** execution within a trusted execution environment (TEE) provides hardware-enforced isolation, memory encryption, and integrity protection."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.2.3",
+      "level": 3,
+      "text": "**Verify that** AI accelerator (GPU) integrity is validated using hardware-based attestation mechanisms before each workload executes."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.2.4",
+      "level": 3,
+      "text": "**Verify that** accelerator (GPU) memory is isolated between workloads through partitioning mechanisms with memory sanitization between jobs."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.2.5",
+      "level": 3,
+      "text": "**Verify that** accelerator interconnects are restricted to approved topologies and authenticated endpoints."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.3.1",
+      "level": 1,
+      "text": "**Verify that** edge AI devices authenticate to central infrastructure using strong authentication mechanisms."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.3.2",
+      "level": 2,
+      "text": "**Verify that** models deployed to edge or mobile devices are cryptographically signed during packaging, and that the on-device runtime validates these signatures or checksums before loading or inference."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.3.3",
+      "level": 3,
+      "text": "**Verify that** inference runtimes enforce process, memory, and file access isolation."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.3.4",
+      "level": 3,
+      "text": "**Verify that** model weights and sensitive parameters stored locally are encrypted using hardware-backed key stores or secure enclaves."
+    },
+    {
+      "chapter": "C4",
+      "id": "v1.01-C4.3.5",
+      "level": 3,
+      "text": "**Verify that** models packaged within mobile, IoT, or embedded applications are encrypted at rest, and decrypted only inside a trusted runtime or secure enclave, preventing direct extraction from the app package or filesystem."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.1.1",
+      "level": 3,
+      "text": "**Verify that** high-risk AI operations (model deployment, weight export, training data access, production configuration changes) require step-up authentication."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.1.2",
+      "level": 3,
+      "text": "**Verify that** AI agents in federated or multi-system deployments authenticate using short-lived, minimal-scoped, cryptographically signed tokens."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.2.1",
+      "level": 2,
+      "text": "**Verify that** every AI resource (datasets, endpoints, vector collections, embedding indices, compute instances) enforces access controls with explicit allow-lists and default-deny policies."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.2.2",
+      "level": 2,
+      "text": "**Verify that** retrieval pipelines (e.g., RAG queries, embedding lookups) enforce the end-user's authorization context at each retrieval and assembly stage, rather than relying solely on the service account's permissions."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.2.3",
+      "level": 2,
+      "text": "**Verify that** sensitive data is retrieved via retrieval pipelines (e.g., RAG queries, embedding lookups) to prevent permanent storage in models."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.2.4",
+      "level": 2,
+      "text": "**Verify that** post-inference filtering mechanisms prevent responses from including data that the requester is not authorized to receive."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.2.5",
+      "level": 2,
+      "text": "**Verify that** the policy decision point for agent authorization is isolated from the agent's execution environment."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.2.6",
+      "level": 3,
+      "text": "**Verify that** privileged access to model weights, training pipelines, and production AI configuration is granted just in time, with a defined maximum session duration and automatic expiry. Zero Standing Privilege (ZSP) to these resources is encouraged."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.2.7",
+      "level": 3,
+      "text": "**Verify that** data classification labels propagate to downstream resources (embeddings, prompt caches, model outputs)."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.3.1",
+      "level": 2,
+      "text": "**Verify that** shared model serving infrastructure prevents one tenant's fine-tuning, inference, or embedding operations from influencing or observing another tenant's operations."
+    },
+    {
+      "chapter": "C5",
+      "id": "v1.01-C5.3.2",
+      "level": 3,
+      "text": "**Verify that** one tenant cannot influence or observe another tenant's operations through shared compute resources. Satisfying this requirement typically requires hardware partitioning, confidential computing, or dedicated per-tenant compute allocation."
+    },
+    {
+      "chapter": "C6",
+      "id": "v1.01-C6.1.1",
+      "level": 1,
+      "text": "**Verify that** models are scanned for malicious code before import."
+    },
+    {
+      "chapter": "C6",
+      "id": "v1.01-C6.1.2",
+      "level": 1,
+      "text": "**Verify that** model weights, datasets, and fine-tuning adapters are downloaded only from approved sources."
+    },
+    {
+      "chapter": "C6",
+      "id": "v1.01-C6.1.3",
+      "level": 2,
+      "text": "**Verify that** every third-party model artifact can be integrity-verified."
+    },
+    {
+      "chapter": "C6",
+      "id": "v1.01-C6.1.4",
+      "level": 2,
+      "text": "**Verify that** models pass a behavioral acceptance test suite before being promoted to any non-development environment."
+    },
+    {
+      "chapter": "C6",
+      "id": "v1.01-C6.2.1",
+      "level": 1,
+      "text": "**Verify that** every model artifact publishes a version-controlled, machine-readable AI BOM listing datasets, weights, licenses, and data-origin statements."
+    },
+    {
+      "chapter": "C6",
+      "id": "v1.01-C6.2.2",
+      "level": 2,
+      "text": "**Verify that** AI BOMs are cryptographically signed before deployment."
+    },
+    {
+      "chapter": "C6",
+      "id": "v1.01-C6.2.3",
+      "level": 2,
+      "text": "**Verify that** AI BOM completeness checks fail the build if any component metadata is missing."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.1.1",
+      "level": 1,
+      "text": "**Verify that** the application validates all model outputs against a defined schema and rejects any output that does not match."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.1.2",
+      "level": 1,
+      "text": "**Verify that** model-generated output is bounded by length limits and termination controls."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.1.3",
+      "level": 2,
+      "text": "**Verify that**, when an application uses an AI response to decide whether to perform an action, it does not perform that action if the AI refuses the request, reports a failure, or returns a response the application cannot correctly read or understand."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.2.1",
+      "level": 2,
+      "text": "**Verify that** the system assesses the reliability of generated answers using a confidence estimation method."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.2.2",
+      "level": 2,
+      "text": "**Verify that** the application automatically blocks answers or switches to a fallback message if the confidence score drops below a defined threshold."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.2.3",
+      "level": 3,
+      "text": "**Verify that** for responses classified as high-risk by policy, the system performs an additional verification step."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.3.1",
+      "level": 1,
+      "text": "**Verify that** automated classifiers scan every response and block content that matches defined harmful content categories."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.3.2",
+      "level": 2,
+      "text": "**Verify that** output filters detect and block responses that disclose system prompt content or backend data."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.3.3",
+      "level": 2,
+      "text": "**Verify that** model-generated output is prevented from triggering outbound requests."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.3.4",
+      "level": 3,
+      "text": "**Verify that** model outputs are checked for hidden, encoded, or misleading content created through homoglyphs, formatting, metadata, or structured fields."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.4.1",
+      "level": 1,
+      "text": "**Verify that** responses generated using retrieval-augmented generation (RAG) include attribution to the source documents."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.4.2",
+      "level": 1,
+      "text": "**Verify that** RAG attributions are derived from retrieval metadata and are not generated by the model, so provenance cannot be fabricated."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.4.3",
+      "level": 2,
+      "text": "**Verify that** claims in a RAG response can be traced to the retrieved chunk."
+    },
+    {
+      "chapter": "C7",
+      "id": "v1.01-C7.4.4",
+      "level": 3,
+      "text": "**Verify that** generated media is watermarked to prove it was AI-generated."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.1.1",
+      "level": 1,
+      "text": "**Verify that** vector identifiers and namespaces enforce uniqueness per tenant and prevent cross-tenant collisions."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.1.2",
+      "level": 2,
+      "text": "**Verify that** document metadata tags are immutable after the initial write."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.1.3",
+      "level": 2,
+      "text": "**Verify that** retrieval operations enforce scope constraints."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.2.1",
+      "level": 1,
+      "text": "**Verify that** sensitive fields are detected before embedding and are masked, tokenized, or dropped."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.2.2",
+      "level": 2,
+      "text": "**Verify that** vectors that fall outside normal clustering patterns are flagged and quarantined before entering production indices."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.2.3",
+      "level": 2,
+      "text": "**Verify that** no component reachable from agent execution can write agent outputs or tool outputs to trusted agent memory without explicit source validation."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.2.4",
+      "level": 3,
+      "text": "**Verify that** content crafted to manipulate retrieval results is detected and rejected or quarantined before vectorization."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.2.5",
+      "level": 3,
+      "text": "**Verify that** new content written to memory is checked for contradictions with what is already stored and that conflicts trigger alerts."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.3.1",
+      "level": 2,
+      "text": "**Verify that** expired vectors are excluded from retrieval results."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.3.2",
+      "level": 2,
+      "text": "**Verify that** memory can be reset."
+    },
+    {
+      "chapter": "C8",
+      "id": "v1.01-C8.3.3",
+      "level": 3,
+      "text": "**Verify that** quarantined content is retained but excluded from all retrieval results."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.1.1",
+      "level": 1,
+      "text": "**Verify that** per-tool quotas and timeouts (e.g., CPU, memory, disk, egress, and execution time) are enforced by the runtime."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.1.2",
+      "level": 1,
+      "text": "**Verify that** per-execution budgets (e.g., max recursion depth, token use, and monetary spend) are enforced by the runtime."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.1.3",
+      "level": 2,
+      "text": "**Verify that** a swarm-level kill-switch exists that can halt all active agent instances."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.1",
+      "level": 1,
+      "text": "**Verify that** the agent runtime blocks execution of privileged or irreversible actions until explicit human approval is received and verified."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.2",
+      "level": 2,
+      "text": "**Verify that** approval requests display canonicalized and complete action parameters, such as diffs, commands, recipients, amounts, resources, and scopes, without truncation or unsafe transformation."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.3",
+      "level": 2,
+      "text": "**Verify that** each high-impact action has a trusted reversibility classification, such as read-only, reversible, externally reversible, or irreversible."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.4",
+      "level": 2,
+      "text": "**Verify that** the agent runtime enforces reversibility classifications by blocking, requiring approval, or restricting actions based on their impact and ability to be reversed."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.5",
+      "level": 2,
+      "text": "**Verify that** any self-modification capability (e.g., prompt rewriting, tool-list changes, parameter updates) is restricted by boundaries that are enforced by the runtime and cannot be changed or bypassed by the agent."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.6",
+      "level": 2,
+      "text": "**Verify that** agentic systems include an AI-augmented review of planned high-risk actions before execution that adds to, and does not replace, the deterministic policy gate."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.7",
+      "level": 2,
+      "text": "**Verify that** the AI-augmented review mechanism is protected against manipulation by adversarial inputs, and cannot be overridden or bypassed through prompt injection."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.8",
+      "level": 3,
+      "text": "**Verify that** approvals are cryptographically bound to action parameters, requester identity, execution context, and a unique single-use nonce, and are rejected if any bound value changes or the nonce is reused."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.9",
+      "level": 3,
+      "text": "**Verify that** cryptographic key material or credentials used to issue approvals are isolated from the agent runtime, and that the runtime can neither read them nor use them to issue approvals."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.10",
+      "level": 3,
+      "text": "**Verify that** approval gates for multi-step or multi-agent action chains enforce the highest-impact reversibility classification present anywhere in the chain, where the chain is established by a component outside the control of the agent being gated."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.2.11",
+      "level": 3,
+      "text": "**Verify that** agent execution which would exceed the approved action chain is blocked until a new approval is obtained, and that the new approval enforces the highest-impact reversibility classification present across the cumulative chain."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.3.1",
+      "level": 1,
+      "text": "**Verify that** each tool/plugin executes in a least-privilege sandbox or is otherwise isolated from model operations."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.3.2",
+      "level": 1,
+      "text": "**Verify that** tool outputs are validated against schemas."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.3.3",
+      "level": 2,
+      "text": "**Verify that** tool manifests declare required privileges, resource limits, and output validation requirements."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.3.4",
+      "level": 2,
+      "text": "**Verify that** the runtime enforces the privileges, resource limits, and output-validation requirements declared in tool manifests."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.3.5",
+      "level": 2,
+      "text": "**Verify that** components processing untrusted data are isolated from tool-calling capabilities, ensuring that compromised data processing cannot trigger unauthorized tool invocations."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.3.6",
+      "level": 2,
+      "text": "**Verify that** there is architectural separation between processing of untrusted tool outputs and agent operations."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.3.7",
+      "level": 2,
+      "text": "**Verify that** external resources named in model output are verified against an approved allow-list or registry before the agent installs or invokes them."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.3.8",
+      "level": 3,
+      "text": "**Verify that** policy violations trigger automatic containment of affected tools, such as stopping their execution, isolating them, or revoking their permissions."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.3.9",
+      "level": 2,
+      "text": "**Verify that** services reachable from agent or tool sandboxes enforce the defined run, task, or tenant isolation policy on agent-writable state, including object names."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.4.1",
+      "level": 2,
+      "text": "**Verify that** each agent instance has a unique cryptographic identity and authenticates as a first-class principal to downstream systems."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.4.2",
+      "level": 2,
+      "text": "**Verify that** agent-initiated actions are cryptographically bound to each step of the execution chain for non-repudiation."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.4.3",
+      "level": 3,
+      "text": "**Verify that** agent identity credentials rotate on a defined schedule."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.4.4",
+      "level": 3,
+      "text": "**Verify that** agent state persisted between invocations is integrity-protected."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.5.1",
+      "level": 2,
+      "text": "**Verify that** agent actions are authorized against fine-grained policies enforced by the runtime that restrict which tools an agent may invoke, and which parameter values it may supply."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.5.2",
+      "level": 2,
+      "text": "**Verify that** when an agent acts on a user's behalf, the runtime propagates an integrity-protected, scope-limited token that carries the user's authorization context and is enforced at every downstream call."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.5.3",
+      "level": 2,
+      "text": "**Verify that** all access control decisions are enforced by application logic or a policy engine, never by the AI model itself."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.5.4",
+      "level": 2,
+      "text": "**Verify that** secrets and credentials required by an agent at runtime are not exposed within the model's observable context, including the context window, system prompts, or tool call parameters."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.5.5",
+      "level": 2,
+      "text": "**Verify that** inter-agent task delegation is restricted by an explicit authorization policy."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.5.6",
+      "level": 3,
+      "text": "**Verify that** long-running agent sessions re-evaluate current backend authorization policy on every privileged action."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.5.7",
+      "level": 2,
+      "text": "**Verify that** authority derived through delegation never exceeds the delegating agent's current authority."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.6.1",
+      "level": 1,
+      "text": "**Verify that** a manual kill-switch mechanism exists to immediately halt AI model inference and outputs."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.6.2",
+      "level": 2,
+      "text": "**Verify that** when a human-approval gate is not satisfied within the defined approval time, the system blocks the pending action."
+    },
+    {
+      "chapter": "C9",
+      "id": "v1.01-C9.6.3",
+      "level": 3,
+      "text": "**Verify that** kill-switch commands are implemented through an out-of-band channel that is isolated from the agent runtime."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.1.1",
+      "level": 1,
+      "text": "**Verify that** MCP components are obtained only from trusted sources and cryptographically verified."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.1.2",
+      "level": 2,
+      "text": "**Verify that** only allow-listed MCP servers are permitted."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.1.3",
+      "level": 2,
+      "text": "**Verify that** locally launched MCP servers run in a least-privilege sandbox with restricted file system, network, and system access."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.2.1",
+      "level": 1,
+      "text": "**Verify that** MCP servers validate access tokens for each request and do not rely on transport security alone."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.2.2",
+      "level": 1,
+      "text": "**Verify that** MCP servers validate the presented access token's issuer, audience, expiration, and scope claims in accordance with OAuth 2.1."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.2.3",
+      "level": 1,
+      "text": "**Verify that** MCP servers acting as OAuth 2.1 resource servers do not store or persist access tokens or user credentials."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.2.4",
+      "level": 2,
+      "text": "**Verify that** MCP tools/list returns only tools permitted by the requester's authorized scopes, and that list responses vary only by authorization context, never by connection."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.2.5",
+      "level": 2,
+      "text": "**Verify that** MCP servers enforce access control on every tool invocation, validating that the user's access token authorizes both the requested tool and the specific argument values supplied."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.2.7",
+      "level": 1,
+      "text": "**Verify that** MCP servers only accept tokens explicitly issued for them, and do not pass tokens issued for other services through to downstream APIs."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.2.8",
+      "level": 1,
+      "text": "**Verify that** MCP servers protect the integrity of `requestState` that influences authorization, resource access, or business logic, and reject state that fails verification."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.2.9",
+      "level": 2,
+      "text": "**Verify that** MCP clients bind persisted OAuth client credentials to the issuing authorization server and do not present them to a different authorization server."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.2.10",
+      "level": 2,
+      "text": "**Verify that** MCP servers enforce single use server-side for `requestState` that must be consumed at most once."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.3.1",
+      "level": 1,
+      "text": "**Verify that** authenticated, encrypted streamable HTTP is used for MCP transport for remote services."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.3.2",
+      "level": 1,
+      "text": "**Verify that** stdio transport is permitted only in controlled local environments."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.3.3",
+      "level": 1,
+      "text": "**Verify that** MCP servers validate both the Origin header and the Host header independently on all HTTP-based transports to prevent DNS rebinding attacks."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.3.4",
+      "level": 2,
+      "text": "**Verify that** MCP clients enforce a minimum acceptable protocol version and do not retry with, or fall back to, a protocol version or legacy handshake below that minimum."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.3.5",
+      "level": 3,
+      "text": "**Verify that** access tokens between the MCP client and server are sender-constrained using mTLS or DPoP."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.3.6",
+      "level": 2,
+      "text": "**Verify that** MCP intermediaries enforcing policy on mirrored request headers confirm that the protocol version indicates a revision requiring header and body validation before trusting those headers."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.1",
+      "level": 1,
+      "text": "**Verify that** MCP tools/list and tools/call responses are validated against their declared schemas before being injected into the model context."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.2",
+      "level": 1,
+      "text": "**Verify that** MCP tools/list and tools/call responses are screened for indirect prompt injection before being injected into the model context."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.3",
+      "level": 1,
+      "text": "**Verify that** MCP servers reject unrecognized or oversized parameters in function calls."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.4",
+      "level": 2,
+      "text": "**Verify that** all MCP servers enforce strict schema validation."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.5",
+      "level": 2,
+      "text": "**Verify that** all MCP transports enforce maximum payload size limits."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.6",
+      "level": 2,
+      "text": "**Verify that** MCP servers sign tool responses with a unique nonce and timestamp so MCP clients can detect replay attempts."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.7",
+      "level": 2,
+      "text": "**Verify that** MCP clients present users with explicit consent dialogue and cancellation options upon installation of a local MCP server."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.8",
+      "level": 3,
+      "text": "**Verify that** MCP clients maintain a snapshot of tool definitions and that any change to a tool definition triggers re-approval before the modified tool can be invoked."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.9",
+      "level": 2,
+      "text": "**Verify that** MCP proxy servers using a shared upstream OAuth client identity do not allow a requesting MCP client to inherit authorization established for a different MCP client."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.10",
+      "level": 2,
+      "text": "**Verify that** MCP clients bind each approved MCP server's granted consent and authorization to the connection endpoint approved for that server, and require user re-approval before any further interaction once that endpoint changes."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.11",
+      "level": 1,
+      "text": "**Verify that** MCP clients reject tool definitions containing invalid mirrored-header annotations, excluding the affected tool rather than the entire tool list."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.12",
+      "level": 2,
+      "text": "**Verify that** MCP servers reject requests where mirrored request headers do not match the corresponding request body values, after decoding any encoded header values."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.13",
+      "level": 2,
+      "text": "**Verify that** MCP implementations apply resource bounds to schema validation, such as a maximum schema depth, a cap on the total number of nested schema elements, or a per-validation time budget."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.14",
+      "level": 1,
+      "text": "**Verify that** MCP implementations do not automatically dereference JSON Schema `$ref` values that resolve to network URIs, and that any opt-in external resolution is disabled by default and rejects loopback, link-local, and private network addresses."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.15",
+      "level": 2,
+      "text": "**Verify that** MCP implementations reject schemas that fail to validate due to an unresolved external `$ref` rather than treating them as permissive."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.16",
+      "level": 2,
+      "text": "**Verify that** MCP clients and intermediaries reuse cached responses marked with a private cache scope only within the authorization context that produced them, and do not cache results of multi round-trip requests."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.17",
+      "level": 2,
+      "text": "**Verify that** MCP servers mark cacheable results containing user-specific or authorization-filtered data with a private cache scope."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.18",
+      "level": 2,
+      "text": "**Verify that** MCP servers do not use form-mode elicitation to request secrets or payment credentials, and that in URL-mode elicitation the user completing the flow is the same user who initiated it."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.19",
+      "level": 1,
+      "text": "**Verify that** MCP servers exclude end-user credentials and personal data from URL-mode elicitation URLs, and do not issue URLs that are pre-authenticated to a protected resource."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.20",
+      "level": 2,
+      "text": "**Verify that** MCP clients require explicit user consent and display the full URL before opening any URL-mode elicitation target, and do not pre-fetch the URL or its metadata."
+    },
+    {
+      "chapter": "C10",
+      "id": "v1.01-C10.4.21",
+      "level": 2,
+      "text": "**Verify that** MCP clients open URL-mode elicitation targets so that neither the client nor the model can observe the page contents or the user's input."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.1.1",
+      "level": 1,
+      "text": "**Verify that** the model has undergone alignment and safety training or fine-tuning to prevent the model from generating disallowed content categories."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.1.2",
+      "level": 1,
+      "text": "**Verify that** a version-controlled alignment test suite is run on every model update or release."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.1.3",
+      "level": 1,
+      "text": "**Verify that** models are evaluated against known adversarial attack techniques relevant to their modality."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.1.4",
+      "level": 2,
+      "text": "**Verify that** models are hardened against adversarial inputs."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.1.5",
+      "level": 3,
+      "text": "**Verify that** an automated evaluator measures harmful-content rate and flags regressions beyond a defined threshold."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.1.6",
+      "level": 2,
+      "text": "**Verify that** adversarial evaluation results are reported alongside results for the same tasks, scored the same way, with no attack applied."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.2.1",
+      "level": 1,
+      "text": "**Verify that** model-inferred sensitive attributes are not directly returned in outputs."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.2.2",
+      "level": 1,
+      "text": "**Verify that** inference endpoints enforce per-principal and global rate limits sized to the extraction threat model, and not solely as a generic API throttle."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.2.3",
+      "level": 2,
+      "text": "**Verify that** model outputs are calibrated to reduce overconfident predictions."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.2.4",
+      "level": 2,
+      "text": "**Verify that** training on sensitive datasets employs differentially-private optimization."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.2.5",
+      "level": 3,
+      "text": "**Verify that** membership-inference attack simulations demonstrate that attack accuracy does not exceed random guessing on evaluated data."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.3.1",
+      "level": 1,
+      "text": "**Verify that** query-pattern analysis feeds an extraction-attempt detector."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.3.2",
+      "level": 2,
+      "text": "**Verify that** raw model outputs are not directly exposed beyond the application backend, and that externally visible responses are calibrated to the extraction risk level."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.3.3",
+      "level": 3,
+      "text": "**Verify that** model watermarking or fingerprinting techniques are applied so that unauthorized copies can be identified."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.3.4",
+      "level": 3,
+      "text": "**Verify that** detection of suspected extraction triggers response measures."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.3.5",
+      "level": 2,
+      "text": "**Verify that** inference endpoints constrain sampling and decoding parameters supplied by untrusted callers (e.g., temperature, top-k, top-p, logit bias, candidate/n count) to server-side approved ranges and defaults, rejecting out-of-policy values."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.4.1",
+      "level": 2,
+      "text": "**Verify that** inputs from external or untrusted sources pass through anomaly detection before model inference."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.4.2",
+      "level": 2,
+      "text": "**Verify that** inputs flagged as anomalous trigger gating actions."
+    },
+    {
+      "chapter": "C11",
+      "id": "v1.01-C11.4.3",
+      "level": 3,
+      "text": "**Verify that** the safety violation feedback pipeline includes poisoning detection and human review gates to prevent adversarial manipulation of the improvement mechanism."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.1.1",
+      "level": 1,
+      "text": "**Verify that** AI interactions are logged with session context and AI-specific telemetry."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.1.2",
+      "level": 2,
+      "text": "**Verify that** safety filtering and policy decisions are logged with sufficient detail to support audit, debugging, and forensic analysis of content moderation systems."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.1.3",
+      "level": 2,
+      "text": "**Verify that** log entries for AI inference events follow a structured, interoperable schema that includes at least the model identifier, token usage (input and output), provider name, and operation type."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.1.4",
+      "level": 2,
+      "text": "**Verify that** RAG pipeline retrieval events are logged, including the query, documents retrieved, and knowledge source."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.2.1",
+      "level": 1,
+      "text": "**Verify that** the system detects and alerts on known jailbreak patterns, prompt injection attempts, and adversarial inputs."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.2.2",
+      "level": 2,
+      "text": "**Verify that** behavioral anomaly detection identifies unusual conversation patterns, excessive retry attempts, or probing behaviors."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.2.3",
+      "level": 2,
+      "text": "**Verify that** custom rules detect AI-specific threat patterns for coordinated jailbreak attempts, prompt injection, and system prompt extraction attempts."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.2.4",
+      "level": 2,
+      "text": "**Verify that** extraction-alert events include offending query metadata to support investigation."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.2.5",
+      "level": 2,
+      "text": "**Verify that** token usage is tracked at granular attribution levels including per user, per session, per feature endpoint, and per team or workspace."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.2.6",
+      "level": 3,
+      "text": "**Verify that** LLM API traffic is monitored for covert-channel indicators and communication signatures to identify malware and command-and-control (C2) activity."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.3.1",
+      "level": 1,
+      "text": "**Verify that** data drift detection monitors input distribution changes that may impact model performance, using statistically validated methods matched to the input data type (e.g., KS test or PSI for tabular numeric features, embedding-distance metrics for text or image)."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.3.2",
+      "level": 2,
+      "text": "**Verify that** hallucination detection monitors identify and flag model outputs that contain factually incorrect, inconsistent, or fabricated information."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.3.3",
+      "level": 2,
+      "text": "**Verify that** hallucination rates are tracked as continuous time-series metrics to enable trend analysis and detection of sustained model degradation."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.3.4",
+      "level": 3,
+      "text": "**Verify that** unexplained behavioral shifts are distinguished from gradual, expected operational drift."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.4.1",
+      "level": 2,
+      "text": "**Verify that** autonomous action triggers include proactive behavior-pattern analysis, security evaluation, and threat-landscape assessment."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.4.2",
+      "level": 2,
+      "text": "**Verify that** audit logs capture security-critical proactive actions, including approver identity, timestamp, action parameters, and decision outcomes."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.4.3",
+      "level": 2,
+      "text": "**Verify that** kill-switch activations and override commands are logged."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.5.1",
+      "level": 1,
+      "text": "**Verify that** dataset lineage records each dataset and its components, including all transformations, augmentations, and merges."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.5.2",
+      "level": 1,
+      "text": "**Verify that** all labeling activities are recorded in logs."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.5.3",
+      "level": 2,
+      "text": "**Verify that** all model changes generate immutable audit records."
+    },
+    {
+      "chapter": "C12",
+      "id": "v1.01-C12.5.4",
+      "level": 2,
+      "text": "**Verify that** every ingested document is tagged at write time with source, writer identity, and timestamp."
+    }
+  ],
+  "source": {
+    "commit": "55dc2203d861af14482b529c564f5b312134b165",
+    "license": "CC-BY-SA-4.0",
+    "publisher": "OWASP",
+    "repository": "https://github.com/OWASP/AISVS",
+    "source_sha256": "c23aa4d6ac5313787ee82a31528df71b378521f6c59e61456d6d8f135ace74c5",
+    "tree": "9287f3198e1ee7832fc2490e0afbc7b114490e9a",
+    "version": "1.01"
+  },
+  "source_status": "PINNED: OWASP AISVS v1.01 local snapshot verified"
 }

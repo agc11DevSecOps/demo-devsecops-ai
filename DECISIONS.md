@@ -25,3 +25,10 @@ preserves the harmless demonstration while matching the writable boundary.
 
 Run A intentionally lacks useful security observability, but a minimal common
 evidence writer records the scenario result so the scorecard can compare runs.
+
+## D-006: Pin the full AISVS catalog
+
+The scorecard contains all 213 AISVS v1.01 requirements generated from a
+reviewed local snapshot of the official, frozen `1.01/en` source. Regeneration
+is offline and accepts only the recorded source digest. The source provenance
+and CC BY-SA notice remain beside the derived catalog.

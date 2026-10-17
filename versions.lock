@@ -8,6 +8,8 @@
   "aisvs": {
     "version": "1.01",
     "source": "https://github.com/OWASP/AISVS",
-    "status": "commit-to-be-pinned-before-public-release"
+    "commit": "55dc2203d861af14482b529c564f5b312134b165",
+    "source_sha256": "c23aa4d6ac5313787ee82a31528df71b378521f6c59e61456d6d8f135ace74c5",
+    "status": "pinned-local-snapshot-required-for-regeneration"
   }
 }
