@@ -7,8 +7,11 @@ RUNB_MEMORY := $(if $(RUNB_WORKLOAD_READY),2g,$(if $(wildcard $(PROMPT_GUARD_MOD
 RUNB_MODELS_VOLUME := $(if $(or $(wildcard $(PROMPT_GUARD_MODEL)),$(wildcard $(WORKLOAD_MODEL))),--volume "$(CURDIR)/vendor/models:/models:ro",)
 RUNB_PROMPT_GUARD := $(if $(wildcard $(PROMPT_GUARD_MODEL)),--env OPS_DEMO_PROMPT_GUARD=1 --env OPS_DEMO_PROMPT_GUARD_MODEL=/models/prompt-guard-2-22m --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1,)
 RUNB_WORKLOAD := $(if $(RUNB_WORKLOAD_READY),--env OPS_DEMO_WORKLOAD=1 --env OPS_DEMO_WORKLOAD_MODE=local --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env TOKENIZERS_PARALLELISM=false,)
+# Iteration aid: 5 keeps the full demo fast; set to 55 (the full admitted corpus)
+# for the final run. A reduced run is reported PARTIAL and never counts as PASS.
+GARAK_LIMIT ?= 5
 
-.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy demo versions fetch-tools fetch-models fetch-workload-model workload container-build container-run-a container-run-b container-scenario-a container-scenario-b s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s7-a s7-b stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
+.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy demo versions fetch-tools fetch-models fetch-workload-model workload garak garak-build container-garak container-build container-run-a container-run-b container-scenario-a container-scenario-b s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s7-a s7-b stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
 
 reset:
 	$(PYTHON) -m app.cli reset
@@ -37,7 +40,7 @@ run-b:
 	$(MAKE) container-run-b
 
 container-build: fetch-tools
-	docker build --pull=false --network none --tag demo-devsecops-ai:local .
+	docker build --pull=false --network none --target runtime --tag demo-devsecops-ai:local .
 
 container-run-a: container-build
 	docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 128m --cpus 0.5 --pids-limit 32 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_IN_CONTAINER=1 --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local run --run A $(if $(SCENARIO),--scenario $(SCENARIO))
@@ -48,6 +51,14 @@ container-run-b: container-build
 workload: fetch-workload-model container-build
 	@test -f "$(PROMPT_GUARD_MODEL)" || (printf '%s\n' 'Set HF_TOKEN and run make fetch-models to provision Prompt Guard.'; exit 2)
 	docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 2g --cpus 0.5 --pids-limit 64 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_PROMPT_GUARD=1 --env OPS_DEMO_PROMPT_GUARD_MODEL=/models/prompt-guard-2-22m --env OPS_DEMO_PRESIDIO=1 --env OPS_DEMO_VECTOR=1 --env OPS_DEMO_WORKLOAD_MODE=local --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1 --env TOKENIZERS_PARALLELISM=false --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/vendor/models:/models:ro" --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local workload --request-id local-workload --requester synthetic-operator --question "What is the rollback procedure?"
+
+garak: reset container-garak
+
+garak-build: fetch-tools
+	docker build --pull=false --network none --target garak --tag demo-devsecops-ai:garak .
+
+container-garak: garak-build
+	docker run --rm --network none --read-only --tmpfs /tmp:rw,size=32m --memory 512m --cpus 0.5 --pids-limit 64 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_GARAK_LIMIT=$(GARAK_LIMIT) --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:garak garak
 
 container-scenario-a:
 	$(MAKE) SCENARIO=$(SCENARIO) container-run-a
@@ -75,8 +86,10 @@ versions:
 	$(PYTHON) -c 'import pathlib; print(pathlib.Path("versions.lock").read_text())'
 
 demo: reset
-	$(MAKE) run-a
-	$(MAKE) run-b
+	$(MAKE) container-run-a
+	$(PYTHON) -m app.cli reset --preserve-evidence
+	$(MAKE) container-garak
+	$(MAKE) container-run-b
 	$(MAKE) scorecard
 
 s0-a:

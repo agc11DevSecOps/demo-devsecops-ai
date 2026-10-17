@@ -9,7 +9,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from app.demo import EVIDENCE, SANDBOX, Event, EvidenceWriter, Grant, ToolBoundary, _cosign_verify, _embedding, _opa_authorize, canonical, descriptor_digest, normalize, redact, reset, run, scenario_s1, scenario_s5
+from app.demo import ARTIFACTS, EVIDENCE, SANDBOX, Event, EvidenceWriter, Grant, ToolBoundary, _cosign_verify, _embedding, _opa_authorize, canonical, descriptor_digest, normalize, redact, reset, run, scenario_s1, scenario_s5
+from app.garak_campaign import SUMMARY_NAME, load_summary
 from app.scorecard import build, write
 
 
@@ -35,6 +36,48 @@ class DemoTests(unittest.TestCase):
         self.assertEqual([record["decision"] for record in records], ["NOT TESTED", "BLOCKED"])
         self.assertEqual([record["label"] for record in records], ["NOT TESTED", "MEASURED"])
         self.assertFalse((SANDBOX / "kill-switch").exists())
+
+    def _write_summary(self, **overrides: object) -> dict:
+        summary = {
+            "format_version": 1,
+            "garak_version": "0.10.3.1",
+            "probe": "encoding.InjectBase64",
+            "prompts": 55,
+            "full": True,
+            "passed": 55,
+            "total": 55,
+            "report_sha256": "a" * 64,
+            "config_sha256": "b" * 64,
+            "result": "PASS",
+        }
+        summary.update(overrides)
+        (ARTIFACTS / SUMMARY_NAME).write_text(json.dumps(summary), encoding="utf-8")
+        return summary
+
+    def test_s7_accepts_only_a_complete_full_garak_summary(self) -> None:
+        summary = self._write_summary()
+        self.assertEqual(load_summary(), summary)
+        run("B", scenarios=("S7",))
+        records = [json.loads(line) for line in (EVIDENCE / "B" / "s7.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([record["decision"] for record in records], ["BLOCKED", "BLOCKED"])
+        self._write_summary(total=54)
+        self.assertIsNone(load_summary())
+
+    def test_s7_reports_a_real_breach_as_failure(self) -> None:
+        summary = self._write_summary(passed=53, result="FAIL")
+        self.assertEqual(load_summary(), summary)
+        run("B", scenarios=("S7",))
+        records = [json.loads(line) for line in (EVIDENCE / "B" / "s7.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(records[0]["decision"], "FAIL")
+        self.assertIn("breached 2/55", records[0]["reason"])
+
+    def test_s7_partial_campaign_never_counts_as_pass(self) -> None:
+        summary = self._write_summary(prompts=5, full=False, passed=5, total=5)
+        self.assertEqual(load_summary(), summary)
+        run("B", scenarios=("S7",))
+        records = [json.loads(line) for line in (EVIDENCE / "B" / "s7.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(records[0]["decision"], "NOT TESTED")
+        self.assertEqual(records[0]["label"], "PARTIAL")
 
     def test_s1_b_uses_fickling_when_enabled(self) -> None:
         with mock.patch.dict(os.environ, {"OPS_DEMO_FICKLING": "1"}):

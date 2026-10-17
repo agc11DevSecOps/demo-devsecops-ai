@@ -85,7 +85,7 @@
       "source_commit": "bef37d98366296045d9fb220d7c4910b2d958ddc",
       "license": "Apache-2.0",
       "wheel_sha256": "e4876a17522f865fbbe7c66421f52249544b5ef62f8ec3883676c9aeca6deeb7",
-      "status": "c1-rejected"
+      "status": "c1-admitted"
     }
   },
   "c1_rejected": {
@@ -93,9 +93,9 @@
       "version": "0.10.3.1",
       "source_commit": "bef37d98366296045d9fb220d7c4910b2d958ddc",
       "wheel_sha256": "e4876a17522f865fbbe7c66421f52249544b5ef62f8ec3883676c9aeca6deeb7",
-      "reason": "mandatory ecoji>=0.1.1 has no Python 3.12 wheel; newer candidate conflicts with admitted numpy/transformers pins",
+      "reason": "mandatory ecoji>=0.1.1 metadata has no Python 3.12 wheel; superseded because the used code path does not import ecoji (see c1_admitted.garak)",
       "command": "pip download --only-binary=:all: --python-version 3.12 garak==0.10.3.1",
-      "status": "rejected"
+      "status": "superseded-by-admission"
     },
     "modelscan": {
       "version": "0.8.8",
@@ -205,6 +205,37 @@
       "provisioning": "make fetch-workload-model",
       "scope": "ops-assist-local-inference",
       "evidence": "artifacts/ops-assist.jsonl sha256:f47a4c97dd017a22fe074543155ef687300e21c710e7973bcce35f17202a6f36",
+      "status": "admitted"
+    },
+    "garak": {
+      "version": "0.10.3.1",
+      "publisher": "NVIDIA Garak contributors",
+      "source_commit": "bef37d98366296045d9fb220d7c4910b2d958ddc",
+      "license": "Apache-2.0",
+      "wheel_sha256": "e4876a17522f865fbbe7c66421f52249544b5ef62f8ec3883676c9aeca6deeb7",
+      "wheel_manifest": "vendor/garak.lock.json",
+      "requirements": "vendor/garak-requirements.lock",
+      "python": "3.12",
+      "runtime_wheels": {
+        "xdg_base_dirs-6.0.3-py3-none-any.whl": "c80886a8f4e369d6148fdebd7abf182bf053ce6c744f7b7eec5853fec835ff44",
+        "colorama-0.4.6-py2.py3-none-any.whl": "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6",
+        "aiohttp-3.14.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl": "20f085697d7e911f1f73c43ed03fafbed1e7121797e2eb5428efa80398060584",
+        "aiohappyeyeballs-2.7.1-py3-none-any.whl": "9243213661e29250eb41368e5daa826fc017156c3b8a11440826b2e3ed376472",
+        "aiosignal-1.4.0-py3-none-any.whl": "053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e",
+        "frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl": "494a5952b1c597ba44e0e78113a7266e656b9794eec897b19ead706bd7074383",
+        "multidict-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl": "fed6b7705d49dd07e5e0dd5f5c873fc44047e92d714299b13245b5fecac49d01",
+        "propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl": "2814ecd8e818f487bee4b0f921bc4d1c176cc5fc71ac0f072d0fa67eda4ac14b",
+        "yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl": "c6f117789d22dce188e5754e8bc65b7e6ebf8cb73963b9fa761f672a5883769d",
+        "backoff-2.2.1-py3-none-any.whl": "63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8",
+        "jsonpath_ng-1.8.0-py3-none-any.whl": "b8dde192f8af58d646fc031fac9c99fe4d00326afc4148f1f043c601a8cfe138",
+        "ply-3.11-py2.py3-none-any.whl": "096f9b8350b65ebd2fd1346b12452efe5b9607f7482813ffca50c22722a807ce",
+        "markdown-3.11.1-py3-none-any.whl": "f1fa378ba5d682900c9ecb55ccceacca936016dda7c3b27097e8ae03ff78feb5"
+      },
+      "probe": "encoding.InjectBase64",
+      "prompts": 55,
+      "run_timeout_seconds": 1800,
+      "summary": "artifacts/garak-s7.json",
+      "scope": "S7-bounded-loopback-redteam",
       "status": "admitted"
     }
   },

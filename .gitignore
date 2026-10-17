@@ -12,6 +12,7 @@ record/**/*.webm
 vendor/opa
 vendor/cosign
 vendor/python/
+vendor/garak/
 vendor/models
 vendor/promptguard
 vendor/.*.part

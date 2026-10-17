@@ -22,6 +22,8 @@ from pathlib import Path
 VENDOR = Path(__file__).resolve().parents[1] / "vendor"
 WHEELS_DIR = VENDOR / "python"
 WHEELS_MANIFEST = VENDOR / "python.lock.json"
+GARAK_WHEELS_DIR = VENDOR / "garak"
+GARAK_WHEELS_MANIFEST = VENDOR / "garak.lock.json"
 
 ALLOWED_HOSTS = {
     "github.com": (
@@ -117,9 +119,16 @@ def fetch_wheels() -> None:
         _download(entry["url"], WHEELS_DIR / entry["file"], entry["sha256"], entry["file"], 0o644)
 
 
+def fetch_garak_wheels() -> None:
+    manifest = json.loads(GARAK_WHEELS_MANIFEST.read_text())
+    for entry in manifest:
+        _download(entry["url"], GARAK_WHEELS_DIR / entry["file"], entry["sha256"], entry["file"], 0o644)
+
+
 def main() -> int:
     fetch_tools()
     fetch_wheels()
+    fetch_garak_wheels()
     return 0
 
 

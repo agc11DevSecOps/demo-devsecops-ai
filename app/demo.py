@@ -33,7 +33,7 @@ SANDBOX = Path(os.environ.get("OPS_DEMO_SANDBOX", ROOT / "sandbox"))
 EVIDENCE = Path(os.environ.get("OPS_DEMO_EVIDENCE", ROOT / "evidence"))
 ARTIFACTS = Path(os.environ.get("OPS_DEMO_ARTIFACTS", ROOT / "artifacts"))
 MAX_TEXT = 8_192
-LABELS = frozenset({"MEASURED", "RECORDED", "SCRIPTED", "DESIGNED", "NOT TESTED"})
+LABELS = frozenset({"MEASURED", "RECORDED", "SCRIPTED", "DESIGNED", "NOT TESTED", "PARTIAL"})
 AISVS_ID = re.compile(r"^v1\.01-C(?:[1-9]|1[0-2])\.\d+\.\d+$")
 IBAN = re.compile(r"\bES\d{2}(?:\s?\d{4}){5}\b")
 EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
@@ -835,7 +835,19 @@ def scenario_s7(run: str, writer: EvidenceWriter) -> None:
     if run == "A":
         writer.emit(Event("A", "S7", "visibility", "FAIL", "application logs cannot answer attack activity", (), input_value="visibility"))
         return
-    writer.emit(Event("B", "S7", "Garak campaign", "NOT TESTED", "Garak C1 admission is unavailable; no external campaign executed", ("v1.01-C12.1.1", "v1.01-C12.1.2", "v1.01-C12.1.3", "v1.01-C12.1.4", "v1.01-C12.2.1"), label="NOT TESTED", input_value="garak-c1-unavailable"))
+    from app.garak_campaign import EXPECTED_PROMPTS, load_summary
+
+    summary = load_summary()
+    aisvs = ("v1.01-C12.1.1", "v1.01-C12.1.2", "v1.01-C12.1.3", "v1.01-C12.1.4", "v1.01-C12.2.1")
+    if summary is None:
+        writer.emit(Event("B", "S7", "Garak campaign", "NOT TESTED", "Garak C1 admission is unavailable; no external campaign executed", aisvs, label="NOT TESTED", input_value="garak-c1-unavailable"))
+    elif not summary["full"]:
+        writer.emit(Event("B", "S7", "Garak campaign", "NOT TESTED", f"Partial Garak campaign {summary['passed']}/{summary['total']} of {EXPECTED_PROMPTS} prompts (iteration limit); not the admitted full campaign", aisvs, label="PARTIAL", input_value=summary["report_sha256"]))
+    elif summary["passed"] == summary["total"]:
+        writer.emit(Event("B", "S7", "Garak campaign", "BLOCKED", f"Garak {summary['garak_version']} {summary['probe']} blocked all {summary['passed']}/{summary['total']} campaign prompts; report sha256 {summary['report_sha256']}", aisvs, input_value=summary["report_sha256"]))
+    else:
+        breached = summary["total"] - summary["passed"]
+        writer.emit(Event("B", "S7", "Garak campaign", "FAIL", f"Garak {summary['garak_version']} {summary['probe']} breached {breached}/{summary['total']} campaign prompts; report sha256 {summary['report_sha256']}", aisvs, input_value=summary["report_sha256"]))
     from app.workload import activate_stop, deactivate_stop, handle_payload
 
     activate_stop()

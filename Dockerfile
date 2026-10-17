@@ -1,4 +1,4 @@
-FROM python:3.12-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
+FROM python:3.12-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f AS runtime
 
 WORKDIR /app
 COPY vendor/python /tmp/wheels
@@ -17,3 +17,12 @@ COPY app /app/app
 ENV PYTHONDONTWRITEBYTECODE=1
 USER 10001:10001
 ENTRYPOINT ["python", "-m", "app.cli"]
+
+FROM runtime AS garak
+USER root
+COPY vendor/garak /tmp/garak-wheels
+COPY vendor/garak-requirements.lock /tmp/garak-requirements.lock
+RUN python -m pip install --no-index --no-cache-dir --no-deps --require-hashes \
+        --find-links /tmp/garak-wheels -r /tmp/garak-requirements.lock \
+    && rm -rf /tmp/garak-wheels /tmp/garak-requirements.lock
+USER 10001:10001

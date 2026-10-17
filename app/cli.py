@@ -12,7 +12,7 @@ from app.workload import activate_stop, deactivate_stop, handle_payload, serve
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["reset", "run", "workload", "serve-workload", "kill", "unkill"])
+    parser.add_argument("command", choices=["reset", "run", "workload", "serve-workload", "garak", "kill", "unkill"])
     parser.add_argument("--run", choices=["A", "B"])
     parser.add_argument("--scenario", choices=sorted(SCENARIOS))
     parser.add_argument("--fresh", action="store_true")
@@ -26,6 +26,11 @@ def main() -> None:
         return
     if args.command == "serve-workload":
         serve()
+        return
+    if args.command == "garak":
+        from app.garak_campaign import main as garak_main
+
+        garak_main()
         return
     if args.command == "kill":
         activate_stop()

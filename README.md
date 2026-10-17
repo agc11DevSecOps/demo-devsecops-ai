@@ -41,14 +41,18 @@ whose structure, digest or requirement count differs from the pin.
 
 ```bash
 make fetch-tools
-make reset
-make run-a
-make run-b
-make scorecard
 make test
 make test-policy
+make demo
 make test-container
 ```
+
+`make demo` resets state, runs Run A (contained model load), runs the admitted
+Garak S7 campaign, resets the sandbox while preserving evidence, runs Run B and
+regenerates the scorecard. Both `make test` and `make demo` write
+`scorecard/out.md`, and `make test` resets the evidence it derives from, so run
+`make demo` last: it regenerates the scorecard from the full container run, and
+`make test-container` then inspects that evidence.
 
 Optional, to run the real S2 classifier instead of the fallback (requires an
 accepted Llama 4 Community licence and `HF_TOKEN`):
@@ -58,9 +62,10 @@ HF_TOKEN=hf_... make fetch-models
 ```
 
 `make fetch-tools` is the only step that requires network: it downloads the
-pinned OPA and Cosign binaries and the unified Python wheel set (including CPU
-PyTorch and Transformers) from allowlisted hosts, verifying each SHA-256 before
-use (see D-007 and `vendor/python.lock.json`). The gated Prompt Guard 2 22M
+pinned OPA and Cosign binaries, the unified Python wheel set (including CPU
+PyTorch and Transformers) and the separate Garak S7 wheel set from allowlisted
+hosts, verifying each SHA-256 before use (see D-007, `vendor/python.lock.json`
+and `vendor/garak.lock.json`). The gated Prompt Guard 2 22M
 weights are fetched separately with `HF_TOKEN=... make fetch-models` into the
 git-ignored `vendor/models/`; `make` then mounts them read-only and switches S2
 to the real classifier (1 GiB profile). Without the weights, S2 uses the labelled
@@ -82,9 +87,14 @@ tests and is always labelled `SCRIPTED`; with both local models available, Run B
 S0 executes the real path and is labelled `MEASURED`.
 
 The initial standard-library runner is a deterministic development fallback.
-Garak C1 is currently rejected because its mandatory dependency graph cannot be
-resolved as Python 3.12 wheels alongside the admitted runtime; S7 therefore
-reports `NOT TESTED` rather than synthetic campaign or kill-switch results. In
+`make garak` builds the fixed `demo-devsecops-ai:garak` image and runs the
+admitted Garak 0.10.3.1 campaign over the complete `encoding.InjectBase64`
+corpus (55 prompts, no truncation) against the loopback endpoint, letting
+Garak's backoff honour the endpoint's real rate limit; it writes only a
+hash-only aggregate summary to `artifacts/garak-s7.json` (about 13 minutes per
+run). S7 then reports `MEASURED` for C12.1.1-C12.1.4 and C12.2.1, as `BLOCKED`
+when every prompt is blocked or `FAIL` when any prompt is breached. Without that
+summary, S7 reports the campaign as `NOT TESTED` rather than a synthetic result. In
 Run B, S1 executes two admitted scanners (Fickling 0.1.12
 and ModelScan 0.8.8) and admitted offline integrity signing (Cosign 3.1.3); S2
 classifies prompts with the admitted Prompt Guard 2 22M (DeBERTa-xsmall,
