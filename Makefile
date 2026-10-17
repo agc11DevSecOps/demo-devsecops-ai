@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: reset run-a run-b scorecard aisvs-catalog test demo versions container-build container-run-a container-run-b container-scenario-a container-scenario-b s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s7-a s7-b stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
+.PHONY: reset run-a run-b scorecard aisvs-catalog test test-container demo versions container-build container-run-a container-run-b container-scenario-a container-scenario-b s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s7-a s7-b stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
 
 reset:
 	$(PYTHON) -m app.cli reset
@@ -37,6 +37,9 @@ aisvs-catalog:
 
 test:
 	$(PYTHON) -m unittest discover -s tests -v
+
+test-container:
+	$(PYTHON) -m unittest discover -s tests -p 'checks_container.py' -v
 
 versions:
 	$(PYTHON) -c 'import pathlib; print(pathlib.Path("versions.lock").read_text())'

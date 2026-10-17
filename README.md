@@ -45,6 +45,7 @@ make run-a
 make run-b
 make scorecard
 make test
+make test-container
 ```
 
 The initial standard-library runner is a deterministic development fallback.

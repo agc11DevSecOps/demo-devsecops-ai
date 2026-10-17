@@ -31,6 +31,8 @@ jobs:
         run: docker pull python@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
       - name: Run offline A/B demo
         run: make demo
+      - name: Verify container boundary artifacts
+        run: make test-container
       - name: Upload scorecard
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

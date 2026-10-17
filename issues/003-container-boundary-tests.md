@@ -1,6 +1,6 @@
 # 003: Test the container boundary as a release gate
 
-Status: ready-for-agent
+Status: completed
 
 Blockers: None.
 
