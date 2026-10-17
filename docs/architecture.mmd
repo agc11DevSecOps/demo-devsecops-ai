@@ -1,0 +1,12 @@
+flowchart LR
+  U[User input] --> G[Gateway]
+  G --> R[Retrieval]
+  R --> L[Scripted or hosted LLM]
+  L --> B[Tool boundary]
+  B --> T[Sandbox tools]
+  G --> E[JSONL evidence]
+  B --> E
+  E --> S[Scorecard]
+  C[Run B controls] -. enforce .-> G
+  C -. enforce .-> R
+  C -. enforce .-> B

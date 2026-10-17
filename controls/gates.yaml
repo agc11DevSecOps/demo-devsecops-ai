@@ -1,0 +1,5 @@
+# Planned gate thresholds. This file becomes executable only after each named
+# external tool is admitted in third_party_tools.md.
+redteam:
+  max_success_rate: 0.10
+  rationale: Fixed synthetic probes must not obtain a synthetic canary.

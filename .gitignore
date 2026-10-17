@@ -1,0 +1,11 @@
+__pycache__/
+.pytest_cache/
+.venv/
+sandbox/
+evidence/**/*.jsonl
+artifacts/
+record/**/*.mp4
+record/**/*.webm
+*.key
+*.sig
+*.bundle

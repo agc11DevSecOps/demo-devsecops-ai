@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "tier0": {
+    "python": "3.12+",
+    "runner": "stdlib-fallback",
+    "external_tools": "unadmitted"
+  },
+  "aisvs": {
+    "version": "1.01",
+    "source": "https://github.com/OWASP/AISVS",
+    "status": "commit-to-be-pinned-before-public-release"
+  }
+}

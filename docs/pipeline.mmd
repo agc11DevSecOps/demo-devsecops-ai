@@ -1,0 +1,11 @@
+flowchart LR
+  S1[1 Secrets] --> G1{Pass?}
+  G1 -->|yes| S2[2 Static analysis]
+  G1 -->|no| STOP[Red stop]
+  S2 --> G2{Pass?}
+  G2 -->|yes| S3[3 Optional AI triage]
+  G2 -->|no| STOP
+  S3 --> S4[4 Dependency audit] --> S5[5 Model scan] --> S6[6 Sign and BOM]
+  S6 --> S7[7 Admission] --> S8[8 Red team] --> S9[9 Deploy] --> S10[10 Runtime]
+  S10 --> S11[11 Recorded S6 evidence]
+  S9 --> DEPLOY[Green deploy]
