@@ -11,7 +11,7 @@ RUNB_WORKLOAD := $(if $(RUNB_WORKLOAD_READY),--env OPS_DEMO_WORKLOAD=1 --env OPS
 # for the final run. A reduced run is reported PARTIAL and never counts as PASS.
 GARAK_LIMIT ?= 5
 
-.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy demo versions fetch-tools fetch-models fetch-workload-model workload garak garak-build container-garak container-build container-run-a container-run-b container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
+.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy demo versions fetch-tools fetch-models fetch-workload-model workload garak garak-build container-garak container-build container-run-a container-run-b container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline present stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
 
 setup: fetch-tools fetch-models
 	@printf '%s\n' 'Setup complete: tools, models and reviewed catalogs are provisioned.'
@@ -159,6 +159,9 @@ s8-b:
 
 pipeline:
 	$(PYTHON) -m app.cli pipeline
+
+present:
+	./scripts/present.sh --inline
 
 stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11: stage-%:
 	$(PYTHON) -m app.cli pipeline --stage $*

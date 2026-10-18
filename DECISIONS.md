@@ -157,12 +157,15 @@ the unsafe-format variant. Vectors are embedded with a deterministic local
 embedding, not MiniLM; the admitted Qdrant store and provenance filter remain the
 material control, and no embedding model verdict is treated as authorization.
 
-## D-018: The presentation/recording layer is deferred
+## D-018: The presentation layer is deterministic and additive
 
-The live-presentation aids (a tmux A/B split, `DEMO_PAUSE` pacing, colour output
-and a recorded `record/fallback.mp4` with `REHEARSAL.md`) are deferred. The demo
-is driven by the deterministic `make` targets and one-line verdicts, so no
-rehearsal depends on them. When added, they must not change Tier 0 determinism or
-emit prompts, secrets or raw fixtures to any recording.
+The live-presentation aids are implemented in `app/present.py` and
+`scripts/present.sh` (`make present`): they colourise the fixed `[LABEL]` token
+and pace the stream with `DEMO_PAUSE`, and use `tmux` only to hold one session.
+Run A and Run B always execute sequentially because they share `sandbox/`, so the
+presentation can never introduce a race or change a verdict. The recorded
+fallback (`record/*.mp4`, `record/*.webm`) stays git-ignored and, if used, must
+not contain prompts, secrets or raw fixtures; the committed fallback is the
+deterministic `make demo` transcript in `REHEARSAL.md`.
 
 

@@ -137,6 +137,9 @@ token). Human approvals for high-impact tools are issued and verified offline
 with `python approve_cli.py` and are cryptographically bound to the tool,
 parameters, requester and pinned descriptor (D-016).
 
+`make present` runs the demo through a paced, colourised presentation filter
+(`DEMO_PAUSE`, `NO_COLOR`); see `REHEARSAL.md` for the run of show.
+
 ## Honest Labels
 
 - `MEASURED`: executed by this repository in the current run.
