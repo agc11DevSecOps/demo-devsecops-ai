@@ -50,7 +50,8 @@ make test-container
 `make demo` resets state, runs Run A (contained model load), runs the admitted
 Garak S7 campaign, resets the sandbox while preserving evidence, runs Run B and
 regenerates the scorecard. Both `make test` and `make demo` write
-`scorecard/out.md`, and `make test` resets the evidence it derives from, so run
+`scorecard/out.md`, and any state-resetting target (`make test`, `make pipeline`
+and the per-scenario targets) clears the evidence it derives from, so run
 `make demo` last: it regenerates the scorecard from the full container run, and
 `make test-container` then inspects that evidence.
 
@@ -117,6 +118,24 @@ The sandbox-only inference stop control is independently measured: `make kill`
 causes Ops Assist to return `503 inference_stopped` before input inspection,
 retrieval or model inference; `make unkill` removes that marker. This is not a
 production emergency-stop mechanism or an authorization control.
+
+## DevSecOps Pipeline
+
+`make pipeline` runs the offline 11-stage pipeline shown in
+`docs/pipeline.mmd` (secrets, static analysis, optional AI triage, dependency
+audit, model scan, sign and BOM, admission, red team, deploy, runtime, recorded
+S6 evidence); `make stage-N` runs a single stage. The secrets and static-analysis
+stages gate the flow and fail closed, and the red-team stage enforces
+`redteam.max_success_rate` from `controls/ci/gates.yaml`. Stages whose external
+tool is not admitted report `NOT TESTED`/`DESIGNED` and never pass. Pipeline
+events carry no AISVS ids, so they cannot change the AISVS scorecard.
+
+The optional presentation surface is a thin FastAPI wrapper over the same
+loopback workload: `make container-gateway` builds it and `make compose-up`
+starts it (loopback `:8080`, no Swagger/OpenAPI, bounded body, optional bearer
+token). Human approvals for high-impact tools are issued and verified offline
+with `python approve_cli.py` and are cryptographically bound to the tool,
+parameters, requester and pinned descriptor (D-016).
 
 ## Honest Labels
 

@@ -93,3 +93,76 @@ bounds plus provenance-derived citations (C2.1.4, C7.1.1, C7.1.2, C7.4.1). A
 requirement whose control is not implemented, or that depends on the full Garak
 corpus, stays `NOT TESTED` until its evidence exists; a partial Garak run keeps
 C3.2.1, C11.1.3 and the C12.1.x/C12.2.1 ids out of `PASS`.
+
+## D-012: Not-applicable requirements are excluded from the denominator
+
+`applicability.yaml` declares the requirements this single-tenant, offline,
+no-training, non-accelerated, text-only demo cannot exercise (for example
+`no_training`, `multitenant`, `accelerator`). Each entry names a reason category
+and is validated against the pinned catalog; an unknown id fails the build. The
+scorecard marks such rows `N/A` in both runs, hides them from the delta and, when
+a chapter has no applicable requirement, reports the chapter level as `N/A`.
+This keeps "we did not test it because it does not apply" distinct from
+"we could test it and did not".
+
+## D-013: The presentation gateway is a thin wrapper, not a new workload
+
+`app/gateway.py` exposes the existing loopback Ops Assist workload over a
+minimal FastAPI `POST /chat` for the demo, with Swagger/OpenAPI, CORS and
+redirects disabled, bounded body/content-length, an optional bearer token
+(`OPS_DEMO_GATEWAY_TOKEN`) and `no-store`/`nosniff`/`no-referrer` headers. It
+re-implements no scenario or control: the gateway calls the same `assist()`
+boundary, so the container run and the `docker-compose.yml` service exercise the
+identical controls. `make container-gateway`/`compose-up` run it.
+
+## D-014: Model access goes through labelled adapters; no hosted Tier 1
+
+`app/llm/` defines one `Adapter` protocol with a `ScriptedAdapter` (default,
+`SCRIPTED`) and a `LocalAdapter` (`google/flan-t5-small`, revision-pinned,
+`MEASURED`). The run must never silently fall back to a hosted provider: the
+scripted adapter is the only default, and reaching a hosted model would require a
+separate C0/C1 admission that does not exist. Tier 1 (`make tier1`) remains
+`DESIGNED`, not executed.
+
+## D-015: The 11-stage pipeline is offline and never over-claims
+
+`app/pipeline.py` mirrors `docs/pipeline.mmd`. Stages whose external tool is not
+admitted (AI triage, offline advisory lookup, deployment, recorded S6 evidence,
+and the red-team stage without a campaign) report `DESIGNED`/`NOT TESTED` and
+never pass. The secrets and static-analysis stages gate the flow and fail closed;
+the red-team stage enforces `redteam.max_success_rate` from
+`controls/ci/gates.yaml`. Pipeline events deliberately carry no AISVS ids so they
+cannot alter the AISVS scorecard, which is derived only from scenario evidence.
+`make pipeline` runs all stages; `make stage-N` runs one.
+
+## D-016: Human approvals are cryptographically bound and logged
+
+`app/approvals.py` binds an approval to the exact tool, canonical parameters,
+requester, pinned descriptor digest and an expiry, signed with an HMAC key kept
+outside the agent (`OPS_DEMO_APPROVAL_KEY` or the sandbox signing key). A changed
+parameter, requester, descriptor, expired token or tampered body fails
+verification. Every approval decision is appended to a hash-only
+`artifacts/approvals.jsonl` audit record (approver and parameter digests only).
+`approve_cli.py` issues and verifies tokens without trusting model output.
+
+## D-017: S1 signs the AI BOM and gates admission on it
+
+The S1 admission path publishes a machine-readable AI BOM (C6.2.1), signs it with
+the same pinned offline signer used for the model and verifies it before
+deployment (C6.2.2), and fails closed when component metadata is missing
+(C6.2.3). Model admission itself is a pure policy decision
+(`policies/admission.rego` via OPA, or the deterministic fallback) over three
+facts -- safe format, verified signature, complete BOM -- and the policy denies
+the unsafe-format variant. Vectors are embedded with a deterministic local
+embedding, not MiniLM; the admitted Qdrant store and provenance filter remain the
+material control, and no embedding model verdict is treated as authorization.
+
+## D-018: The presentation/recording layer is deferred
+
+The live-presentation aids (a tmux A/B split, `DEMO_PAUSE` pacing, colour output
+and a recorded `record/fallback.mp4` with `REHEARSAL.md`) are deferred. The demo
+is driven by the deterministic `make` targets and one-line verdicts, so no
+rehearsal depends on them. When added, they must not change Tier 0 determinism or
+emit prompts, secrets or raw fixtures to any recording.
+
+

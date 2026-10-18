@@ -62,6 +62,18 @@ forwarded (`MCP search_docs -> ALLOWED`, `MCP delete_branch -> BLOCKED`). Both r
 inside the restricted container within 512 MiB and the PID limit; both wheels are
 part of the unified hash-pinned set.
 
+2026-10-17 update: the S1 admission path now also publishes, signs and
+completeness-checks the AI BOM (C6.2.1-C6.2.3) and gates model admission through
+the pinned `policies/admission.rego` policy (OPA when `OPS_DEMO_OPA=1`, otherwise
+the deterministic fallback); the unsafe-format variant is denied. S5 additionally
+validates tool output schemas, screens tool output for indirect injection,
+enforces per-tool quotas, filters `tools/list` by authorized scopes and binds
+human approvals to the exact tool/parameters/requester/descriptor with a
+hash-only audit log (`app/approvals.py`, `approve_cli.py`). S7 now emits
+measured telemetry, retrieval-audit and jailbreak-alert events. The offline
+11-stage pipeline (`app/pipeline.py`, mirroring `docs/pipeline.mmd`) reports
+`NOT TESTED`/`DESIGNED` for unadmitted stages rather than passing them.
+
 Acceptance criteria:
 - Each tool has an evidence record and exact lock entry before installation.
 - Commands execute offline or with explicitly approved egress only.
