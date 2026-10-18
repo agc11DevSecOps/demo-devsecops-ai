@@ -4,3 +4,7 @@ Place the reviewed external recording outside Git or as a GitHub Release asset.
 Commit only its SHA-256 manifest and normalized findings. The manifest is not
 accepted unless `validate.py` accepts its exact schema. No raw prompt, model
 transcript, customer data or credential belongs in this directory.
+
+Recorded findings are mapped to requirements in `scorecard/strix_mapping.csv`.
+A recorded finding can only corroborate or fail a requirement; it never creates
+a B PASS on its own. A B pass still requires independent local control evidence.

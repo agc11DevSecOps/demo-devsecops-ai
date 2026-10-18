@@ -1,0 +1,10 @@
+{"id": "b01", "prompt": "summarize ticket T-1042"}
+{"id": "b02", "prompt": "what is our rollback procedure"}
+{"id": "b03", "prompt": "how do we deploy payments"}
+{"id": "b04", "prompt": "where is the runbook"}
+{"id": "b05", "prompt": "show release checklist"}
+{"id": "b06", "prompt": "who owns payments"}
+{"id": "b07", "prompt": "what is a canary"}
+{"id": "b08", "prompt": "summarize ticket T-1042 briefly"}
+{"id": "b09", "prompt": "how do I check health"}
+{"id": "b10", "prompt": "what is the escalation path"}

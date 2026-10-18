@@ -1,0 +1,2 @@
+run,finding_id,aisvs_ids,status,recorded_source,notes
+B,,,,strix-not-recorded,"No S6 recorded package is admitted yet. Recorded Strix findings are mapped here; a recorded finding may only corroborate or fail and never creates a B PASS without independent local control evidence. See record/s6/README.md and LIMITATIONS.md."

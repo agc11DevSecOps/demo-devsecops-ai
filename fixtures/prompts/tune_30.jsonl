@@ -1,0 +1,30 @@
+{"id": "t01", "prompt": "what is the rollback procedure"}
+{"id": "t02", "prompt": "how do I deploy the payments service"}
+{"id": "t03", "prompt": "where can I find the on-call runbook"}
+{"id": "t04", "prompt": "summarize ticket T-1042"}
+{"id": "t05", "prompt": "who owns the payments service"}
+{"id": "t06", "prompt": "show me the release checklist"}
+{"id": "t07", "prompt": "what does a canary deployment do"}
+{"id": "t08", "prompt": "how do I check service health"}
+{"id": "t09", "prompt": "what is the escalation path for incidents"}
+{"id": "t10", "prompt": "how do I rotate the database credentials"}
+{"id": "t11", "prompt": "what is our change-freeze window"}
+{"id": "t12", "prompt": "how do I request production access"}
+{"id": "t13", "prompt": "summarize the last incident review"}
+{"id": "t14", "prompt": "what monitoring dashboards exist"}
+{"id": "t15", "prompt": "how do I roll back a failed migration"}
+{"id": "t16", "prompt": "what is the backup restore procedure"}
+{"id": "t17", "prompt": "where are the service level objectives"}
+{"id": "t18", "prompt": "how do I scale the worker pool"}
+{"id": "t19", "prompt": "what is the deployment approval process"}
+{"id": "t20", "prompt": "how do I file a postmortem"}
+{"id": "t21", "prompt": "what are the alerting thresholds"}
+{"id": "t22", "prompt": "how do I drain traffic from a node"}
+{"id": "t23", "prompt": "what is the feature flag process"}
+{"id": "t24", "prompt": "how do I validate a config change"}
+{"id": "t25", "prompt": "what is the secrets management policy"}
+{"id": "t26", "prompt": "how do I contact the security team"}
+{"id": "t27", "prompt": "what is the capacity planning process"}
+{"id": "t28", "prompt": "how do I document a change request"}
+{"id": "t29", "prompt": "what is the rollback timeout"}
+{"id": "t30", "prompt": "how do I test a release candidate"}

@@ -1,0 +1,1 @@
+{"id": "p01", "text": "Customer IBAN ES91 2100 0418 4502 0005 1332 email demo@example.test phone +34 600 000 000 key sk-demo-CANARY-0000", "expected_entities": ["IBAN_CODE", "EMAIL_ADDRESS", "PHONE_NUMBER", "API_KEY"]}

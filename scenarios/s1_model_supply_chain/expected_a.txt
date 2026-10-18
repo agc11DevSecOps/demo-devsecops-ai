@@ -1,0 +1,1 @@
+Malicious pickle loads and executes: PWNED_BY_MODEL marker created (container boundary only).

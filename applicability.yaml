@@ -1,0 +1,121 @@
+# OWASP AISVS v1.01 applicability for the synthetic Ops Copilot demo.
+#
+# Requirements listed under not_applicable are excluded from the scorecard
+# denominator and rendered as N/A. Each entry names a category whose rationale
+# explains why the control cannot apply to this system's architecture. This file
+# only declares intrinsic non-applicability; it must never be used to move a
+# requirement that the demo could exercise out of scope.
+format_version: 1
+source: OWASP AISVS v1.01 applicability for the synthetic Ops Copilot demo
+
+categories:
+  no_training: >-
+    The demo deploys a pinned, prebuilt model and performs inference only. It has
+    no training, fine-tuning, RLHF, quantization, labeling, or dataset-ingestion
+    pipeline to which this control could apply.
+  accelerator: >-
+    The demo runs CPU-only inference in a local container. It deploys no GPU or
+    other accelerator, so accelerator firmware, attestation, memory-isolation and
+    interconnect controls cannot apply.
+  edge: >-
+    The demo runs as a local container, not on edge, mobile, IoT or embedded
+    devices, so edge-device authentication, packaging and storage controls cannot
+    apply.
+  multitenant: >-
+    The demo is a single-tenant local system with one shared serving process, so
+    multi-tenant isolation and shared-serving controls cannot apply.
+  federated: >-
+    The demo is a self-contained system with no federated or multi-system agent
+    deployment, so cross-system agent authentication controls cannot apply.
+  multimodal: >-
+    The demo is text-only and generates no images, audio or video, so
+    non-text-input and generated-media controls cannot apply.
+  remote_mcp: >-
+    The demo uses a local stdio MCP server only and exposes no remote HTTP or
+    OAuth MCP transport, so remote-transport, OAuth-token and URL-elicitation
+    controls cannot apply.
+  confidential: >-
+    The demo provides no TEE, confidential-computing or hardware workload
+    attestation infrastructure, so those controls cannot apply.
+  provider_routing: >-
+    The demo uses a single pinned local model and has no hosted provider,
+    model-version or routing changes to re-evaluate.
+  watermark: >-
+    The demo applies no model or generated-media watermarking or fingerprinting.
+
+not_applicable:
+  # No training / fine-tuning / labeling / dataset pipeline.
+  v1.01-C1.1.1: no_training
+  v1.01-C1.1.2: no_training
+  v1.01-C1.1.3: no_training
+  v1.01-C1.1.4: no_training
+  v1.01-C1.1.5: no_training
+  v1.01-C1.2.1: no_training
+  v1.01-C1.2.2: no_training
+  v1.01-C1.2.3: no_training
+  v1.01-C1.3.1: no_training
+  v1.01-C1.3.2: no_training
+  v1.01-C1.3.3: no_training
+  v1.01-C1.3.4: no_training
+  v1.01-C1.3.5: no_training
+  v1.01-C3.2.2: no_training
+  v1.01-C3.4.2: no_training
+  v1.01-C3.5.1: no_training
+  v1.01-C3.5.2: no_training
+  v1.01-C3.5.3: no_training
+  v1.01-C3.5.4: no_training
+  v1.01-C11.1.1: no_training
+  v1.01-C11.1.2: no_training
+  v1.01-C11.2.4: no_training
+  v1.01-C11.2.5: no_training
+  v1.01-C11.4.3: no_training
+  v1.01-C12.5.1: no_training
+  v1.01-C12.5.2: no_training
+  # CPU-only inference.
+  v1.01-C4.2.1: accelerator
+  v1.01-C4.2.2: accelerator
+  v1.01-C4.2.3: accelerator
+  v1.01-C4.2.4: accelerator
+  v1.01-C4.2.5: accelerator
+  # No edge or mobile deployment.
+  v1.01-C4.3.1: edge
+  v1.01-C4.3.2: edge
+  v1.01-C4.3.3: edge
+  v1.01-C4.3.4: edge
+  v1.01-C4.3.5: edge
+  # Single tenant, no shared serving.
+  v1.01-C5.3.1: multitenant
+  v1.01-C5.3.2: multitenant
+  # No federation.
+  v1.01-C5.1.2: federated
+  # Text-only, no generated media.
+  v1.01-C2.2.3: multimodal
+  v1.01-C2.2.4: multimodal
+  # No TEE / confidential computing / workload attestation.
+  v1.01-C4.1.3: confidential
+  v1.01-C4.1.4: confidential
+  # Single pinned local model, no provider routing.
+  v1.01-C3.2.3: provider_routing
+  # Local stdio MCP only, no remote transport or OAuth.
+  v1.01-C10.2.1: remote_mcp
+  v1.01-C10.2.2: remote_mcp
+  v1.01-C10.2.3: remote_mcp
+  v1.01-C10.2.7: remote_mcp
+  v1.01-C10.2.8: remote_mcp
+  v1.01-C10.2.9: remote_mcp
+  v1.01-C10.2.10: remote_mcp
+  v1.01-C10.3.1: remote_mcp
+  v1.01-C10.3.3: remote_mcp
+  v1.01-C10.3.5: remote_mcp
+  v1.01-C10.3.6: remote_mcp
+  v1.01-C10.4.9: remote_mcp
+  v1.01-C10.4.10: remote_mcp
+  v1.01-C10.4.16: remote_mcp
+  v1.01-C10.4.17: remote_mcp
+  v1.01-C10.4.18: remote_mcp
+  v1.01-C10.4.19: remote_mcp
+  v1.01-C10.4.20: remote_mcp
+  v1.01-C10.4.21: remote_mcp
+  # No watermarking.
+  v1.01-C7.4.4: watermark
+  v1.01-C11.3.3: watermark

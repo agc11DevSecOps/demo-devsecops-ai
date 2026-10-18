@@ -1,0 +1,1 @@
+Presidio masks entities at ingest and output; no sensitive token in the index.
