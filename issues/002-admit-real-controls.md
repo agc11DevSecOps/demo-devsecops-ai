@@ -1,6 +1,6 @@
 # 002: Admit and integrate real control implementations
 
-Status: in-progress
+Status: completed
 
 Blockers: Separate C0/C1 admission records for every selected tool, including
 publisher, immutable version, hash, isolated review result and retrieval date.
@@ -73,6 +73,16 @@ hash-only audit log (`app/approvals.py`, `approve_cli.py`). S7 now emits
 measured telemetry, retrieval-audit and jailbreak-alert events. The offline
 11-stage pipeline (`app/pipeline.py`, mirroring `docs/pipeline.mmd`) reports
 `NOT TESTED`/`DESIGNED` for unadmitted stages rather than passing them.
+
+2026-10-17 completion: every selected control is admitted and executes
+`MEASURED` in the restricted container — Fickling, ModelScan, Cosign and the
+admission policy (S1), Prompt Guard 2 22M (S2), Presidio (S3), Qdrant (S4), OPA
+and MCP (S5), Garak (S7) and the local FLAN-T5 workload (S0). The Pinned AISVS
+catalog (D-006) has no `PROVISIONAL` marker. The deterministic stdlib paths
+remain only as labelled host-only unit-test doubles and are never presented as
+named tools in the container run. Remaining `NOT TESTED`/`DESIGNED` items are
+scope decisions tracked elsewhere (S6 issue 004, Tier 1 issue 005), not missing
+admissions.
 
 Acceptance criteria:
 - Each tool has an evidence record and exact lock entry before installation.
