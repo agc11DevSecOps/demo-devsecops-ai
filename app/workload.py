@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from app.demo import ARTIFACTS, INJECTION, PROMPT_GUARD_THRESHOLD, SANDBOX, _presidio_redact, _prompt_guard_scores, _vector_available, _vector_index, _vector_search, normalize, redact, sha256
+from app.llm import LOCAL_ADAPTER, SCRIPTED_ADAPTER
 
 MAX_BODY_BYTES = 8_192
 MAX_QUESTION_CHARS = 1_024
@@ -317,14 +318,15 @@ def assist(payload: Any, *, mode: str | None = None) -> AssistResponse:
         _require_local_controls()
     question = _check_question(request)
     sources = _retrieve(question, require_vector=selected_mode == "local")
-    answer = _generate_local(_build_prompt(question, sources)) if selected_mode == "local" else _generate_scripted(sources)
+    adapter = LOCAL_ADAPTER if selected_mode == "local" else SCRIPTED_ADAPTER
+    answer = adapter.generate(_build_prompt(question, sources), sources=sources)
     response = AssistResponse(
         request_id=request.request_id,
         decision="ALLOWED",
         answer=_validate_answer(answer, use_presidio=selected_mode == "local"),
         citations=tuple(Citation(source_id, sha256(text)) for source_id, text in sources),
-        model="google/flan-t5-small@0fc9ddf78a1e988dac52e2dac162b0ede4fd74ab" if selected_mode == "local" else "scripted-contract-adapter",
-        label="MEASURED" if selected_mode == "local" else "SCRIPTED",
+        model=adapter.name,
+        label=adapter.label,
     )
     _record(request, response)
     return response

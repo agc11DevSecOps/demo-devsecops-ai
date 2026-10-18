@@ -80,6 +80,11 @@
   "sha256": "a7a39a3bd276781e98394987d3a5701d0c4edffb633bb7a5144577f82c773598"
  },
  {
+  "file": "fastapi-0.143.3-py3-none-any.whl",
+  "url": "https://files.pythonhosted.org/packages/2c/1a/03d246befcf307219bb2161c97d8c5d314f84125bf7dd245730a28589828/fastapi-0.143.3-py3-none-any.whl",
+  "sha256": "75e8bd68e2f52f77d29b2879749c257d64de2d85282d25270caf2bfccce5efe5"
+ },
+ {
   "file": "fickling-0.1.12-py3-none-any.whl",
   "url": "https://files.pythonhosted.org/packages/ba/c0/c65003b71abc4ffddbae99ae86952a21ff859d81b0f1331f79239fe5a58e/fickling-0.1.12-py3-none-any.whl",
   "sha256": "6232b72857e6ee9d729922811b681132d49dc39abc896581390dad1c0eada814"

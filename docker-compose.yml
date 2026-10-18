@@ -1,0 +1,30 @@
+# Minimal, offline composition for the Ops Assist gateway.
+#
+# The workload is self-contained: retrieval uses an in-memory Qdrant client and
+# the OPA/Cosign binaries ship inside the image, so no sidecar services are
+# required. Every service runs non-root, read-only and without capabilities.
+services:
+  gateway:
+    build:
+      context: .
+      target: runtime
+    image: demo-devsecops-ai:local
+    command: ["gateway"]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=1m
+    user: "10001:10001"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 512m
+    cpus: 0.5
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 3

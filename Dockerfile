@@ -14,6 +14,8 @@ RUN test "$(sha256sum /usr/local/bin/cosign | cut -d ' ' -f1)" = "4629c757b76180
     && chmod 0755 /usr/local/bin/cosign
 COPY policies /app/policies
 COPY app /app/app
+COPY fixtures /app/fixtures
+COPY controls /app/controls
 ENV PYTHONDONTWRITEBYTECODE=1
 USER 10001:10001
 ENTRYPOINT ["python", "-m", "app.cli"]
