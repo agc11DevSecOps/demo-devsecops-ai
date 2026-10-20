@@ -36,7 +36,9 @@ make demo-10m
 and ModelScan. It never chooses the `SCRIPTED` adapter. It runs the verbose OPA
 policy tests first, then S1, S2, S3, S4, S0, a fixed injection request, S5 and
 S8. See [`docs/demo-10min.md`](docs/demo-10min.md) for the timed script and the
-claims that are safe to make.
+claims that are safe to make, and [`docs/demo-runbook.md`](docs/demo-runbook.md)
+for the full presenter runbook with commands, evidence locations and
+contingencies.
 
 ## Code Tour
 

@@ -1,59 +1,60 @@
 # Rehearsal
 
-The audience flow is [`docs/demo-10min.md`](docs/demo-10min.md). Use it instead
-of `make demo`: the full scenario catalogue is useful for verification, not for a
-ten-minute explanation.
+The full presenter script is [`docs/demo-runbook.md`](docs/demo-runbook.md).
+This page is the one-page checklist to print and follow.
 
-## Pre-Flight
-
-```bash
-make fetch-tools
-HF_TOKEN=hf_... make fetch-models
-make fetch-workload-model
-make demo-10m-preflight
-make test
-make test-policy
-make policy-template-test
-```
-
-Run the pre-flight before the session, never while presenting. It confirms the
-strict profile cannot substitute the scripted model or deterministic fallbacks.
-
-## Live Run
+## Pre-Flight (T-1 hour, never during the session)
 
 ```bash
-make showcase-live
-make demo-10m
+make provision      # one command: tools, models, image, preflight
+make test           -> OK (skipped=5)
+make test-policy    -> PASS: 14/14
 ```
 
-The first command is optional and display-only. The second resets generated
-state, runs the verbose OPA policy tests, and then runs S1, S2, S3, S4, S0, a
-fixed injection request, S5 and S8. It leaves S6 and the full Garak campaign
-outside the timing-critical path.
+`make provision` is idempotent and asks for the Hugging Face token once,
+stored in the git-ignored `.env` file with owner-only permissions.
 
-## Appendices
+## The Room
+
+| Surface | Command | Shows |
+| --- | --- | --- |
+| Terminal A | your commands | every command and verdict line |
+| Terminal B | `make showcase-live` | the live evidence timeline |
+| Browser | `http://127.0.0.1:8091/` | the timeline, plus `scorecard/out.html` |
+
+## The Ten Minutes
+
+| Clock | Show | Key line |
+| --- | --- | --- |
+| 0:00 | `docs/architecture.mmd`, `docs/policies.md` | the answer lane is read-only |
+| 0:45 | `env -i ./vendor/opa test -v policies/` | `PASS: 14/14` |
+| 0:45 | `make SCENARIO=S1 container-run-b-exec` | Fickling, ModelScan, SafeTensors, Cosign, OPA, tamper `DENIED` |
+| 2:00 | `make SCENARIO=S0 container-run-b-exec` | hash-verified SafeTensors model, 3 citations |
+| 3:15 | `make SCENARIO=S2 container-run-b-exec` | Prompt Guard, 10/10 blocked |
+| 3:15 | `make SCENARIO=S3 container-run-b-exec` | Presidio masked 4 entity types |
+| 3:15 | `make demo-request-injection` | `BLOCKED` before inference |
+| 4:30 | `make SCENARIO=S4 container-run-b-exec` | quarantine, forced `REVIEW`, filtered `BLOCKED` |
+| 5:30 | `make SCENARIO=S5 container-run-b-exec` | `DENIED`, `REVIEW`, scope filter, screening, quota |
+| 6:30 | `make SCENARIO=S8 container-run-b-exec` | input bound, output bound, retrieval attribution |
+| 7:30 | `make pipeline` | 11 stages with honest labels |
+| 8:30 | `make scorecard`, `LIMITATIONS.md` | evidence, limits, the honest claim |
+
+The machine needs about 50 seconds in total. The other nine minutes are you
+talking.
+
+## Appendices (only if there is time)
 
 ```bash
-make pipeline
-make GARAK_LIMIT=5 demo
-make GARAK_LIMIT=55 demo
+make pipeline                        # delivery stages
+make compose-up                      # the local HTTP gateway
+make policy-template TEMPLATE=model-admission ID=payments-model
+make GARAK_LIMIT=5 demo              # the complete scenario catalogue
 ```
-
-`make pipeline` uses named local scanners, Cosign, and OPA in the restricted
-container. `GARAK_LIMIT=5` is `PARTIAL`; the 55-prompt run takes longer than the
-presentation and tests the endpoint guards, not FLAN jailbreak resistance.
-
-## Reference
-
-If a question comes up about a specific tool, the answer is in
-[`docs/tools/`](docs/tools/README.md). If it is about how a decision is made,
-it is in [`docs/policies.md`](docs/policies.md). If it is about a standard
-reference, it is in
-[`docs/standards-and-policy-mapping.md`](docs/standards-and-policy-mapping.md).
 
 ## Non-Claims
 
 Do not describe the synthetic fixtures as production data, the scorecard as
 certification, S5 as LLM tool execution, the local gateway as a production
-service, or the standards mapping as compliance. The permitted phrasing is:
-"real local integrations, safe synthetic inputs, and explicit evidence labels."
+service, the standards mapping as compliance, or the Garak campaign as a red
+team of the model. The permitted phrasing is: "real local integrations, safe
+synthetic inputs, and explicit evidence labels."

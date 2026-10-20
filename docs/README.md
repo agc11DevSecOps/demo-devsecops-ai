@@ -6,6 +6,7 @@ production architecture or a security certification.
 ## Start Here
 
 - [Ten-minute demonstration](demo-10min.md) is the presentation script and its honest claims.
+- [Demo runbook](demo-runbook.md) is the full presenter script: commands, timings, evidence map, contingencies, and audience Q&A.
 - [Code tour](code-tour.md) follows the request, RAG, model-admission, and evidence paths.
 - [Policies](policies.md) explains how the OPA policies are written, called, tested and promoted.
 - [Standards and policy mapping](standards-and-policy-mapping.md) maps policy patterns to control objectives and states the limits.

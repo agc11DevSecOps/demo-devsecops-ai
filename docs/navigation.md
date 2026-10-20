@@ -21,6 +21,7 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `LIMITATIONS.md` | Explicit non-claims and remaining constraints. | Review and presentation. |
 | `REHEARSAL.md` | Live-demo run of show. | `make present` operators. |
 | `docs/demo-10min.md` | Timed strict-profile narrative and permitted claims. | Presenters. |
+| `docs/demo-runbook.md` | Full presenter runbook: commands, timings, evidence map, contingencies, Q&A. | Presenters. |
 | `docs/code-tour.md` | Source-level routes through the end-to-end workflow. | Reviewers and presenters. |
 | `docs/policies.md` | How the OPA policies are written, called, tested and promoted. | Reviewers and policy authors. |
 | `docs/standards-and-policy-mapping.md` | Control-objective mapping to AISVS, OWASP and NIST. | Reviewers. |
