@@ -7,6 +7,17 @@ export OPS_DEMO_UID="$(id -u)"
 export OPS_DEMO_GID="$(id -g)"
 export OPS_DEMO_GATEWAY_PORT="18080"
 
+# The container runs as the current user, so the writable bind mounts must exist
+# and belong to that user. Compose would otherwise create a missing source
+# directory as root, and the container user could not write into it.
+mkdir -p sandbox evidence artifacts
+for directory in sandbox evidence artifacts; do
+  if [ ! -w "$directory" ]; then
+    printf 'Directory %s is not writable by the current user; fix its ownership and retry.\n' "$directory" >&2
+    exit 1
+  fi
+done
+
 cleanup() {
   docker compose -p "$project" down --volumes >/dev/null 2>&1 || true
 }

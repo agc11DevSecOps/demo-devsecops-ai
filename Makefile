@@ -13,7 +13,7 @@ PIPELINE_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1
 # for the final run. A reduced run is reported PARTIAL and never counts as PASS.
 GARAK_LIMIT ?= 5
 
-.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose test-gateway-unit demo demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present policy-template policy-template-test showcase-build showcase-serve showcase-live challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
+.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose test-gateway-unit prepare-writable-dirs demo demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present policy-template policy-template-test showcase-build showcase-serve showcase-live challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
 
 setup: fetch-tools fetch-models
 	@printf '%s\n' 'Setup complete: tools, models and reviewed catalogs are provisioned.'
@@ -44,8 +44,19 @@ run-b:
 	$(PYTHON) -m app.cli reset --preserve-evidence
 	$(MAKE) container-run-b
 
-container-build: fetch-tools
+container-build: fetch-tools prepare-writable-dirs
 	docker build --pull=false --network none --target runtime --tag demo-devsecops-ai:local .
+
+# The restricted runners execute as the host user, so the writable bind mounts
+# must exist and be owned by that user before Docker mounts them. Docker
+# creates a missing source directory as root, and the container user could not
+# write into it. This target is therefore a prerequisite of every container
+# run, and it fails loudly instead of leaving a root-owned mount behind.
+prepare-writable-dirs:
+	@mkdir -p sandbox evidence artifacts
+	@for directory in sandbox evidence artifacts; do \
+		test -w "$$directory" || { printf '%s\n' "Directory $$directory is not writable by the current user; fix its ownership and retry." >&2; exit 1; }; \
+	done
 
 container-run-a: container-build
 	$(MAKE) container-run-a-exec
@@ -75,7 +86,7 @@ demo-request-injection: demo-10m-preflight
 
 garak: reset container-garak
 
-garak-build: fetch-tools
+garak-build: fetch-tools prepare-writable-dirs
 	docker build --pull=false --network none --target garak --tag demo-devsecops-ai:garak .
 
 container-garak: garak-build
@@ -93,7 +104,7 @@ container-scenario-b:
 
 container-gateway: compose-up
 
-compose-up:
+compose-up: prepare-writable-dirs
 	@test -n "$$OPS_DEMO_GATEWAY_TOKEN" || (printf '%s\n' 'Set OPS_DEMO_GATEWAY_TOKEN for the local gateway.'; exit 2)
 	@test -f "$(PROMPT_GUARD_MODEL)" || (printf '%s\n' 'Set HF_TOKEN and run make fetch-models to provision Prompt Guard.'; exit 2)
 	@test -f "$(WORKLOAD_MODEL)" || (printf '%s\n' 'Run make fetch-workload-model to provision FLAN-T5-small.'; exit 2)

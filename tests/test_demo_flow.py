@@ -59,6 +59,20 @@ class DemoFlowTests(unittest.TestCase):
         self.assertIn("SafeTensors", source)
         self.assertIn("sha256", source)
 
+    def test_container_targets_prepare_the_writable_mounts(self) -> None:
+        """Docker creates a missing bind source as root, which the runner user cannot write."""
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertRegex(makefile, r"(?m)^prepare-writable-dirs:")
+        self.assertRegex(makefile, r"(?m)^container-build:.*prepare-writable-dirs")
+        self.assertRegex(makefile, r"(?m)^garak-build:.*prepare-writable-dirs")
+        self.assertRegex(makefile, r"(?m)^compose-up:.*prepare-writable-dirs")
+        phony = next(line for line in makefile.splitlines() if line.startswith(".PHONY:"))
+        self.assertIn("prepare-writable-dirs", phony)
+
+    def test_the_compose_smoke_script_prepares_the_writable_mounts(self) -> None:
+        script = (ROOT / "scripts" / "test_gateway_compose.sh").read_text(encoding="utf-8")
+        self.assertIn("mkdir -p sandbox evidence artifacts", script)
+
     def test_run_b_events_follow_run_a_for_each_paired_scenario(self) -> None:
         reset()
         environ = {"OPS_DEMO_IN_CONTAINER": "0"}

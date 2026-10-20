@@ -137,7 +137,7 @@ The gateway answers with a bounded JSON payload containing `decision`,
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | `Cannot connect to the Docker daemon` | The daemon is not running | Start Docker and retry |
-| `permission denied` writing to `evidence/` | The container ran as a different UID | Use `make compose-up`, which passes your UID and GID |
+| `permission denied` writing to `evidence/` | The writable mount was created by Docker as `root` | The `prepare-writable-dirs` target creates `sandbox/`, `evidence/` and `artifacts/` with your ownership before any container runs; fix the ownership of those directories if they are already root-owned |
 | `Missing FLAN-T5` in the preflight | The model was never downloaded | `make fetch-workload-model` |
 | `Set OPS_DEMO_GATEWAY_TOKEN` | The token is mandatory | Export the variable and retry |
 | Port 8080 already in use | Another service holds the port | `OPS_DEMO_GATEWAY_PORT=18080 make compose-up` |
