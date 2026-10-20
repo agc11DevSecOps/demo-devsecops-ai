@@ -1,0 +1,9 @@
+{
+  "action": "{{PRIMARY_READ_ONLY_TOOL}}",
+  "context": {
+    "descriptor_ok": true,
+    "scope_ok": true,
+    "quota_ok": true,
+    "grant_valid": false
+  }
+}

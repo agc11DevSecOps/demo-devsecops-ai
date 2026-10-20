@@ -1,0 +1,68 @@
+# Machine-readable description of the input-output-guardrails template family.
+family: input-output-guardrails
+package: input_output_guardrails
+title: Input and output guardrails
+decision_question: May this request be answered and this output returned?
+purpose: >-
+  Encode the "model output is untrusted data" rule as an explicit decision.
+  The request and the answer must both be bounded, screened and free of
+  injection and sensitive data before an answer may be returned.
+
+inputs:
+  - path: input.length
+    type: integer
+    meaning: Length of the request text.
+  - path: input.injection
+    type: boolean
+    meaning: The request matched an injection rule or the classifier.
+  - path: input.pii
+    type: boolean
+    meaning: The request contains sensitive data.
+  - path: output.length
+    type: integer
+    meaning: Length of the generated answer.
+  - path: output.injection
+    type: boolean
+    meaning: The answer contains an injection pattern.
+  - path: output.pii
+    type: boolean
+    meaning: The answer contains unmasked sensitive data.
+  - path: output.schema_ok
+    type: boolean
+    meaning: The answer matches the declared output schema.
+
+controls:
+  - id: input-bound
+    description: The request length is bounded and not empty.
+  - id: output-bound
+    description: The answer length is bounded.
+  - id: injection-screening
+    description: Injection patterns are refused on both sides.
+  - id: sensitive-data
+    description: Sensitive data is masked and refused on both sides.
+  - id: schema-validation
+    description: The answer must match its declared schema.
+  - id: default-deny
+    description: Every other input is denied.
+
+non_goals:
+  - Detecting anything. Detection belongs to the input and output controls.
+  - Repairing an answer. A denied answer is discarded.
+  - Authorizing an action.
+  - Judging correctness of the answer.
+
+standards:
+  - standard: aisvs-1.01
+    ids: [v1.01-C2.1.1, v1.01-C2.1.4, v1.01-C7.1.1, v1.01-C8.2.1]
+    objective: Screen input, bound output, and never treat model output as a decision.
+  - standard: owasp-llm-top-10-2025
+    ids: [LLM01, LLM02, LLM10]
+    objective: Detect prompt injection, mask sensitive data, and bound consumption.
+  - standard: nist-ai-rmf-1.0
+    ids: [MEASURE 2.7, MANAGE 4.1]
+    objective: Measure and manage input and output risk with deterministic controls.
+
+files:
+  policy: policy.rego.tmpl
+  tests: policy_test.rego.tmpl
+  example: input.example.json

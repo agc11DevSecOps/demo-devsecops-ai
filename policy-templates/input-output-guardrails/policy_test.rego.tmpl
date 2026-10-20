@@ -1,0 +1,80 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Tests for the generated input-output-guardrails draft. They cover the clean
+# allow case, every explicit deny case and the default-deny case.
+package {{PACKAGE}}.test
+
+admit(req) := result if {
+	result := data.{{PACKAGE}}.allow with input as req
+}
+
+test_allow_clean_request_and_answer if {
+	admit({
+		"input": {"length": 31, "injection": false, "pii": false},
+		"output": {"length": 96, "injection": false, "pii": false, "schema_ok": true}
+	})
+}
+
+test_deny_over_length_input if {
+	not admit({
+		"input": {"length": 999999, "injection": false, "pii": false},
+		"output": {"length": 96, "injection": false, "pii": false, "schema_ok": true}
+	})
+}
+
+test_deny_empty_input if {
+	not admit({
+		"input": {"length": 0, "injection": false, "pii": false},
+		"output": {"length": 96, "injection": false, "pii": false, "schema_ok": true}
+	})
+}
+
+test_deny_injection_in_input if {
+	not admit({
+		"input": {"length": 31, "injection": true, "pii": false},
+		"output": {"length": 96, "injection": false, "pii": false, "schema_ok": true}
+	})
+}
+
+test_deny_pii_in_input if {
+	not admit({
+		"input": {"length": 31, "injection": false, "pii": true},
+		"output": {"length": 96, "injection": false, "pii": false, "schema_ok": true}
+	})
+}
+
+test_deny_over_length_output if {
+	not admit({
+		"input": {"length": 31, "injection": false, "pii": false},
+		"output": {"length": 999999, "injection": false, "pii": false, "schema_ok": true}
+	})
+}
+
+test_deny_output_schema_violation if {
+	not admit({
+		"input": {"length": 31, "injection": false, "pii": false},
+		"output": {"length": 96, "injection": false, "pii": false, "schema_ok": false}
+	})
+}
+
+test_deny_injection_in_output if {
+	not admit({
+		"input": {"length": 31, "injection": false, "pii": false},
+		"output": {"length": 96, "injection": true, "pii": false, "schema_ok": true}
+	})
+}
+
+test_deny_pii_in_output if {
+	not admit({
+		"input": {"length": 31, "injection": false, "pii": false},
+		"output": {"length": 96, "injection": false, "pii": true, "schema_ok": true}
+	})
+}
+
+test_deny_missing_output_by_default if {
+	not admit({"input": {"length": 31, "injection": false, "pii": false}})
+}
+
+test_deny_empty_input_by_default if {
+	not admit({})
+}

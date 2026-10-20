@@ -8,6 +8,39 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTER = ROOT / "docs" / "control-register.md"
+TOOL_PAGES = (
+    "make-python.md",
+    "docker-compose.md",
+    "opa.md",
+    "cosign.md",
+    "fickling.md",
+    "modelscan.md",
+    "presidio-spacy.md",
+    "prompt-guard.md",
+    "flan-safetensors.md",
+    "qdrant.md",
+    "mcp.md",
+    "garak.md",
+    "gateway-fastapi.md",
+    "github-actions.md",
+)
+REQUIRED_TOOL_SECTIONS = (
+    "## What Problem It Solves",
+    "## Where It Lives In This Repository",
+    "## Pinned Version And Provenance",
+    "## Prerequisites",
+    "## Install",
+    "## Verify The Installation",
+    "## Supported Configuration",
+    "## Example Run",
+    "## Expected Result",
+    "## Evidence And Artifacts",
+    "## Troubleshooting",
+    "## Security Limits",
+    "## When A Change Needs A New Review",
+    "## Official Documentation",
+    "## Local Source",
+)
 
 
 class DocumentationTests(unittest.TestCase):
@@ -51,6 +84,59 @@ class DocumentationTests(unittest.TestCase):
             for state in states:
                 self.assertIn(state, runtime)
                 self.assertIn(state, expected)
+
+    def test_every_direct_tool_has_a_guide(self) -> None:
+        index = (ROOT / "docs" / "tools" / "README.md").read_text(encoding="utf-8")
+        for page in TOOL_PAGES:
+            self.assertTrue((ROOT / "docs" / "tools" / page).is_file(), f"missing guide {page}")
+            self.assertIn(page, index)
+
+    def test_tool_guides_follow_the_required_section_order(self) -> None:
+        for page in TOOL_PAGES:
+            text = (ROOT / "docs" / "tools" / page).read_text(encoding="utf-8")
+            positions = []
+            for section in REQUIRED_TOOL_SECTIONS:
+                self.assertIn(section, text, f"{page} is missing {section}")
+                positions.append(text.index(section))
+            self.assertEqual(positions, sorted(positions), f"{page} does not follow the section order")
+
+    def test_tool_guide_versions_match_the_admitted_records(self) -> None:
+        corpus = "\n".join(
+            (ROOT / name).read_text(encoding="utf-8")
+            for name in ("versions.lock", "vendor/python.lock.json", "third_party_tools.md")
+        )
+        for page in TOOL_PAGES:
+            text = (ROOT / "docs" / "tools" / page).read_text(encoding="utf-8")
+            for match in re.finditer(r"(?m)^- Version: (.+)$", text):
+                version = match.group(1).strip().strip("`")
+                self.assertIn(version, corpus, f"{page} quotes an unknown version {version}")
+
+    def test_policy_documentation_covers_the_active_policies(self) -> None:
+        text = (ROOT / "docs" / "policies.md").read_text(encoding="utf-8")
+        for needle in (
+            "policies/admission.rego",
+            "policies/tool_boundary.rego",
+            "default allow := false",
+            "app/security/opa.py",
+            "make test-policy",
+            "REVIEW",
+            "fail-closed",
+        ):
+            self.assertIn(needle, text)
+
+    def test_navigation_lists_the_new_documentation(self) -> None:
+        navigation = (ROOT / "docs" / "navigation.md").read_text(encoding="utf-8")
+        for path in (
+            "docs/policies.md",
+            "docs/standards-and-policy-mapping.md",
+            "docs/tools/README.md",
+            "policy-templates/README.md",
+            "policy-templates/catalog.yaml",
+            "policy-templates/standards.yaml",
+            "tools/create_policy_template.py",
+            "specs/policy-tooling-documentation/design.md",
+        ):
+            self.assertIn(path, navigation)
 
 
 if __name__ == "__main__":

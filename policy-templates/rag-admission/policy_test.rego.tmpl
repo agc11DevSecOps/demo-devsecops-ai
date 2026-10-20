@@ -1,0 +1,98 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Tests for the generated rag-admission draft. They cover the explicit allow
+# case, an untrusted writer, a quarantined document, a duplicate, an
+# over-length document, an empty identifier and the default-deny case.
+package {{PACKAGE}}.test
+
+admit(req) := result if {
+	result := data.{{PACKAGE}}.allow with input as req
+}
+
+test_allow_trusted_document if {
+	admit({
+		"document": {
+			"source_id": "rollback-runbook",
+			"writer": "{{PRIMARY_WRITER}}",
+			"quarantined": false,
+			"duplicate": false,
+			"text_chars": 62
+		}
+	})
+}
+
+test_deny_untrusted_writer if {
+	not admit({
+		"document": {
+			"source_id": "poisoned-note",
+			"writer": "untrusted-upload",
+			"quarantined": false,
+			"duplicate": false,
+			"text_chars": 62
+		}
+	})
+}
+
+test_deny_quarantined_document if {
+	not admit({
+		"document": {
+			"source_id": "rollback-runbook",
+			"writer": "{{PRIMARY_WRITER}}",
+			"quarantined": true,
+			"duplicate": false,
+			"text_chars": 62
+		}
+	})
+}
+
+test_deny_duplicate_document if {
+	not admit({
+		"document": {
+			"source_id": "rollback-runbook",
+			"writer": "{{PRIMARY_WRITER}}",
+			"quarantined": false,
+			"duplicate": true,
+			"text_chars": 62
+		}
+	})
+}
+
+test_deny_over_length_document if {
+	not admit({
+		"document": {
+			"source_id": "rollback-runbook",
+			"writer": "{{PRIMARY_WRITER}}",
+			"quarantined": false,
+			"duplicate": false,
+			"text_chars": 999999
+		}
+	})
+}
+
+test_deny_empty_document if {
+	not admit({
+		"document": {
+			"source_id": "rollback-runbook",
+			"writer": "{{PRIMARY_WRITER}}",
+			"quarantined": false,
+			"duplicate": false,
+			"text_chars": 0
+		}
+	})
+}
+
+test_deny_empty_source_id if {
+	not admit({
+		"document": {
+			"source_id": "",
+			"writer": "{{PRIMARY_WRITER}}",
+			"quarantined": false,
+			"duplicate": false,
+			"text_chars": 62
+		}
+	})
+}
+
+test_deny_missing_document_by_default if {
+	not admit({})
+}

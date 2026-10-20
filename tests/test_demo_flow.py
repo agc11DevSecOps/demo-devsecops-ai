@@ -36,6 +36,29 @@ class DemoFlowTests(unittest.TestCase):
             if number == 7:
                 self.assertTrue(any("container-garak-exec" in line for line in lines))
 
+    def test_demo_10m_shows_the_policy_tests_and_the_strict_scenarios(self) -> None:
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        match = re.search(r"^demo-10m:.*\n((?:\t.*\n)+)", makefile, re.MULTILINE)
+        self.assertIsNotNone(match, "missing demo-10m")
+        body = match.group(1)
+        self.assertIn("opa test -v policies/", body)
+        for scenario in ("S1", "S2", "S3", "S4", "S0", "S5", "S8"):
+            self.assertIn(f"SCENARIO={scenario} container-run-b-exec", body)
+        self.assertIn("demo-request --case injection", body)
+
+    def test_s1_names_the_safe_format_and_the_policy_engine(self) -> None:
+        source = (ROOT / "app" / "scenarios" / "s1.py").read_text(encoding="utf-8")
+        self.assertIn("SafeTensors format gate", source)
+        self.assertIn("safetensors", source)
+        self.assertIn("admission.admit", source)
+        self.assertIn("OPA admission policy", source)
+        self.assertIn("integrity admission", source)
+
+    def test_s0_names_the_verified_model_format(self) -> None:
+        source = (ROOT / "app" / "scenarios" / "s0.py").read_text(encoding="utf-8")
+        self.assertIn("SafeTensors", source)
+        self.assertIn("sha256", source)
+
     def test_run_b_events_follow_run_a_for_each_paired_scenario(self) -> None:
         reset()
         environ = {"OPS_DEMO_IN_CONTAINER": "0"}

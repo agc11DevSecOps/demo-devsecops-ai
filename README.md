@@ -30,9 +30,10 @@ make demo-10m
 ```
 
 `demo-10m` refuses to run without FLAN-T5, Prompt Guard, OPA, Cosign, Fickling,
-and ModelScan. It never chooses the `SCRIPTED` adapter. See
-[`docs/demo-10min.md`](docs/demo-10min.md) for the timed script and claims that
-are safe to make.
+and ModelScan. It never chooses the `SCRIPTED` adapter. It runs the verbose OPA
+policy tests first, then S1, S2, S3, S4, S0, a fixed injection request, S5 and
+S8. See [`docs/demo-10min.md`](docs/demo-10min.md) for the timed script and the
+claims that are safe to make.
 
 ## Code Tour
 
@@ -47,8 +48,33 @@ Read these files in order:
    scan, signing, BOM, and admission.
 6. [`app/security/tool_boundary.py`](app/security/tool_boundary.py): optional S5
    authorization lab, deliberately separate from the workload.
+7. [`docs/policies.md`](docs/policies.md): how the OPA policies are written,
+   called, tested and promoted.
 
 [`docs/navigation.md`](docs/navigation.md) inventories every retained path.
+
+## Policies And Standards
+
+- [`docs/policies.md`](docs/policies.md) documents the two active OPA policies:
+  the input contract, the fail-closed wrapper, the test matrix and the
+  promotion flow.
+- [`policy-templates/`](policy-templates/README.md) is a catalogue of reviewable
+  policy starting points. `make policy-template TEMPLATE=model-admission
+  ID=payments-model` renders a draft into `policy-drafts/`. Drafts are inert,
+  marked `DRAFT - REVIEW REQUIRED`, and never become active automatically.
+- [`docs/standards-and-policy-mapping.md`](docs/standards-and-policy-mapping.md)
+  maps policy patterns to control objectives in AISVS, OWASP LLM Top 10, OWASP
+  ASVS, NIST AI RMF and NIST SSDF. Those references shaped the design. They
+  are not compliance, not certification, and they never authorize an action.
+
+## Tool Guides
+
+[`docs/tools/README.md`](docs/tools/README.md) is a guided path to every direct
+integration: Docker, Make and Python, OPA, Cosign, Fickling, ModelScan,
+Presidio and spaCy, Prompt Guard, FLAN-T5 and SafeTensors, Qdrant, MCP, Garak,
+the FastAPI gateway and GitHub Actions. Each page covers installation,
+verification, supported configuration, examples, expected output, evidence,
+troubleshooting and the limits.
 
 ## Real Integrations And Safe Inputs
 
@@ -68,6 +94,7 @@ demo limits. They show the enforcement path, not production retrieval quality.
 ```bash
 make test                 # unit and documentation checks
 make test-policy          # OPA Rego tests
+make policy-template-test # policy catalogue, generator and standards checks
 make pipeline             # named local scanners, Cosign, and OPA in Docker
 make GARAK_LIMIT=5 demo   # full scenario catalogue; S7 stays PARTIAL
 ```

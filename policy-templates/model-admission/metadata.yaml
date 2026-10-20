@@ -1,0 +1,60 @@
+# Machine-readable description of the model-admission template family.
+family: model-admission
+package: model_admission
+title: Model artifact admission
+decision_question: May this model artifact be admitted?
+purpose: >-
+  Admit a model artifact only when its container format is safe, its signature
+  verifies and its AI BOM is complete. This is the supply-chain gate that runs
+  before a model is allowed into the trusted set.
+
+inputs:
+  - path: artifact.safe_format
+    type: boolean
+    meaning: The container format cannot execute code when loaded.
+  - path: artifact.format
+    type: string
+    meaning: The detected container format, compared against the allow-list.
+  - path: artifact.signature_ok
+    type: boolean
+    meaning: The signature verified for the exact bytes presented.
+  - path: artifact.aibom_complete
+    type: boolean
+    meaning: The AI BOM carries every required component field.
+  - path: artifact.provenance_ok
+    type: boolean
+    meaning: The artifact came from an approved origin.
+
+controls:
+  - id: safe-format
+    description: Only non-executable container formats are admissible.
+  - id: signature-verified
+    description: The blob signature must verify before admission.
+  - id: aibom-complete
+    description: The AI BOM must be complete before admission.
+  - id: provenance-confirmed
+    description: The origin of the artifact must be confirmed.
+  - id: default-deny
+    description: Every other input is denied.
+
+non_goals:
+  - Scanning an artifact. Fickling and ModelScan produce the detection evidence.
+  - Signing or verifying a signature. Cosign does that.
+  - Loading a model. Admission is a precondition, not a loader.
+  - Authorizing a deployment.
+
+standards:
+  - standard: aisvs-1.01
+    ids: [v1.01-C3.1.2, v1.01-C6.1.3, v1.01-C6.2.3]
+    objective: Admit a model artifact only with a safe format, a verified signature and a complete AI BOM.
+  - standard: owasp-llm-top-10-2025
+    ids: [LLM03]
+    objective: Treat model and dependency provenance as a supply-chain decision input.
+  - standard: nist-ssdf-1.1
+    ids: [PW.4, PW.7]
+    objective: Keep the model artifact and its bill of materials reviewable and reproducible.
+
+files:
+  policy: policy.rego.tmpl
+  tests: policy_test.rego.tmpl
+  example: input.example.json

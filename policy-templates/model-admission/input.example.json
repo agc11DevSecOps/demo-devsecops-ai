@@ -1,0 +1,9 @@
+{
+  "artifact": {
+    "safe_format": true,
+    "format": "{{PRIMARY_FORMAT}}",
+    "signature_ok": true,
+    "aibom_complete": true,
+    "provenance_ok": true
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "document": {
+    "source_id": "rollback-runbook",
+    "writer": "{{PRIMARY_WRITER}}",
+    "quarantined": false,
+    "duplicate": false,
+    "text_chars": 62
+  }
+}

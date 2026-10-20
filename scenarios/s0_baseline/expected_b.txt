@@ -1,1 +1,1 @@
-10/10 benign prompts answered; 0 false positives.
+10/10 benign prompts answered; 0 false positives; the answer came from a hash-verified SafeTensors model with retrieval-derived citations.

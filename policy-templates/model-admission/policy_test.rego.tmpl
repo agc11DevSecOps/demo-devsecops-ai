@@ -1,0 +1,90 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Tests for the generated model-admission draft. They cover the explicit allow
+# case, each explicit deny case, the default-deny case and the malformed
+# input case.
+package {{PACKAGE}}.test
+
+admit(req) := result if {
+	result := data.{{PACKAGE}}.allow with input as req
+}
+
+test_allow_complete_artifact if {
+	admit({
+		"artifact": {
+			"safe_format": true,
+			"format": "{{PRIMARY_FORMAT}}",
+			"signature_ok": true,
+			"aibom_complete": true,
+			"provenance_ok": true
+		}
+	})
+}
+
+test_deny_unsafe_format if {
+	not admit({
+		"artifact": {
+			"safe_format": false,
+			"format": "pickle",
+			"signature_ok": true,
+			"aibom_complete": true,
+			"provenance_ok": true
+		}
+	})
+}
+
+test_deny_format_not_on_allow_list if {
+	not admit({
+		"artifact": {
+			"safe_format": true,
+			"format": "pytorch-bin",
+			"signature_ok": true,
+			"aibom_complete": true,
+			"provenance_ok": true
+		}
+	})
+}
+
+test_deny_bad_signature if {
+	not admit({
+		"artifact": {
+			"safe_format": true,
+			"format": "{{PRIMARY_FORMAT}}",
+			"signature_ok": false,
+			"aibom_complete": true,
+			"provenance_ok": true
+		}
+	})
+}
+
+test_deny_incomplete_bom if {
+	not admit({
+		"artifact": {
+			"safe_format": true,
+			"format": "{{PRIMARY_FORMAT}}",
+			"signature_ok": true,
+			"aibom_complete": false,
+			"provenance_ok": true
+		}
+	})
+}
+
+test_deny_unknown_provenance if {
+	not admit({
+		"artifact": {
+			"safe_format": true,
+			"format": "{{PRIMARY_FORMAT}}",
+			"signature_ok": true,
+			"aibom_complete": true,
+			"provenance_ok": false
+		}
+	})
+}
+
+test_deny_missing_facts_by_default if {
+	not admit({"artifact": {"safe_format": true}})
+}
+
+test_deny_empty_input_by_default if {
+	not admit({})
+}

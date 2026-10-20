@@ -7,6 +7,9 @@ production architecture or a security certification.
 
 - [Ten-minute demonstration](demo-10min.md) is the presentation script and its honest claims.
 - [Code tour](code-tour.md) follows the request, RAG, model-admission, and evidence paths.
+- [Policies](policies.md) explains how the OPA policies are written, called, tested and promoted.
+- [Standards and policy mapping](standards-and-policy-mapping.md) maps policy patterns to control objectives and states the limits.
+- [Tool guides](tools/README.md) is the guided path to every direct integration.
 - [Architecture](architecture.mmd) separates the read-only answer lane from the S5 authorization lab.
 - [Pipeline](pipeline.mmd) shows the offline 11-stage pipeline and its current stage labels.
 - [Control register](control-register.md) maps scenarios to controls, implementation paths, and evidence.
@@ -23,6 +26,14 @@ production architecture or a security certification.
 - `app/workload.py` is the read-only Ops Assist service; `app/sandbox.py` owns reset.
 - `app/demo.py` is a thin scenario dispatcher; `app/evidence.py` writes authoritative and visual records.
 - `controls/ci/gates.yaml` contains the pipeline's executable red-team threshold; control implementations live only in `app/security/`.
+- `policy-templates/` holds the reviewable policy catalogue; `tools/create_policy_template.py` renders drafts from it.
+
+## Policy Authoring
+
+- [`../policy-templates/README.md`](../policy-templates/README.md) explains the catalogue and the promotion flow.
+- `make policy-template TEMPLATE=model-admission ID=payments-model` renders a
+  draft into `policy-drafts/`. Drafts are inert and never become active
+  automatically.
 
 ## Status Labels
 

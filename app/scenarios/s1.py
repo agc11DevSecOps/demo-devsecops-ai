@@ -42,6 +42,10 @@ def scenario_s1(run: str, writer: EvidenceWriter) -> None:
             writer.emit(Event("B", "S1", "fallback pickle scan", "BLOCKED", "unsafe self-made pickle opcode", ("v1.01-C6.1.1",), input_value=malicious.name))
         else:
             raise AssertionError("malicious_fixture_not_detected")
+    safe_format = clean.suffix == ".safetensors" and clean.is_file()
+    if not safe_format:
+        raise AssertionError("unsafe_format_artifact")
+    writer.emit(Event("B", "S1", "SafeTensors format gate", "ALLOWED", "the clean artifact uses the non-executable SafeTensors container format, so loading it cannot execute code", (), input_value=clean.name, visual={"input": {"artifact": clean.name, "format": "safetensors"}, "control": {"format_check": "safetensors", "executable_format": False}, "observation": {"suffix": clean.suffix}, "state": {"admitted": False}}))
     integrity = "Cosign" if os.environ.get("OPS_DEMO_COSIGN") == "1" else "fallback"
     aibom = {
         "model": "synthetic-tiny-model", "sha256": sha256(clean.read_bytes()),
@@ -63,10 +67,11 @@ def scenario_s1(run: str, writer: EvidenceWriter) -> None:
         raise AssertionError("aibom_gate_failed")
     writer.emit(Event("B", "S1", "AI BOM completeness gate", "BLOCKED", "completeness check rejects a BOM missing component metadata, failing the admission build", ("v1.01-C6.2.3",), input_value="aibom-incomplete.json"))
     signature = admission.sign(clean)
-    if not admission.verify(clean, signature):
+    signature_ok = admission.verify(clean, signature)
+    if not signature_ok:
         raise AssertionError("signature_failed")
     writer.emit(Event("B", "S1", f"{integrity} integrity admission", "ALLOWED", f"safe format, digest and {integrity} signature verified", ("v1.01-C3.1.1", "v1.01-C3.1.2", "v1.01-C4.1.2", "v1.01-C6.1.2", "v1.01-C6.1.3", "v1.01-C6.2.1"), input_value=clean.name))
-    if not admission.admit(True, True, True):
+    if not admission.admit(safe_format, signature_ok, True):
         raise AssertionError("admission_denied")
     engine = "OPA admission policy" if os.environ.get("OPS_DEMO_OPA") == "1" else "fallback admission rules"
     writer.emit(Event("B", "S1", f"{engine} model admission", "ALLOWED", "admission gated on a safe format, a verified signature and a complete AI BOM", ("v1.01-C3.1.2", "v1.01-C6.1.3"), input_value=clean.name))

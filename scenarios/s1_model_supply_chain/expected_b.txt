@@ -1,1 +1,1 @@
-Fickling/ModelScan BLOCKED the pickle; Cosign signature verified; tampered model DENIED; no marker.
+Fickling/ModelScan BLOCKED the pickle; SafeTensors format gate ALLOWED; Cosign signature verified; OPA admitted only the safe, signed, BOM-complete artifact; tampered model DENIED; no marker.

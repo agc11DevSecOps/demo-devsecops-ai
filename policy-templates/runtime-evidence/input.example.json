@@ -1,0 +1,8 @@
+{
+  "runtime": {
+    "stop_enabled": false,
+    "requests_this_minute": 0,
+    "evidence_written": true,
+    "hash_only": true
+  }
+}

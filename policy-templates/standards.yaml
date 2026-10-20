@@ -1,0 +1,144 @@
+# Standards Register
+#
+# This file is the machine-readable companion of
+# docs/standards-and-policy-mapping.md.
+#
+# It records control objectives only. A mapping entry says "this policy
+# pattern targets this objective". It never means the demo complies with,
+# passes, is audited against, or is certified against a standard, and it never
+# authorizes an action.
+#
+# The full provenance of each source, including publisher, immutable version,
+# content hash, licence, retrieval date, review, and permitted use, lives in
+# third_party_sources.md.
+
+format: 1
+status: reviewed
+note: >-
+  Control-objective mapping only. Never a compliance, certification, coverage,
+  or audit claim. Never an authorization signal.
+
+standards:
+  - id: aisvs-1.01
+    source_record: SRC-2026-10-17-OWASP-AISVS-1.01
+    title: OWASP Artificial Intelligence Security Verification Standard
+    publisher: OWASP AISVS Project
+    version: "1.01"
+    source: https://github.com/OWASP/AISVS
+    immutable: commit 55dc2203d861af14482b529c564f5b312134b165
+    snapshot_sha256: c23aa4d6ac5313787ee82a31528df71b378521f6c59e61456d6d8f135ace74c5
+    licence: CC BY-SA 4.0
+    retrieval_date: "2026-10-17"
+    status: admitted
+    use: Requirement identifiers mapped to executed controls.
+
+  - id: owasp-llm-top-10-2025
+    source_record: SRC-2026-10-20-OWASP-LLM-TOP-10-2025
+    title: OWASP Top 10 for Large Language Model Applications
+    publisher: OWASP Foundation
+    version: "2025"
+    source: https://github.com/OWASP/www-project-top-10-for-large-language-model-applications
+    immutable: commit 99f4395589bdbd120ae961f9cd179e79d7f9b27f
+    snapshot_sha256: d8596f2c6b3384081574d392619ee3e9065c4f86e5b1fed1bb56be78de2ce382
+    licence: CC BY-SA 4.0
+    retrieval_date: "2026-10-20"
+    status: admitted
+    use: List identifier level objectives only.
+
+  - id: owasp-asvs-5.0.0
+    source_record: SRC-2026-10-20-OWASP-ASVS-5.0.0
+    title: OWASP Application Security Verification Standard
+    publisher: OWASP Foundation
+    version: "5.0.0"
+    source: https://github.com/OWASP/ASVS
+    immutable: commit 5cf9b032440be53ce345ab3c130fda46ba1ce7a2
+    snapshot_sha256: f3e9a2f1098bc4af594578acb404121af69e3964aa4d90abd4b00607218d30c6
+    licence: CC BY-SA 4.0
+    retrieval_date: "2026-10-20"
+    status: admitted
+    use: Chapter level objectives only.
+
+  - id: nist-ai-rmf-1.0
+    source_record: SRC-2026-10-20-NIST-AI-RMF-1.0
+    title: NIST AI Risk Management Framework
+    publisher: National Institute of Standards and Technology
+    version: "1.0"
+    source: https://doi.org/10.6028/NIST.AI.100-1
+    immutable: NIST AI 100-1 publication DOI 10.6028/NIST.AI.100-1
+    snapshot_sha256: 7576edb531d9848825814ee88e28b1795d3a84b435b4b797d3670eafdc4a89f1
+    licence: NIST publication, no licence text vendored
+    retrieval_date: "2026-10-20"
+    status: admitted
+    use: Function and subcategory identifiers only.
+
+  - id: nist-ssdf-1.1
+    source_record: SRC-2026-10-20-NIST-SSDF-1.1
+    title: NIST Secure Software Development Framework
+    publisher: National Institute of Standards and Technology
+    version: "1.1"
+    source: https://doi.org/10.6028/NIST.SP.800-218
+    immutable: NIST SP 800-218 publication DOI 10.6028/NIST.SP.800-218
+    snapshot_sha256: 617746e553a9e2da49bfbd4eef0dfc3094758a39b869314e4173ac36605cde22
+    licence: NIST publication, no licence text vendored
+    retrieval_date: "2026-10-20"
+    status: admitted
+    use: Practice group identifiers only.
+
+templates:
+  model-admission:
+    - standard: aisvs-1.01
+      ids: [v1.01-C3.1.2, v1.01-C6.1.3, v1.01-C6.2.3]
+      objective: Admit a model artifact only with a safe format, a verified signature and a complete AI BOM.
+    - standard: owasp-llm-top-10-2025
+      ids: [LLM03]
+      objective: Treat model and dependency provenance as a supply-chain decision input, not as a downstream action.
+    - standard: nist-ssdf-1.1
+      ids: [PW.4, PW.7]
+      objective: Keep the model artifact and its bill of materials reviewable and reproducible.
+
+  tool-authorization:
+    - standard: aisvs-1.01
+      ids: [v1.01-C9.2.1, v1.01-C9.5.1, v1.01-C9.5.3]
+      objective: Default-deny tool access, with human approval bound to a high-impact call.
+    - standard: owasp-llm-top-10-2025
+      ids: [LLM06]
+      objective: Keep model reach over tools minimal, scoped and human-gated.
+    - standard: owasp-asvs-5.0.0
+      ids: [V4]
+      objective: Access control decisions are enforced outside the model and are auditable.
+
+  rag-admission:
+    - standard: aisvs-1.01
+      ids: [v1.01-C8.1.2, v1.01-C8.2.4, v1.01-C8.3.3]
+      objective: Only documents from an approved writer enter the retrievable corpus.
+    - standard: owasp-llm-top-10-2025
+      ids: [LLM08]
+      objective: Vector retrieval is filtered by provenance, not only by similarity.
+    - standard: owasp-asvs-5.0.0
+      ids: [V5]
+      objective: Untrusted content is sanitised and validated before it can influence a response.
+
+  input-output-guardrails:
+    - standard: aisvs-1.01
+      ids: [v1.01-C2.1.1, v1.01-C2.1.4, v1.01-C7.1.1, v1.01-C8.2.1]
+      objective: Screen input, bound output, and never treat model output as a decision.
+    - standard: owasp-llm-top-10-2025
+      ids: [LLM01, LLM02, LLM10]
+      objective: Detect prompt injection, mask sensitive data, and bound consumption.
+    - standard: nist-ai-rmf-1.0
+      ids: [MEASURE 2.7, MANAGE 4.1]
+      objective: Measure and manage input and output risk with deterministic, reviewable controls.
+
+  runtime-evidence:
+    - standard: aisvs-1.01
+      ids: [v1.01-C9.6.1, v1.01-C12.1.2, v1.01-C12.4.3]
+      objective: A stop control interrupts inference and evidence stays hash-only.
+    - standard: owasp-llm-top-10-2025
+      ids: [LLM10]
+      objective: Rate and size limits keep consumption bounded.
+    - standard: nist-ai-rmf-1.0
+      ids: [GOVERN 1.1, MANAGE 2.2]
+      objective: Governance and risk management are visible in recorded evidence.
+    - standard: nist-ssdf-1.1
+      ids: [PS.1, RV.1]
+      objective: Protect the development environment and record findings for response.

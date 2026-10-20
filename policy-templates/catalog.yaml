@@ -1,0 +1,103 @@
+# Policy Template Catalogue
+#
+# This file is the only registry the generator accepts. A family that is not
+# listed here cannot be generated. Parameters are typed and validated; no
+# parameter may disable a control, only narrow an allow-list or lower a limit.
+#
+# format: 1
+
+format: 1
+drafts_dir: policy-drafts
+id_pattern: "^[a-z][a-z0-9-]{2,47}$"
+
+templates:
+  model-admission:
+    title: Model artifact admission
+    package: model_admission
+    directory: model-admission
+    summary: >-
+      Admit a model artifact only when its container format is safe, its
+      signature verifies and its AI BOM is complete.
+    decision_question: May this model artifact be admitted?
+    parameters:
+      allowed_formats:
+        type: list
+        default: [safetensors]
+        forbidden: [pickle, pkl, pytorch-bin, pt, ckpt, h5, hdf5, joblib, numpy, keras, tensorflow, onnx, pmml]
+        description: >-
+          Non-executable container formats that may be admitted. A format that
+          can execute code, such as pickle, must never appear here.
+
+  tool-authorization:
+    title: Tool call authorization
+    package: tool_authorization
+    directory: tool-authorization
+    summary: >-
+      Allow read-only tools when the descriptor and scope are intact, and
+      allow high-impact tools only when a valid, scoped, in-quota human
+      approval exists.
+    decision_question: May this tool call proceed to the approval stage?
+    parameters:
+      read_only_tools:
+        type: list
+        default: [read_ticket, search_docs]
+        description: Tools that may proceed without a human grant.
+      gated_tools:
+        type: list
+        default: [delete_branch]
+        description: >-
+          High-impact tools that may proceed only with a valid grant. An allow
+          result still means review, never execution.
+
+  rag-admission:
+    title: Retrieval corpus admission
+    package: rag_admission
+    directory: rag-admission
+    summary: >-
+      Admit a document into the retrievable corpus only when it comes from an
+      approved writer, is not quarantined, is not a duplicate and respects the
+      text bound.
+    decision_question: May this document enter the retrievable corpus?
+    parameters:
+      allowed_writers:
+        type: list
+        default: [trusted]
+        description: Writers whose documents may become retrievable.
+      max_text_chars:
+        type: int
+        default: 2048
+        description: Upper bound for the admitted document length.
+
+  input-output-guardrails:
+    title: Input and output guardrails
+    package: input_output_guardrails
+    directory: input-output-guardrails
+    summary: >-
+      Allow a request and its answer only when the input is within bounds and
+      free of injection and sensitive data, and the output is within bounds,
+      schema-valid and free of injection and sensitive data.
+    decision_question: May this request be answered and this output returned?
+    parameters:
+      max_input_chars:
+        type: int
+        default: 1024
+        description: Upper bound for the request length.
+      max_output_chars:
+        type: int
+        default: 1200
+        description: Upper bound for the answer length.
+
+  runtime-evidence:
+    title: Runtime and evidence guardrails
+    package: runtime_evidence
+    directory: runtime-evidence
+    summary: >-
+      Allow runtime work only while the stop control is inactive, the request
+      rate is inside the limit, evidence is written and the record is
+      hash-only.
+    decision_question: May runtime work continue and be recorded?
+    parameters:
+      max_requests_per_minute:
+        type: int
+        default: 5
+        description: Maximum number of requests accepted in one minute.

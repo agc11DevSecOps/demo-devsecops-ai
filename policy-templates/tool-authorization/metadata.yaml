@@ -1,0 +1,61 @@
+# Machine-readable description of the tool-authorization template family.
+family: tool-authorization
+package: tool_authorization
+title: Tool call authorization
+decision_question: May this tool call proceed to the approval stage?
+purpose: >-
+  Keep the last deterministic gate before a human approval stage. Read-only
+  tools may proceed when the descriptor and scope are intact; high-impact
+  tools require a valid, scoped, in-quota grant, and even then the result is
+  review rather than execution.
+
+inputs:
+  - path: action
+    type: string
+    meaning: The requested tool name.
+  - path: context.descriptor_ok
+    type: boolean
+    meaning: The tool descriptor matches its pinned digest.
+  - path: context.scope_ok
+    type: boolean
+    meaning: The caller's scope covers this tool.
+  - path: context.quota_ok
+    type: boolean
+    meaning: The per-run quota for this tool is not exhausted.
+  - path: context.grant_valid
+    type: boolean
+    meaning: A one-use human approval bound to the exact call is valid.
+
+controls:
+  - id: default-deny
+    description: A tool that appears on no list is denied.
+  - id: descriptor-pinning
+    description: A changed descriptor denies the call even with a valid grant.
+  - id: scope-check
+    description: The call must be inside the caller's scope.
+  - id: quota
+    description: Per-run quotas contain repeated high-impact calls.
+  - id: human-gate
+    description: High-impact tools require an explicit grant.
+
+non_goals:
+  - Executing a tool. This repository has no action execution path.
+  - Granting approval. A human issues the token out of band.
+  - Verifying a grant. The policy only receives the boolean result.
+  - Widening a scope.
+
+standards:
+  - standard: aisvs-1.01
+    ids: [v1.01-C9.2.1, v1.01-C9.5.1, v1.01-C9.5.3]
+    objective: Default-deny tool access with a human approval bound to a high-impact call.
+  - standard: owasp-llm-top-10-2025
+    ids: [LLM06]
+    objective: Keep model reach over tools minimal, scoped and human-gated.
+  - standard: owasp-asvs-5.0.0
+    ids: [V4]
+    objective: Access control is enforced outside the model and is auditable.
+
+files:
+  policy: policy.rego.tmpl
+  tests: policy_test.rego.tmpl
+  example: input.example.json

@@ -168,3 +168,32 @@ fallback (`record/*.mp4`, `record/*.webm`) stays git-ignored and, if used, must
 not contain prompts, secrets or raw fixtures; the committed fallback is the
 deterministic `make demo` transcript in `REHEARSAL.md`.
 
+## D-019: Policy templates are inert drafts generated offline
+
+`policy-templates/` holds one reviewable starting point per policy pattern:
+`model-admission`, `tool-authorization`, `rag-admission`,
+`input-output-guardrails` and `runtime-evidence`. `tools/create_policy_template.py`
+renders them offline and deterministically into `policy-drafts/`, which is
+git-ignored. The generator accepts only a family declared in
+`policy-templates/catalog.yaml`, validates the draft identifier and every
+parameter against a declared type, refuses an existing target or a symlinked
+drafts root, marks the output `DRAFT - REVIEW REQUIRED`, and never writes into
+`policies/` and never executes what it produces. No parameter can disable a
+control: parameters may only narrow an allow-list or lower a limit. Promotion
+into `policies/` is a reviewed source change with its own tests and evidence
+event.
+
+## D-020: Standards are design references, never decisions
+
+`third_party_sources.md` records the provenance of every referenced standard,
+including the OWASP LLM Top 10, OWASP ASVS, NIST AI RMF and NIST SSDF, each
+with publisher, immutable version or commit, content hash, licence, retrieval
+date, review and permitted use. `policy-templates/standards.yaml` is the
+machine-readable register of control objectives, and
+`docs/standards-and-policy-mapping.md` explains the mapping. A mapping states
+"this policy pattern targets this objective". It never states compliance,
+certification, coverage or audit, and no standard identifier is evaluated at
+runtime or used to allow, deny or escalate an action. The tests in
+`tests/test_standards_mapping.py` enforce both the register-to-document
+consistency and the absence of compliance claims.
+

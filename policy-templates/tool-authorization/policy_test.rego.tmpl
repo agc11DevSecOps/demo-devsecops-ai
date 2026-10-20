@@ -1,0 +1,114 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Tests for the generated tool-authorization draft. They cover the read-only
+# allow case, the gated allow case, descriptor drift, missing scope, a missing
+# grant, an exhausted quota, an unknown action and the default-deny case.
+package {{PACKAGE}}.test
+
+admit(req) := result if {
+	result := data.{{PACKAGE}}.allow with input as req
+}
+
+test_allow_read_only_tool if {
+	admit({
+		"action": "{{PRIMARY_READ_TOOL}}",
+		"context": {
+			"descriptor_ok": true,
+			"scope_ok": true,
+			"quota_ok": true,
+			"grant_valid": false
+		}
+	})
+}
+
+test_allow_gated_tool_with_valid_grant if {
+	admit({
+		"action": "{{PRIMARY_GATED_TOOL}}",
+		"context": {
+			"descriptor_ok": true,
+			"scope_ok": true,
+			"quota_ok": true,
+			"grant_valid": true
+		}
+	})
+}
+
+test_deny_read_only_tool_with_descriptor_drift if {
+	not admit({
+		"action": "{{PRIMARY_READ_ONLY_TOOL}}",
+		"context": {
+			"descriptor_ok": false,
+			"scope_ok": true,
+			"quota_ok": true,
+			"grant_valid": false
+		}
+	})
+}
+
+test_deny_read_only_tool_without_scope if {
+	not admit({
+		"action": "{{PRIMARY_READ_ONLY_TOOL}}",
+		"context": {
+			"descriptor_ok": true,
+			"scope_ok": false,
+			"quota_ok": true,
+			"grant_valid": false
+		}
+	})
+}
+
+test_deny_gated_tool_without_grant if {
+	not admit({
+		"action": "{{PRIMARY_GATED_TOOL}}",
+		"context": {
+			"descriptor_ok": true,
+			"scope_ok": true,
+			"quota_ok": true,
+			"grant_valid": false
+		}
+	})
+}
+
+test_deny_gated_tool_with_exhausted_quota if {
+	not admit({
+		"action": "{{PRIMARY_GATED_TOOL}}",
+		"context": {
+			"descriptor_ok": true,
+			"scope_ok": true,
+			"quota_ok": false,
+			"grant_valid": true
+		}
+	})
+}
+
+test_deny_gated_tool_with_descriptor_drift_even_with_grant if {
+	not admit({
+		"action": "{{PRIMARY_GATED_TOOL}}",
+		"context": {
+			"descriptor_ok": false,
+			"scope_ok": true,
+			"quota_ok": true,
+			"grant_valid": true
+		}
+	})
+}
+
+test_deny_unknown_action if {
+	not admit({
+		"action": "drop_database",
+		"context": {
+			"descriptor_ok": true,
+			"scope_ok": true,
+			"quota_ok": true,
+			"grant_valid": true
+		}
+	})
+}
+
+test_deny_missing_context_by_default if {
+	not admit({"action": "{{PRIMARY_READ_ONLY_TOOL}}"})
+}
+
+test_deny_empty_input_by_default if {
+	not admit({})
+}

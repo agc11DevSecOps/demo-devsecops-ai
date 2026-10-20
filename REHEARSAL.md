@@ -13,6 +13,7 @@ make fetch-workload-model
 make demo-10m-preflight
 make test
 make test-policy
+make policy-template-test
 ```
 
 Run the pre-flight before the session, never while presenting. It confirms the
@@ -26,8 +27,9 @@ make demo-10m
 ```
 
 The first command is optional and display-only. The second resets generated
-state and runs S0-S5, S8, and fixed local model requests. It leaves S6 and the
-full Garak campaign outside the timing-critical path.
+state, runs the verbose OPA policy tests, and then runs S1, S2, S3, S4, S0, a
+fixed injection request, S5 and S8. It leaves S6 and the full Garak campaign
+outside the timing-critical path.
 
 ## Appendices
 
@@ -41,9 +43,17 @@ make GARAK_LIMIT=55 demo
 container. `GARAK_LIMIT=5` is `PARTIAL`; the 55-prompt run takes longer than the
 presentation and tests the endpoint guards, not FLAN jailbreak resistance.
 
+## Reference
+
+If a question comes up about a specific tool, the answer is in
+[`docs/tools/`](docs/tools/README.md). If it is about how a decision is made,
+it is in [`docs/policies.md`](docs/policies.md). If it is about a standard
+reference, it is in
+[`docs/standards-and-policy-mapping.md`](docs/standards-and-policy-mapping.md).
+
 ## Non-Claims
 
 Do not describe the synthetic fixtures as production data, the scorecard as
-certification, S5 as LLM tool execution, or the local gateway as a production
-service. The permitted phrasing is: “real local integrations, safe synthetic
-inputs, and explicit evidence labels.”
+certification, S5 as LLM tool execution, the local gateway as a production
+service, or the standards mapping as compliance. The permitted phrasing is:
+"real local integrations, safe synthetic inputs, and explicit evidence labels."

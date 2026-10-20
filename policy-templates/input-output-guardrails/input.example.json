@@ -1,0 +1,13 @@
+{
+  "input": {
+    "length": 31,
+    "injection": false,
+    "pii": false
+  },
+  "output": {
+    "length": 96,
+    "injection": false,
+    "pii": false,
+    "schema_ok": true
+  }
+}

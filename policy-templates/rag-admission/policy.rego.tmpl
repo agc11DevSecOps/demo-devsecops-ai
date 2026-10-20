@@ -1,0 +1,26 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Source template: policy-templates/rag-admission
+# Draft id: {{DRAFT_ID}}
+#
+# This policy is NOT active. It only answers whether a document may become
+# retrievable; it never ranks, retrieves or executes.
+package {{PACKAGE}}
+
+# Default deny. A document that is not explicitly admitted stays out.
+default allow := false
+
+# The only writers whose documents may become retrievable.
+allowed_writers := {{ALLOWED_WRITERS}}
+
+# Upper bound for an admitted document.
+max_text_chars := {{MAX_TEXT_CHARS}}
+
+allow if {
+	input.document.source_id != ""
+	input.document.writer in allowed_writers
+	input.document.quarantined == false
+	input.document.duplicate == false
+	input.document.text_chars > 0
+	input.document.text_chars <= max_text_chars
+}

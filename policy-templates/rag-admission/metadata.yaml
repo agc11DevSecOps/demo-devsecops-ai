@@ -1,0 +1,60 @@
+# Machine-readable description of the rag-admission template family.
+family: rag-admission
+package: rag_admission
+title: Retrieval corpus admission
+decision_question: May this document enter the retrievable corpus?
+purpose: >-
+  Gate the RAG ingestion path. Only documents from an approved writer, with a
+  bounded length and no quarantine or duplication flag, may be indexed and
+  later cited.
+
+inputs:
+  - path: document.source_id
+    type: string
+    meaning: The identifier the citation will use.
+  - path: document.writer
+    type: string
+    meaning: Who produced the document.
+  - path: document.quarantined
+    type: boolean
+    meaning: The document was held back by an ingestion review.
+  - path: document.duplicate
+    type: boolean
+    meaning: The document repeats an already admitted source.
+  - path: document.text_chars
+    type: integer
+    meaning: The length of the document text.
+
+controls:
+  - id: writer-allow-list
+    description: Only approved writers may contribute retrievable text.
+  - id: quarantine
+    description: A quarantined document is never indexed.
+  - id: duplicate-check
+    description: A repeated source identifier is not admitted twice.
+  - id: text-bound
+    description: The admitted text length is bounded.
+  - id: default-deny
+    description: Every other input is denied.
+
+non_goals:
+  - Removing an already indexed document.
+  - Ranking or relevance. Allowed does not mean relevant.
+  - Trusting retrieved text. Retrieved content is screened again later.
+  - Authorizing a tool call.
+
+standards:
+  - standard: aisvs-1.01
+    ids: [v1.01-C8.1.2, v1.01-C8.2.4, v1.01-C8.3.3]
+    objective: Only documents from an approved writer enter the retrievable corpus.
+  - standard: owasp-llm-top-10-2025
+    ids: [LLM08]
+    objective: Retrieval is filtered by provenance, not only by similarity.
+  - standard: owasp-asvs-5.0.0
+    ids: [V5]
+    objective: Untrusted content is validated before it can influence a response.
+
+files:
+  policy: policy.rego.tmpl
+  tests: policy_test.rego.tmpl
+  example: input.example.json

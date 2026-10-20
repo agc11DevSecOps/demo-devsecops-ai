@@ -1,0 +1,28 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Source template: policy-templates/model-admission
+# Draft id: {{DRAFT_ID}}
+#
+# This policy is NOT active. Nothing may call it until a reviewer has:
+#   1. checked the input contract against the real fact builder,
+#   2. run "opa test -v" on the generated tests,
+#   3. added the caller and its evidence event,
+#   4. moved this file into policies/ as a reviewed change.
+#
+# A clean scanner result is detection evidence, never authorization.
+package {{PACKAGE}}
+
+# Default deny. An artifact is admitted only when every fact below holds.
+default allow := false
+
+# Only non-executable container formats may appear here. A format that can
+# execute code, such as pickle, must never be added to this list.
+allowed_formats := {{ALLOWED_FORMATS}}
+
+allow if {
+	input.artifact.safe_format == true
+	input.artifact.format in allowed_formats
+	input.artifact.signature_ok == true
+	input.artifact.aibom_complete == true
+	input.artifact.provenance_ok == true
+}

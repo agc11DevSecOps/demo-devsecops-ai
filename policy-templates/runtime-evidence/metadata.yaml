@@ -1,0 +1,59 @@
+# Machine-readable description of the runtime-evidence template family.
+family: runtime-evidence
+package: runtime_evidence
+title: Runtime and evidence guardrails
+decision_question: May runtime work continue and be recorded?
+purpose: >-
+  Encode two operational guarantees: the emergency stop control interrupts
+  work before inference, and every record is written, bounded and hash-only.
+
+inputs:
+  - path: runtime.stop_enabled
+    type: boolean
+    meaning: The emergency stop marker is present.
+  - path: runtime.requests_this_minute
+    type: integer
+    meaning: Requests accepted in the current window.
+  - path: runtime.evidence_written
+    type: boolean
+    meaning: The evidence record was written successfully.
+  - path: runtime.hash_only
+    type: boolean
+    meaning: The record stores digests instead of raw values.
+
+controls:
+  - id: stop-control
+    description: An active stop control denies further runtime work.
+  - id: rate-limit
+    description: The request rate stays inside the configured bound.
+  - id: evidence-written
+    description: Work that is not recorded is not allowed.
+  - id: hash-only
+    description: Records store digests, never raw values.
+  - id: default-deny
+    description: Every other input is denied.
+
+non_goals:
+  - Stopping a running inference.
+  - Writing the evidence record.
+  - Redacting a value.
+  - Approving an action.
+
+standards:
+  - standard: aisvs-1.01
+    ids: [v1.01-C9.6.1, v1.01-C12.1.2, v1.01-C12.4.3]
+    objective: A stop control interrupts inference and evidence stays hash-only.
+  - standard: owasp-llm-top-10-2025
+    ids: [LLM10]
+    objective: Rate and size limits keep consumption bounded.
+  - standard: nist-ai-rmf-1.0
+    ids: [GOVERN 1.1, MANAGE 2.2]
+    objective: Governance and risk management are visible in recorded evidence.
+  - standard: nist-ssdf-1.1
+    ids: [PS.1, RV.1]
+    objective: Protect the development environment and record findings for response.
+
+files:
+  policy: policy.rego.tmpl
+  tests: policy_test.rego.tmpl
+  example: input.example.json

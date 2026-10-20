@@ -1,0 +1,26 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Source template: policy-templates/input-output-guardrails
+# Draft id: {{DRAFT_ID}}
+#
+# This policy is NOT active. It only decides whether a request may be
+# answered and an answer returned; it never executes or authorizes anything.
+package {{PACKAGE}}
+
+# Default deny. A request or answer that is not explicitly clean is refused.
+default allow := false
+
+# Upper bounds for the request and the answer.
+max_input_chars := {{MAX_INPUT_CHARS}}
+max_output_chars := {{MAX_OUTPUT_CHARS}}
+
+allow if {
+	input.input.length > 0
+	input.input.length <= max_input_chars
+	input.input.injection == false
+	input.input.pii == false
+	input.output.length <= max_output_chars
+	input.output.injection == false
+	input.output.pii == false
+	input.output.schema_ok == true
+}

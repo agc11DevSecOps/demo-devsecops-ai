@@ -13,7 +13,7 @@ PIPELINE_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1
 # for the final run. A reduced run is reported PARTIAL and never counts as PASS.
 GARAK_LIMIT ?= 5
 
-.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose demo demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present showcase-build showcase-serve showcase-live challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
+.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose demo demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present policy-template policy-template-test showcase-build showcase-serve showcase-live challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
 
 setup: fetch-tools fetch-models
 	@printf '%s\n' 'Setup complete: tools, models and reviewed catalogs are provisioned.'
@@ -121,6 +121,17 @@ test-gateway-compose: demo-10m-preflight
 test-policy: fetch-tools
 	env -i ./vendor/opa test policies/
 
+# Render a reviewable policy draft. The generator is offline and deterministic;
+# it writes to policy-drafts/ and never to policies/.
+policy-template:
+	@test -n "$(TEMPLATE)" || (printf '%s\n' 'Set TEMPLATE to a family from policy-templates/catalog.yaml.'; exit 2)
+	@test -n "$(ID)" || (printf '%s\n' 'Set ID to the draft identifier, for example payments-model.'; exit 2)
+	$(PYTHON) -m tools.create_policy_template --template "$(TEMPLATE)" --id "$(ID)" $(if $(PARAMS),--params "$(PARAMS)",)
+
+# Catalogue and standards checks, including the generated Rego tests.
+policy-template-test:
+	$(PYTHON) -m unittest tests.test_policy_templates tests.test_standards_mapping -v
+
 versions:
 	$(PYTHON) -c 'import pathlib; print(pathlib.Path("versions.lock").read_text())'
 
@@ -149,6 +160,7 @@ demo-10m-preflight: container-build
 
 demo-10m: demo-10m-preflight
 	$(PYTHON) -m app.cli reset
+	env -i ./vendor/opa test -v policies/
 	$(MAKE) SCENARIO=S1 container-run-b-exec
 	$(MAKE) SCENARIO=S2 container-run-b-exec
 	$(MAKE) SCENARIO=S3 container-run-b-exec

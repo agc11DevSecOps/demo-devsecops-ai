@@ -1,0 +1,80 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Tests for the generated runtime-evidence draft. They cover the clean allow
+# case, the stop control, the rate limit, a negative counter, a missing
+# evidence record, a non hash-only record and the default-deny case.
+package {{PACKAGE}}.test
+
+admit(req) := result if {
+	result := data.{{PACKAGE}}.allow with input as req
+}
+
+test_allow_healthy_runtime if {
+	admit({
+		"runtime": {
+			"stop_enabled": false,
+			"requests_this_minute": 0,
+			"evidence_written": true,
+			"hash_only": true
+		}
+	})
+}
+
+test_deny_when_stop_control_is_active if {
+	not admit({
+		"runtime": {
+			"stop_enabled": true,
+			"requests_this_minute": 0,
+			"evidence_written": true,
+			"hash_only": true
+		}
+	})
+}
+
+test_deny_when_rate_limit_is_reached if {
+	not admit({
+		"runtime": {
+			"stop_enabled": false,
+			"requests_this_minute": 999999,
+			"evidence_written": true,
+			"hash_only": true
+		}
+	})
+}
+
+test_deny_negative_request_counter if {
+	not admit({
+		"runtime": {
+			"stop_enabled": false,
+			"requests_this_minute": -1,
+			"evidence_written": true,
+			"hash_only": true
+		}
+	})
+}
+
+test_deny_when_evidence_is_not_written if {
+	not admit({
+		"runtime": {
+			"stop_enabled": false,
+			"requests_this_minute": 0,
+			"evidence_written": false,
+			"hash_only": true
+		}
+	})
+}
+
+test_deny_when_record_is_not_hash_only if {
+	not admit({
+		"runtime": {
+			"stop_enabled": false,
+			"requests_this_minute": 0,
+			"evidence_written": true,
+			"hash_only": false
+		}
+	})
+}
+
+test_deny_missing_runtime_by_default if {
+	not admit({})
+}

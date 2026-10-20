@@ -29,3 +29,13 @@
   55-prompt campaign can produce a `BLOCKED` S7 event.
 - Garak currently exercises the loopback endpoint's pre-inference guards through
   the scripted adapter. It is not evidence of FLAN-T5 jailbreak resistance.
+- The standards references (AISVS, OWASP LLM Top 10, OWASP ASVS, NIST AI RMF and
+  NIST SSDF) are design references recorded with provenance. They are not
+  compliance, certification, coverage or audit results, and they never
+  authorize an action.
+- The policy templates in `policy-templates/` are inert starting points. A
+  generated draft is `DRAFT - REVIEW REQUIRED`, is never executed by the
+  generator, and has no effect until a reviewer promotes it as a source change.
+- The tool guides in `docs/tools/` document the admitted configuration of this
+  repository only. They are not a reproduction of the upstream manuals, and
+  upstream features outside the admitted scope are out of scope here.

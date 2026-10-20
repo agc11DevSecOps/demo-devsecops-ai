@@ -1,0 +1,31 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Source template: policy-templates/tool-authorization
+# Draft id: {{DRAFT_ID}}
+#
+# This policy is NOT active. An allow result for a gated tool means review,
+# never execution.
+package {{PACKAGE}}
+
+# Default deny. A tool that appears on neither list is denied.
+default allow := false
+
+# Tools that may proceed when the descriptor and scope are intact.
+read_only_tools := {{READ_ONLY_TOOLS}}
+
+# High-impact tools that may proceed only with a valid, in-quota grant.
+gated_tools := {{GATED_TOOLS}}
+
+allow if {
+	input.context.descriptor_ok == true
+	input.context.scope_ok == true
+	input.action in read_only_tools
+}
+
+allow if {
+	input.context.descriptor_ok == true
+	input.context.scope_ok == true
+	input.context.quota_ok == true
+	input.context.grant_valid == true
+	input.action in gated_tools
+}

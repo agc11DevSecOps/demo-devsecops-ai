@@ -20,6 +20,9 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `REHEARSAL.md` | Live-demo run of show. | `make present` operators. |
 | `docs/demo-10min.md` | Timed strict-profile narrative and permitted claims. | Presenters. |
 | `docs/code-tour.md` | Source-level routes through the end-to-end workflow. | Reviewers and presenters. |
+| `docs/policies.md` | How the OPA policies are written, called, tested and promoted. | Reviewers and policy authors. |
+| `docs/standards-and-policy-mapping.md` | Control-objective mapping to AISVS, OWASP and NIST. | Reviewers. |
+| `docs/tools/README.md` | Guided path to every direct integration guide. | Operators and newcomers. |
 | `applicability.yaml` | Declared AISVS requirements excluded from the scorecard denominator. | `app/scorecard.py`. |
 | `approve_cli.py` | Issues or verifies a bound, synthetic S5 approval token. | Optional S5 demonstration. |
 | `versions.lock` | Human-readable approved dependency versions. | `make versions` and documentation. |
@@ -105,6 +108,10 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `policies/admission_test.rego` | OPA tests for admission policy. | `make test-policy`. |
 | `policies/tool_boundary.rego` | OPA tool-boundary policy. | S5. |
 | `policies/tool_boundary_test.rego` | OPA tests for tool policy. | `make test-policy`. |
+| `policy-templates/README.md` | How the draft policy catalogue is used and promoted. | Policy authors. |
+| `policy-templates/catalog.yaml` | The only accepted template registry and parameter schema. | `tools/create_policy_template.py`. |
+| `policy-templates/standards.yaml` | Machine-readable standards register and control-objective mapping. | `tools/create_policy_template.py`, mapping tests. |
+| `policy-templates/<family>/` | One reviewable starting point per policy pattern. | Policy authors. |
 | `record/s6/validate.py` | Validates a recorded Strix manifest without executing it. | S6 tests and future admission. |
 | `record/s6/README.md` | Contract for an external S6 package. | External-evidence operators. |
 | `scorecard/requirements_v1.01.json` | Pinned 213-requirement AISVS catalog. | Scorecard. |
@@ -122,8 +129,10 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `showcase/live.html`, `showcase/live.js` | Read-only live evidence timeline. | `make showcase-live`. |
 | `specs/core/design.md`, `requirements.md`, `tasks.md` | Original core capability records. | Design traceability. |
 | `specs/visual_assurance/design.md`, `requirements.md`, `tasks.md` | Showcase capability records. | Design traceability. |
+| `specs/policy-tooling-documentation/design.md`, `requirements.md`, `tasks.md` | Policy documentation and template catalogue records. | Design traceability. |
 | `docs/architecture.mmd`, `docs/pipeline.mmd` | Source diagrams for the answer lane and pipeline. | Documentation. |
 | `docs/control-register.md`, `evidence-ledger.md`, `fixtures-and-fallbacks.md`, `tool-action-boundary.md` | Control, authority, fixture, and action-boundary references. | Review and navigation. |
+| `docs/tools/*.md` | One operational guide per direct integration. | Operators and newcomers. |
 | `tests/checks_container.py` | Restricted Docker-runner assertions. | `make test-container`. |
 | `tests/test_aisvs_import.py` | Catalog importer and pin tests. | `make test`. |
 | `tests/test_approvals.py` | Approval-token binding tests. | `make test`. |
@@ -133,6 +142,8 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `tests/test_docs.py` | Documentation and expected-state consistency tests. | `make test`. |
 | `tests/test_gateway.py` | Optional gateway contract tests. | `make test`. |
 | `tests/test_pipeline.py` | Delivery-pipeline and gate tests. | `make test`. |
+| `tests/test_policy_templates.py` | Policy template catalogue and generator tests. | `make policy-template-test`. |
+| `tests/test_standards_mapping.py` | Standards register and mapping tests. | `make policy-template-test`. |
 | `tests/test_present.py` | Presentation filter tests. | `make test`. |
 | `tests/test_s6.py` | Recorded-evidence validator tests. | `make test`. |
 | `tests/test_showcase.py` | Bundle, live endpoint, and challenge-contract tests. | `make test`. |
@@ -145,6 +156,7 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `tools/fetch_tools.py` | Allowlisted, SHA-256-verified tool and wheel provisioning. | `make fetch-tools`. |
 | `tools/fetch_models.py` | Pinned local model provisioning. | Model targets. |
 | `tools/import_aisvs.py` | Offline checked-source AISVS importer. | `make aisvs-catalog`. |
+| `tools/create_policy_template.py` | Deterministic offline generator for reviewable policy drafts. | `make policy-template`. |
 | `vendor/requirements.lock`, `vendor/python.lock.json` | Pinned runtime Python wheel set. | Docker build and fetcher. |
 | `vendor/garak-requirements.lock`, `vendor/garak.lock.json` | Pinned Garak wheel set. | Garak image build and fetcher. |
 | `sandbox/` | Synthetic mutable workload state. | Generated and ignored. |

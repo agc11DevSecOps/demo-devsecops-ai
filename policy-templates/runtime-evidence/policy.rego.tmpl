@@ -1,0 +1,22 @@
+# DRAFT - REVIEW REQUIRED
+#
+# Source template: policy-templates/runtime-evidence
+# Draft id: {{DRAFT_ID}}
+#
+# This policy is NOT active. It only decides whether runtime work may continue
+# and be recorded.
+package {{PACKAGE}}
+
+# Default deny. Runtime work continues only while every fact below holds.
+default allow := false
+
+# Maximum number of requests accepted in one minute.
+max_requests_per_minute := {{MAX_REQUESTS_PER_MINUTE}}
+
+allow if {
+	input.runtime.stop_enabled == false
+	input.runtime.requests_this_minute >= 0
+	input.runtime.requests_this_minute < max_requests_per_minute
+	input.runtime.evidence_written == true
+	input.runtime.hash_only == true
+}
