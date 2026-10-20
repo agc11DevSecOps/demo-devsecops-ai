@@ -188,7 +188,7 @@ truthful fallback control name and never claims the external tool executed.
 | Publisher/source | Meta, `https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-22M`, Llama 4 Community License. |
 | Immutable source | Model revision `11614a155199674a0a95e6602d6ab0417b790ed0`; the repository is gated (`gated: manual`), so weights require an accepted licence and an operator-provided `HF_TOKEN`. |
 | Candidate files | `config.json`, `model.safetensors` (283,347,432 bytes), `special_tokens_map.json`, `tokenizer.json`, `tokenizer_config.json`. |
-| Provisioning | `tools/fetch_models.py` downloads the pinned revision over HTTPS with the operator token (read from the environment only, never logged or written), computes each file's SHA-256 and records it; `make fetch-models` requires `HF_TOKEN`. |
+| Provisioning | `tools/fetch_models.py` downloads the pinned revision over HTTPS with the operator token (read from the environment, or from the git-ignored owner-only `.env` that `scripts/provision.sh` creates; never logged, never committed, never baked into an image), computes each file's SHA-256 and records it; `make fetch-models` requires `HF_TOKEN`. |
 | Review date | 2026-10-17 |
 | Decision boundary | Admitted only as a local classifier for the fixed S2 corpus. Model output is detection evidence, never authorization; the tool boundary still applies. Missing weights, a score below threshold or a load error fails closed. |
 | Status | Superseded by the C1 admission below. |

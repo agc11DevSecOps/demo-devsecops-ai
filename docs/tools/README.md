@@ -48,8 +48,8 @@ Follow these steps in order. Each step is safe to repeat.
 
 ### 1. Prepare the machine
 
-You need Linux or macOS with a POSIX shell, `make`, Python 3.12, and Docker.
-Check what you have:
+You need Linux or macOS with a POSIX shell, `make`, Python 3.10 or newer, and
+Docker. Check what you have:
 
 ```bash
 make versions
@@ -57,41 +57,43 @@ python3 --version
 docker --version
 ```
 
-### 2. Download the pinned tools and wheels
-
-This is the only step that uses the network. It fetches pinned URLs from an
-allowlist and verifies every file against a recorded SHA-256 before writing it
-into `vendor/`.
+### 2. Provision everything with one command
 
 ```bash
-make fetch-tools
+make provision
 ```
 
-Expected: `opa: up to date` or `opa: fetched (...)`, and the same for
-`cosign`, followed by the wheel list. See
-[make-python.md](make-python.md) and [docker-compose.md](docker-compose.md).
+This is the only step that uses the network. It checks the host, creates the
+local `.env` file, downloads the pinned tools and wheels with their SHA-256
+verified, asks for the Hugging Face token once, downloads the two models,
+builds the restricted image and finishes with the strict preflight. It is
+idempotent: run it again whenever you are not sure.
 
-### 3. Download the pinned models
+The only interactive moment is the token prompt. The token is read without
+echoing it and stored in the git-ignored `.env` file with owner-only
+permissions. See [make-python.md](make-python.md) for the key list and the
+format rules.
 
-Prompt Guard is gated on Hugging Face. Accept its licence once, then provide
-your token through the environment only:
+Expected: every download reports `up to date` on a second run, and the last
+line is `Provisioning finished in Ns.`
+
+### 3. Check the strict profile
 
 ```bash
-HF_TOKEN=hf_... make fetch-models
-make fetch-workload-model
+make demo-10m-preflight
 ```
 
-The token is read from the environment, never written to disk and never
-logged. See [prompt-guard.md](prompt-guard.md) and
-[flan-safetensors.md](flan-safetensors.md).
+It confirms the pinned local FLAN-T5 and Prompt Guard files, the OPA and
+Cosign binaries, and the restricted runtime image, and it refuses to continue
+if anything is missing.
 
 ### 4. Build the restricted image
+
+Already done by `make provision`. Rebuild it with:
 
 ```bash
 make container-build
 ```
-
-Expected: the build ends with `naming to docker.io/library/demo-devsecops-ai:local done`.
 
 ### 5. Run the policy tests
 
@@ -99,20 +101,17 @@ Expected: the build ends with `naming to docker.io/library/demo-devsecops-ai:loc
 make test-policy
 ```
 
-Expected: `PASS: 9/9` for the tool boundary and `PASS: 4/4` for admission.
-See [opa.md](opa.md).
+Expected: `PASS: 14/14` for the two active policies.
 
 ### 6. Run the strict demo
 
 ```bash
-make demo-10m-preflight
 make demo-10m
 ```
 
-The preflight refuses to continue if FLAN-T5, Prompt Guard, OPA, Cosign or the
-image is missing. The demo then runs the verbose policy tests, S1, S2, S3, S4,
-S0, a fixed injection request, S5 and S8. See
-[`../demo-10min.md`](../demo-10min.md).
+The demo runs the verbose policy tests, S1, S2, S3, S4, S0, a fixed injection
+request, S5 and S8. See [`../demo-10min.md`](../demo-10min.md) and the full
+presenter script in [`../demo-runbook.md`](../demo-runbook.md).
 
 ### 7. Read the evidence and fix what broke
 

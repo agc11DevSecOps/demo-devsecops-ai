@@ -38,14 +38,27 @@ with your own account, and you must supply your own token.
 
 ## Install
 
+The recommended path is the provisioning script, which asks for the token once
+and stores it in the local `.env` file with owner-only permissions:
+
+```bash
+make provision
+```
+
+The script checks the host, downloads the pinned tools, prompts for the token
+without echoing it, downloads the model, builds the image and finishes with
+the strict preflight. It is idempotent, so it is safe to run again.
+
+To do it by hand:
+
 ```bash
 HF_TOKEN=hf_... make fetch-models
 ```
 
-The token is read from the environment only. It is never written to disk and
-never logged. The fetcher downloads the pinned revision, verifies each file
-against its pinned SHA-256, and refuses to continue if the licence has not
-been accepted.
+The token is read from the environment only. It is never written to disk by
+this command and never logged. The fetcher downloads the pinned revision,
+verifies each file against its pinned SHA-256, and refuses to continue if the
+licence has not been accepted.
 
 ## Verify The Installation
 
@@ -101,8 +114,9 @@ as `<|system|>`, which the normalization rules block. The layered result is
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `Set HF_TOKEN to download gated model` | No token in the environment | Export `HF_TOKEN` and retry |
+| `Set HF_TOKEN to download gated model` | No token in the environment | Run `make provision`, or export `HF_TOKEN` and retry |
 | `HTTP 401` or `403` | The licence was not accepted, or the token is invalid | Accept the licence on the model page, then retry |
+| `the token must start with 'hf_'` | The prompt received an empty or malformed value | Re-run `make provision` and paste the token again |
 | `prompt_guard_model_missing` | The weights are not mounted | Run `make fetch-models`, then `make demo-10m-preflight` |
 | The run is out of memory | The profile is too small | Use the run B profile, which reserves 2 GiB |
 | A benign prompt is blocked | The threshold is too low for your corpus | Treat it as a finding; do not silently raise the threshold |

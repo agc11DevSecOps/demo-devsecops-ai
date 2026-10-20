@@ -23,3 +23,6 @@ scorecard/out.md
 scorecard/out.html
 scorecard/delta.csv
 policy-drafts/
+.env
+.env.local
+!.env.example

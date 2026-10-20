@@ -1,5 +1,17 @@
 PYTHON ?= python3
 
+# The optional .env file holds the local secrets and preferences. It is
+# git-ignored, owner-readable only, and created from .env.example by
+# `make provision`. Only the keys listed here are exported, so the file can
+# never inject anything else into the build. Format: one KEY=value per line,
+# no quotes, no spaces and no '$' in a value.
+-include .env
+export HF_TOKEN
+export HUGGING_FACE_HUB_TOKEN
+export OPS_DEMO_GATEWAY_TOKEN
+export OPS_DEMO_APPROVAL_KEY
+export OPS_DEMO_GATEWAY_PORT
+
 PROMPT_GUARD_MODEL := vendor/models/prompt-guard-2-22m/model.safetensors
 WORKLOAD_MODEL := vendor/models/flan-t5-small/model.safetensors
 RUNB_WORKLOAD_READY := $(and $(wildcard $(PROMPT_GUARD_MODEL)),$(wildcard $(WORKLOAD_MODEL)))
@@ -13,10 +25,18 @@ PIPELINE_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1
 # for the final run. A reduced run is reported PARTIAL and never counts as PASS.
 GARAK_LIMIT ?= 5
 
-.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose test-gateway-unit prepare-writable-dirs demo demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present policy-template policy-template-test showcase-build showcase-serve showcase-live challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
+.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose test-gateway-unit prepare-writable-dirs provision env-check setup demo demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present policy-template policy-template-test showcase-build showcase-serve showcase-live challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
 
-setup: fetch-tools fetch-models
-	@printf '%s\n' 'Setup complete: tools, models and reviewed catalogs are provisioned.'
+setup: provision
+
+# One command that provisions everything the strict demo needs, in order, and
+# waits only for the inputs that genuinely require a human.
+provision:
+	./scripts/provision.sh
+
+# Report which local secrets are configured, without printing any value.
+env-check:
+	./scripts/provision.sh --check
 
 reset:
 	$(PYTHON) -m app.cli reset

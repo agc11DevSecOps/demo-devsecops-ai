@@ -207,3 +207,20 @@ container interpreter is 3.12. Manual validation behaves identically on every
 interpreter and produces an actionable message. `tests/test_fetch_models.py`
 covers the empty selection, the explicit selection and the unknown-model
 refusal, and the suite runs on both 3.10 and 3.12.
+
+## D-022: Local secrets live in an owner-only .env and provisioning is one command
+
+The demo keeps its local credentials in a repository root `.env` file that is
+git-ignored, created from the committed `.env.example` template, and written
+with mode `0600`. `scripts/provision.sh` is the only supported way to store a
+credential: it reads the Hugging Face token without echoing it, writes it
+atomically with owner-only permissions, and prints only whether a key is
+configured, never its value. Docker Compose reads the same file automatically
+for variable substitution, and the Makefile exposes only the known keys to the
+recipes. The security control flags deliberately stay out of the file so the
+strict demo profile cannot be relaxed by accident. `tests/test_no_secrets.py`
+fails the build if `.env` is ever staged, if the template carries a real value,
+if a credential shape appears in any tracked file, or if the provisioning
+script could print a secret. `make provision` performs the whole preparation in
+order and waits only for the token, and it is idempotent because every
+download is hash-verified.

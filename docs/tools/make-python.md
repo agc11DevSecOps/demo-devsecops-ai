@@ -51,7 +51,64 @@ make --version
 ```
 
 If your system Python is older, the container image still works: the image
-pins `python:3.12-slim` and runs the application inside it.
+pins `python:3.12-slim` and runs the application inside it. The host tooling
+works on Python 3.10 and newer.
+
+## One-Command Setup
+
+`make provision` performs the whole preparation in the right order and waits
+only for the inputs that genuinely need a human:
+
+```bash
+make provision
+```
+
+It checks the host, creates the local `.env` file, downloads the pinned
+binaries and wheels, asks for the Hugging Face token once, downloads the two
+models, builds the restricted image and finishes with the strict preflight. It
+is idempotent: every download is hash-verified, so a second run reports "up to
+date" and changes nothing.
+
+Two extra flags:
+
+```bash
+make provision --verify   # also runs the unit, policy and template suites
+make env-check            # report the local state without printing any value
+```
+
+## The Local `.env` File
+
+The demo keeps its local credentials in a repository root `.env` file:
+
+| Key | Secret | Purpose |
+| --- | --- | --- |
+| `HF_TOKEN` | yes | Read access to the gated Prompt Guard weights |
+| `OPS_DEMO_GATEWAY_TOKEN` | yes | Bearer token for the optional local gateway |
+| `OPS_DEMO_APPROVAL_KEY` | yes | HMAC key for the optional S5 approval tokens |
+| `OPS_DEMO_GATEWAY_PORT` | no | Local port published by the gateway |
+
+Rules:
+
+- The file is git-ignored, created from the committed `.env.example`, and
+  written with mode `0600`. It must never be committed.
+- The token is read with a hidden prompt, so it never appears on screen or in
+  the shell history. `make provision` is the only supported way to store it.
+- Docker Compose reads the same file automatically for variable substitution,
+  so `make compose-up` needs no extra export.
+- The security control flags (`OPS_DEMO_FICKLING`, `OPS_DEMO_OPA`,
+  `OPS_DEMO_PROMPT_GUARD`...) deliberately do not belong in the file. The
+  Makefile owns them, so the strict demo profile cannot be relaxed by
+  accident.
+- The format is strict because both Make and the shell read the file: one
+  `KEY=value` per line, no quotes, no spaces and no `$` in a value. A secret
+  key is left **commented out** until it has a value, because an empty
+  assignment would clear a value already present in the environment.
+- `tests/test_no_secrets.py` fails the build if `.env` is ever staged, if the
+  template carries a real value, or if a credential shape appears in any
+  tracked file.
+
+To revoke a token, remove it from the provider, delete the line from `.env`,
+and run `make provision` again.
 
 ## Verify The Installation
 
@@ -68,7 +125,9 @@ consistency checks.
 
 | Target | What it does |
 | --- | --- |
-| `make setup` | Fetch tools and models |
+| `make provision` | The whole preparation in order, waiting only for the token |
+| `make env-check` | Report the local secret state without printing values |
+| `make setup` | Alias of `make provision` |
 | `make fetch-tools` | Download the pinned binaries and wheels |
 | `make fetch-models` | Download the gated Prompt Guard weights |
 | `make fetch-workload-model` | Download FLAN-T5-small |

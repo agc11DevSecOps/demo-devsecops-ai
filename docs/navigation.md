@@ -12,6 +12,8 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `AGENTS.md` | Repository safety and development rules. | Contributors and coding agents. |
 | `README.md` | Public scope, setup, demo, workload, showcase, and safety guide. | Primary entry point. |
 | `Makefile` | Canonical orchestration for containers, A/B runs, policy checks, pipeline, and showcase. | Operators and CI. |
+| `.env.example` | Template for the local, git-ignored `.env` file. | `make provision`. |
+| `scripts/provision.sh` | One-command provisioning that waits only for the token. | `make provision`. |
 | `Dockerfile` | Pinned, no-network runtime and Garak images. | `make container-build`, `make demo`. |
 | `docker-compose.yml` | Optional loopback gateway composition. | `make compose-up`. |
 | `LICENSE` | Repository license. | Distribution. |
@@ -140,6 +142,8 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `tests/test_demo.py` | Scenario, fallback, scorecard, and control behavior tests. | `make test`. |
 | `tests/test_demo_flow.py` | A/B ordering and reset-isolation tests. | `make test`. |
 | `tests/test_docs.py` | Documentation and expected-state consistency tests. | `make test`. |
+| `tests/test_fetch_models.py` | Model fetcher argument handling across Python versions. | `make test`. |
+| `tests/test_no_secrets.py` | Guards that keep credentials out of the repository. | `make test`. |
 | `tests/test_gateway.py` | Optional gateway contract tests. | `make test`. |
 | `tests/test_pipeline.py` | Delivery-pipeline and gate tests. | `make test`. |
 | `tests/test_policy_templates.py` | Policy template catalogue and generator tests. | `make policy-template-test`. |

@@ -12,14 +12,17 @@ action, or deploy anything.
 
 ## Ten-Minute Demo
 
-Provisioning happens before the audience, once:
+Provisioning happens before the audience, once, with a single command:
 
 ```bash
-make fetch-tools
-HF_TOKEN=hf_... make fetch-models
-make fetch-workload-model
-make demo-10m-preflight
+make provision
 ```
+
+It checks the host, downloads the pinned tools and wheels with their SHA-256
+verified, asks for your Hugging Face token once (read without echoing it and
+stored in the git-ignored `.env` file with owner-only permissions), downloads
+the two models, builds the restricted image and finishes with the strict
+preflight. It is idempotent.
 
 Run the display-only evidence viewer in one terminal, then run the strict
 profile in another:

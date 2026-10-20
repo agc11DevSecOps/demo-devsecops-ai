@@ -34,3 +34,16 @@ If external development skills are adopted, keep them only under
 `.agents/skills/` and record their publisher, source, immutable commit, content
 hash, review and retrieval date before use. They are not runtime dependencies.
 No external development skill is currently admitted by this repository.
+
+## Local Secrets
+
+- Local secrets live only in the repository root `.env` file, which is
+  git-ignored, owner-readable only, and created from `.env.example`.
+- Never commit a secret, never paste one into a tracked file, never print one
+  to a terminal, an evidence record, or a log.
+- `scripts/provision.sh` is the only supported way to store a credential. It
+  reads the token without echoing it and writes it with mode `0600`.
+- The security control flags are not secrets and do not belong in `.env`; the
+  Makefile owns them so the strict demo profile cannot be relaxed by accident.
+- `tests/test_no_secrets.py` fails the build if a tracked file contains a
+  credential or if `.env` is ever staged.

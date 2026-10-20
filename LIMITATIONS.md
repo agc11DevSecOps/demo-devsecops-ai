@@ -39,3 +39,6 @@
 - The tool guides in `docs/tools/` document the admitted configuration of this
   repository only. They are not a reproduction of the upstream manuals, and
   upstream features outside the admitted scope are out of scope here.
+- The local `.env` file is a convenience for a single-operator workstation, not
+  a secret manager. It is owner-readable and git-ignored, but it is still a
+  file on disk; use a real secret store for anything that matters.

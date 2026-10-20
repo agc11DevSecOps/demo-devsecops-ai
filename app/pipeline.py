@@ -30,7 +30,7 @@ from app.security import model_admission as admission
 
 BUILD_DIRS = ("app", "controls")
 SECRET = re.compile(
-    r"(?i)(-----BEGIN [A-Z ]*PRIVATE KEY-----|aws_secret_access_key\s*=|AKIA[0-9A-Z]{16}|sk-demo-CANARY-\d{4})"
+    r"(?i)(-----BEGIN [A-Z ]*PRIVATE KEY-----|aws_secret_access_key\s*=|AKIA[0-9A-Z]{16}|sk-demo-CANARY-\d{4}|hf_[A-Za-z0-9]{20,})"
 )
 DANGEROUS_CALLS = {"eval", "exec", "compile", "__import__"}
 DANGEROUS_ATTRS = {("os", "system"), ("os", "popen"), ("pickle", "loads")}

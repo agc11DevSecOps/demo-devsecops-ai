@@ -31,8 +31,9 @@ cannot.
 
 - A working Docker daemon.
 - Enough disk for the image and the vendored wheels.
-- For the gateway: the two local model directories, and a bearer token of your
-  choosing.
+- For the gateway: the two local model directories, and a bearer token.
+  `make provision` generates one and stores it in the local `.env` file, and
+  Docker Compose reads that file automatically, so no export is needed.
 
 ## Install
 
@@ -101,6 +102,13 @@ The local gateway:
 
 ```bash
 OPS_DEMO_GATEWAY_TOKEN=local-demo-token make compose-up
+```
+
+The token above is only the documented example. In practice `make provision`
+stores a generated one in the local `.env` file and Compose picks it up:
+
+```bash
+make compose-up
 ```
 
 Then, from another terminal:
