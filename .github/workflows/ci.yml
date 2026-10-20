@@ -32,7 +32,7 @@ jobs:
       - name: Verify pinned Rego policy
         run: make test-policy
       - name: Run offline A/B demo
-        run: make demo
+        run: make GARAK_LIMIT=5 demo
       - name: Verify container boundary artifacts
         run: make test-container
       - name: Upload scorecard

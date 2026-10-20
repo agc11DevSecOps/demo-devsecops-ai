@@ -6,9 +6,11 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from app.demo import ARTIFACTS, EVIDENCE, EvidenceWriter, reset
+from app.common import ARTIFACTS, EVIDENCE
+from app.evidence import EvidenceWriter
 from app.garak_campaign import SUMMARY_NAME
 from app.pipeline import STAGES, StageOutcome, run_pipeline, stage_redteam, stage_secrets, stage_static
+from app.sandbox import reset
 from app.scorecard import build
 
 

@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import unittest
 
-from app.demo import SANDBOX, reset
+from app.common import EVIDENCE, SANDBOX
+from app.demo import run
+from app.sandbox import reset
 from record.s6.validate import validate
 
 
@@ -32,3 +34,13 @@ class S6EvidenceTests(unittest.TestCase):
         path.write_text('{"label":"RECORDED"}', encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "schema"):
             validate(path)
+
+    def test_s6_is_visible_as_not_tested_without_executing_strix(self) -> None:
+        run("A", ["S6"])
+        run("B", ["S6"])
+        for name in ("A", "B"):
+            record = json.loads((EVIDENCE / name / "s6.jsonl").read_text(encoding="utf-8"))
+            self.assertEqual(record["scenario"], "S6")
+            self.assertEqual(record["decision"], "NOT TESTED")
+            self.assertEqual(record["label"], "NOT TESTED")
+            self.assertEqual(record["aisvs_ids"], [])

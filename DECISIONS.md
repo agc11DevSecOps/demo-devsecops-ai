@@ -47,7 +47,7 @@ recorded egress step while runtime execution stays offline inside the
 
 The S1 malicious fixture now serialises an `os.system` payload (pickled as the
 `posix` global) that only writes `sandbox/PWNED_BY_MODEL`. The earlier fixture
-called a private `app.demo` marker function. A canonical unsafe-global payload is
+called a private demo marker function. A canonical unsafe-global payload is
 more realistic and is detected by independent scanners: ModelScan (CRITICAL),
 Fickling (LIKELY_OVERTLY_MALICIOUS) and the stdlib `pickletools` fallback. The
 effect stays confined to `sandbox/` and Run A still only runs inside the
@@ -109,7 +109,7 @@ This keeps "we did not test it because it does not apply" distinct from
 
 `app/gateway.py` exposes the existing loopback Ops Assist workload over a
 minimal FastAPI `POST /chat` for the demo, with Swagger/OpenAPI, CORS and
-redirects disabled, bounded body/content-length, an optional bearer token
+redirects disabled, bounded body/content-length, a required bearer token
 (`OPS_DEMO_GATEWAY_TOKEN`) and `no-store`/`nosniff`/`no-referrer` headers. It
 re-implements no scenario or control: the gateway calls the same `assist()`
 boundary, so the container run and the `docker-compose.yml` service exercise the
@@ -121,8 +121,8 @@ identical controls. `make container-gateway`/`compose-up` run it.
 `SCRIPTED`) and a `LocalAdapter` (`google/flan-t5-small`, revision-pinned,
 `MEASURED`). The run must never silently fall back to a hosted provider: the
 scripted adapter is the only default, and reaching a hosted model would require a
-separate C0/C1 admission that does not exist. Tier 1 (`make tier1`) remains
-`DESIGNED`, not executed.
+separate hosted-provider admission that does not exist. The local adapter is the
+only measured model path; there is no `make tier1` command.
 
 ## D-015: The 11-stage pipeline is offline and never over-claims
 
@@ -167,5 +167,4 @@ presentation can never introduce a race or change a verdict. The recorded
 fallback (`record/*.mp4`, `record/*.webm`) stays git-ignored and, if used, must
 not contain prompts, secrets or raw fixtures; the committed fallback is the
 deterministic `make demo` transcript in `REHEARSAL.md`.
-
 

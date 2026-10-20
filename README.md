@@ -1,157 +1,96 @@
-# Ops Copilot: DevSecOps AI Demo
+# Ops Copilot: AI DevSecOps Demonstration
 
-> This repository contains intentionally vulnerable, fully synthetic fixtures.
-> Do not reuse Run A patterns in a real system.
+Ops Copilot is a safe, offline demonstration of security controls around a
+normal RAG assistant. The model, scanners, policy engine, signer, vector client,
+MCP SDK, and Docker boundary are real local integrations. Prompts, documents,
+identities, approvals, and unsafe artifacts are deliberately synthetic and
+harmless.
 
-Ops Copilot contrasts an unsecured application (Run A) with deterministic
-DevSecOps controls (Run B). Tier 0 is offline and uses a scripted model. Every
-terminal verdict has a corresponding JSONL evidence event; the scorecard is
-derived from that evidence only.
+This is not a production service, a certification, or an autonomous agent.
+The answer lane is read-only: model output cannot invoke a tool, approve an
+action, or deploy anything.
 
-Run A executes only through the fixed Docker boundary: non-root, read-only
-filesystem, no network, no capabilities and writable mounts limited to the
-synthetic `sandbox/`, `evidence/` and `artifacts/` directories. Docker Engine
-is therefore required for the run targets.
+## Ten-Minute Demo
 
-GitHub Actions runs unit tests and the offline Docker demo on pushes to `main`,
-pull requests and manual dispatch. It uploads only the generated scorecard;
-GitLab CI is not used.
-
-## Scope
-
-The live flow covers S0-S5, S7 and S8. S6 is a separately executed Strix campaign
-admitted as a recorded evidence package under `record/s6/`; this repository
-does not install or execute Strix.
-
-## AISVS Catalog
-
-The scorecard uses the complete, pinned OWASP AISVS v1.01 catalog (213
-requirements). Its source commit, tree, license and snapshot hash are recorded
-in `third_party_sources.md`. To regenerate it from an already reviewed local
-`1.01/en` snapshot, run:
-
-```bash
-make AISVS_SOURCE_DIR=/absolute/path/to/1.01/en aisvs-catalog
-```
-
-The importer does not retrieve content over the network and rejects a snapshot
-whose structure, digest or requirement count differs from the pin.
-
-## Quick Start
+Provisioning happens before the audience, once:
 
 ```bash
 make fetch-tools
-make test
-make test-policy
-make demo
-make test-container
+HF_TOKEN=hf_... make fetch-models
+make fetch-workload-model
+make demo-10m-preflight
 ```
 
-`make demo` resets state, runs Run A (contained model load), runs the admitted
-Garak S7 campaign, resets the sandbox while preserving evidence, runs Run B and
-regenerates the scorecard. Both `make test` and `make demo` write
-`scorecard/out.md`, and any state-resetting target (`make test`, `make pipeline`
-and the per-scenario targets) clears the evidence it derives from, so run
-`make demo` last: it regenerates the scorecard from the full container run, and
-`make test-container` then inspects that evidence.
-
-Optional, to run the real S2 classifier instead of the fallback (requires an
-accepted Llama 4 Community licence and `HF_TOKEN`):
+Run the display-only evidence viewer in one terminal, then run the strict
+profile in another:
 
 ```bash
-HF_TOKEN=hf_... make fetch-models
+make showcase-live
+make demo-10m
 ```
 
-`make fetch-tools` is the only step that requires network: it downloads the
-pinned OPA and Cosign binaries, the unified Python wheel set (including CPU
-PyTorch and Transformers) and the separate Garak S7 wheel set from allowlisted
-hosts, verifying each SHA-256 before use (see D-007, `vendor/python.lock.json`
-and `vendor/garak.lock.json`). The gated Prompt Guard 2 22M
-weights are fetched separately with `HF_TOKEN=... make fetch-models` into the
-git-ignored `vendor/models/`; `make` then mounts them read-only and switches S2
-to the real classifier (1 GiB profile). Without the weights, S2 uses the labelled
-fallback and the demo runs in the reduced 512 MiB profile. Everything else,
-including the Docker
-runs, executes offline.
+`demo-10m` refuses to run without FLAN-T5, Prompt Guard, OPA, Cosign, Fickling,
+and ModelScan. It never chooses the `SCRIPTED` adapter. See
+[`docs/demo-10min.md`](docs/demo-10min.md) for the timed script and claims that
+are safe to make.
 
-## Ops Assist Workload
+## Code Tour
 
-`make fetch-workload-model` provisions the public, revision-pinned FLAN-T5
-files and verifies every SHA-256. `make workload` then runs the loopback-only
-Ops Assist contract in the restricted 2 GiB profile. It requires the admitted
-Prompt Guard weights as well, so provision those first with `HF_TOKEN=... make
-fetch-models`. The workload accepts bounded JSON, applies input inspection and
-PII redaction, retrieves only provenance-approved Qdrant documents, and returns
-a bounded answer with code-generated citations. It never invokes a tool or
-authorizes an action. The host-side scripted adapter exists only for contract
-tests and is always labelled `SCRIPTED`; with both local models available, Run B
-S0 executes the real path and is labelled `MEASURED`.
+Read these files in order:
 
-The initial standard-library runner is a deterministic development fallback.
-`make garak` builds the fixed `demo-devsecops-ai:garak` image and runs the
-admitted Garak 0.10.3.1 campaign over the complete `encoding.InjectBase64`
-corpus (55 prompts, no truncation) against the loopback endpoint, letting
-Garak's backoff honour the endpoint's real rate limit; it writes only a
-hash-only aggregate summary to `artifacts/garak-s7.json` (about 13 minutes per
-run). S7 then reports `MEASURED` for C3.2.1, C11.1.3, C12.1.1-C12.1.4 and
-C12.2.1, as `BLOCKED` when every prompt is blocked or `FAIL` when any prompt is
-breached. Without that summary, S7 reports the campaign as `NOT TESTED` rather
-than a synthetic result (see D-011 for the coverage mapping). S8 exercises the
-admitted workload's own bounds deterministically: it rejects an over-length
-question (C2.1.4), a model output that leaks a source marker (C7.1.1) and an
-over-length answer (C7.1.2), and confirms the returned citations are derived from
-retrieval metadata (C7.4.1). In
-Run B, S1 executes two admitted scanners (Fickling 0.1.12
-and ModelScan 0.8.8) and admitted offline integrity signing (Cosign 3.1.3); S2
-classifies prompts with the admitted Prompt Guard 2 22M (DeBERTa-xsmall,
-`torch`/`transformers` CPU); S3 masks PII with the admitted Presidio 2.2.364
-engine (spaCy `en_core_web_sm`); S4 filters retrieval through the admitted
-in-memory Qdrant 1.19.1 store using per-document provenance; and S5 tool
-authorization is decided by the admitted policy engine (OPA 1.21.2), including
-MCP tool calls made over the admitted local stdio server (MCP 2.3.0). ModelScan
-was initially rejected on a private-marker fixture and is now admitted after the
-S1 fixture was redesigned to a canonical unsafe pickle payload (D-008). Remaining
-fallbacks are always labelled honestly and never presented as named external
-tools.
+1. [`docs/code-tour.md`](docs/code-tour.md): five-minute source navigation.
+2. [`docs/architecture.mmd`](docs/architecture.mmd): runtime and delivery flow.
+3. [`app/workload.py`](app/workload.py): bounded RAG request path.
+4. [`app/security/retrieval.py`](app/security/retrieval.py): corpus admission and
+   Qdrant retrieval.
+5. [`app/security/model_admission.py`](app/security/model_admission.py): model
+   scan, signing, BOM, and admission.
+6. [`app/security/tool_boundary.py`](app/security/tool_boundary.py): optional S5
+   authorization lab, deliberately separate from the workload.
 
-The sandbox-only inference stop control is independently measured: `make kill`
-causes Ops Assist to return `503 inference_stopped` before input inspection,
-retrieval or model inference; `make unkill` removes that marker. This is not a
-production emergency-stop mechanism or an authorization control.
+[`docs/navigation.md`](docs/navigation.md) inventories every retained path.
 
-## DevSecOps Pipeline
+## Real Integrations And Safe Inputs
 
-`make pipeline` runs the offline 11-stage pipeline shown in
-`docs/pipeline.mmd` (secrets, static analysis, optional AI triage, dependency
-audit, model scan, sign and BOM, admission, red team, deploy, runtime, recorded
-S6 evidence); `make stage-N` runs a single stage. The secrets and static-analysis
-stages gate the flow and fail closed, and the red-team stage enforces
-`redteam.max_success_rate` from `controls/ci/gates.yaml`. Stages whose external
-tool is not admitted report `NOT TESTED`/`DESIGNED` and never pass. Pipeline
-events carry no AISVS ids, so they cannot change the AISVS scorecard.
+| Area | Real integration | Safe demonstration input |
+| --- | --- | --- |
+| Supply chain | Fickling, ModelScan, Cosign, OPA | A self-created unsafe pickle and synthetic model blob |
+| Runtime | FLAN-T5-small, Prompt Guard, Presidio | Fixed benign, injection, and PII prompts |
+| RAG | Qdrant client and provenance filter | Reviewed runbooks and a quarantined poisoned note |
+| Tool extension | MCP local stdio and OPA | Read-only synthetic documents; high-impact action is refused |
+| Delivery | Docker, pinned wheels/images, GitHub Actions | Local no-network containers and generated evidence |
 
-The optional presentation surface is a thin FastAPI wrapper over the same
-loopback workload: `make container-gateway` builds it and `make compose-up`
-starts it (loopback `:8080`, no Swagger/OpenAPI, bounded body, optional bearer
-token). Human approvals for high-impact tools are issued and verified offline
-with `python approve_cli.py` and are cryptographically bound to the tool,
-parameters, requester and pinned descriptor (D-016).
+The deterministic hash embedding and in-memory Qdrant collection are intentional
+demo limits. They show the enforcement path, not production retrieval quality.
 
-`make present` runs the demo through a paced, colourised presentation filter
-(`DEMO_PAUSE`, `NO_COLOR`); see `REHEARSAL.md` for the run of show.
+## Other Commands
 
-## Honest Labels
+```bash
+make test                 # unit and documentation checks
+make test-policy          # OPA Rego tests
+make pipeline             # named local scanners, Cosign, and OPA in Docker
+make GARAK_LIMIT=5 demo   # full scenario catalogue; S7 stays PARTIAL
+```
 
-- `MEASURED`: executed by this repository in the current run.
-- `RECORDED`: external, hash-validated evidence package.
-- `SCRIPTED`: deterministic model test double.
-- `DESIGNED`: specified but not executed.
-- `NOT TESTED`: applicable evidence is absent.
+To run the optional local-only gateway, set an explicit bearer token. Compose
+mounts the verified models read-only, activates the local controls, and publishes
+only `127.0.0.1:8080`. The no-network boundary belongs to the separate scenario
+and pipeline runners, not to this local transport profile:
 
-## Safety
+```bash
+OPS_DEMO_GATEWAY_TOKEN=local-demo-token make compose-up
+```
 
-Run A effects are confined to `sandbox/`. The S1 malicious model fixture runs a
-single `os.system` command whose only effect is to write `sandbox/PWNED_BY_MODEL`;
-Run A only unpickles it inside the restricted container, and no scenario contacts
-a network endpoint or uses a real credential. Cosign uses a demo-only key
-generated inside the sandbox and never committed.
+`POST /chat` always requires that token. The gateway is a presentation transport,
+not a production ingress.
+
+## Evidence And Limits
+
+The authoritative records are `evidence/A/*.jsonl` and `evidence/B/*.jsonl`.
+The viewer and scorecard are derived displays; neither authorizes an action.
+Labels distinguish `MEASURED`, `SCRIPTED`, `PARTIAL`, `DESIGNED`, and `NOT TESTED`.
+
+S6 remains an external-evidence appendix. Garak is retained as an endpoint-guard
+campaign: a 5-prompt run is `PARTIAL`; the 55-prompt run is not a red-team claim
+about FLAN's behavior. See [`LIMITATIONS.md`](LIMITATIONS.md) and
+[`docs/fixtures-and-fallbacks.md`](docs/fixtures-and-fallbacks.md).

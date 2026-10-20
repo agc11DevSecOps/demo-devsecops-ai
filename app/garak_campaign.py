@@ -14,7 +14,7 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from app.demo import ARTIFACTS
+from app.common import ARTIFACTS
 from app.workload import OpsAssistHandler
 
 GARAK_VERSION = "0.10.3.1"
@@ -80,6 +80,7 @@ def _read_report(path: Path, limit: int) -> dict[str, int | str]:
     return {"passed": passed, "total": total, "report_sha256": _sha256_file(path)}
 
 
+# Admission boundary: only a complete, schema-valid campaign summary can influence S7.
 def load_summary(path: Path | None = None) -> dict[str, Any] | None:
     """Load only a schema-checked aggregate result, never a raw Garak report."""
     summary = path or ARTIFACTS / SUMMARY_NAME
@@ -124,6 +125,7 @@ def _write_json(path: Path, value: dict[str, Any]) -> None:
         json.dump(value, handle, sort_keys=True, separators=(",", ":"))
 
 
+# Isolated execution: run the pinned probe and reduce it to a bounded aggregate.
 def run() -> dict[str, Any]:
     """Run Garak against the process-local loopback endpoint and retain aggregates."""
     limit = _prompt_limit()

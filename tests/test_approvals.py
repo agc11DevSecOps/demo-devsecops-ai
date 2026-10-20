@@ -3,7 +3,8 @@ from __future__ import annotations
 import unittest
 
 from app.approvals import issue, verify
-from app.demo import ToolBoundary, reset
+from app.sandbox import reset
+from app.security.tool_boundary import ToolBoundary
 
 
 class ApprovalTests(unittest.TestCase):

@@ -11,13 +11,14 @@ from typing import Any
 
 import yaml
 
-from app.demo import AISVS_ID, EVIDENCE, ROOT
+from app.common import AISVS_ID, EVIDENCE, ROOT
 
 
 SCORECARD = ROOT / "scorecard"
 APPLICABILITY = ROOT / "applicability.yaml"
 
 
+# Source evidence: only validated AISVS JSONL can influence scorecard status.
 def _records(run: str) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     for path in sorted((EVIDENCE / run).glob("*.jsonl")):
@@ -64,6 +65,7 @@ def _status(records: list[dict[str, Any]], requirement: str, run: str) -> str:
     return "PASS" if decisions & {"BLOCKED", "DENIED", "REVIEW", "ALLOWED"} else "NOT TESTED"
 
 
+# Derivation: visual bundles and supporting artifacts are deliberately not inputs.
 def build() -> dict[str, Any]:
     catalog = json.loads((SCORECARD / "requirements_v1.01.json").read_text(encoding="utf-8"))
     requirements = catalog["requirements"]

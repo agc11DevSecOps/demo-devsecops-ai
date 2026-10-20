@@ -20,7 +20,7 @@ import json
 import sys
 
 from app.approvals import issue, verify
-from app.demo import ToolBoundary, descriptor_digest
+from app.security.tool_boundary import ToolBoundary, descriptor_digest
 
 
 def _descriptor(tool: str) -> str:

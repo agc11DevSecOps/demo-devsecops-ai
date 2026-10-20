@@ -10,14 +10,10 @@ from __future__ import annotations
 
 from mcp.server.mcpserver import MCPServer
 
-from app.demo import _VECTOR_DIM, _embedding
-
-TRUSTED_DOCS: dict[str, str] = {
-    "rollback": "Rollback procedure: revert the release and drain traffic.",
-    "payments": "Payments deployment runbook: blue/green rollout with a canary.",
-}
+from app.security.retrieval import _VECTOR_DIM, _embedding, admitted_documents
 
 
+# Read-only tool implementation: S5 policy decides whether callers may reach it.
 def _build_index():
     from qdrant_client import QdrantClient, models
 
@@ -27,7 +23,7 @@ def _build_index():
         "docs",
         points=[
             models.PointStruct(id=index, vector=_embedding(text), payload={"doc": name, "writer": "trusted", "text": text})
-            for index, (name, text) in enumerate(TRUSTED_DOCS.items())
+            for index, (name, text) in enumerate(admitted_documents())
         ],
     )
     return client

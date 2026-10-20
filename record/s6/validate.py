@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from app.demo import AISVS_ID
+from app.common import AISVS_ID
 
 
 REQUIRED = {"format_version", "label", "tool", "tool_version", "model", "recorded_at", "scope", "media_sha256", "findings"}

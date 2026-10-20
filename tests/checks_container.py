@@ -28,6 +28,18 @@ class ContainerIntegrationTests(unittest.TestCase):
         self.assertIn('"decision":"EXECUTED"', a_records)
         self.assertIn('"decision":"BLOCKED"', b_records)
 
+    def test_demo_records_each_scenario_pair_and_honest_s6(self) -> None:
+        for scenario in ("s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"):
+            for run in ("A", "B"):
+                records = [json.loads(line) for line in (ROOT / "evidence" / run / f"{scenario}.jsonl").read_text(encoding="utf-8").splitlines()]
+                self.assertTrue(records, f"missing {run}/{scenario} evidence")
+                self.assertTrue(all(record["scenario"] == scenario.upper() for record in records))
+        for run in ("A", "B"):
+            s6 = json.loads((ROOT / "evidence" / run / "s6.jsonl").read_text(encoding="utf-8"))
+            self.assertEqual(s6["decision"], "NOT TESTED")
+            self.assertEqual(s6["label"], "NOT TESTED")
+            self.assertEqual(s6["aisvs_ids"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

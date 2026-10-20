@@ -6,6 +6,7 @@ evidence/**/*.jsonl
 artifacts/
 record/**/*.mp4
 record/**/*.webm
+record/showcase-runs/
 *.key
 *.sig
 *.bundle
@@ -18,3 +19,6 @@ vendor/promptguard
 vendor/.*.part
 vendor/**/.*.part
 .agents/skills/complexity-budget/
+scorecard/out.md
+scorecard/out.html
+scorecard/delta.csv

@@ -7,7 +7,9 @@ action, deployment decision or security verdict by themselves.
 ## Safety Boundary
 
 - Use synthetic data and harmless markers only.
-- The only writable runtime path is the repository-local `sandbox/` directory.
+- Restricted scenario runners write only to repository-local `sandbox/`,
+  `evidence/`, and `artifacts/` bind mounts. The Compose transport uses those
+  same generated paths and is not an egress-restricted evaluation runner.
 - Do not use a shell, network request, dynamic import or user-controlled path
   to process scenario data.
 - Tool authorization is deterministic and default-deny. Model output and
@@ -28,6 +30,7 @@ action, deployment decision or security verdict by themselves.
 
 ## External Skills
 
-External development skills live only under `.agents/skills/`. Their publisher,
-source, immutable commit, content hash, review and retrieval date belong in
-`third_party_skills.md`. They are not runtime dependencies.
+If external development skills are adopted, keep them only under
+`.agents/skills/` and record their publisher, source, immutable commit, content
+hash, review and retrieval date before use. They are not runtime dependencies.
+No external development skill is currently admitted by this repository.

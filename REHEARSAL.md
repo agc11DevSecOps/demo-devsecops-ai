@@ -1,57 +1,49 @@
 # Rehearsal
 
-Run-of-show for the Ops Copilot demo. Tier 0 is offline and deterministic, so
-the same commands produce the same verdicts on any machine with Docker.
+The audience flow is [`docs/demo-10min.md`](docs/demo-10min.md). Use it instead
+of `make demo`: the full scenario catalogue is useful for verification, not for a
+ten-minute explanation.
 
-## Pre-flight (once, with network)
+## Pre-Flight
 
 ```bash
-make fetch-tools          # pinned binaries and wheels (allowlisted hosts)
-HF_TOKEN=hf_... make fetch-models   # gated Prompt Guard weights (read-only mount)
-make fetch-workload-model # pinned FLAN-T5 files
-make test                 # 70 unit tests, no Docker required
-make test-policy          # OPA policy tests
+make fetch-tools
+HF_TOKEN=hf_... make fetch-models
+make fetch-workload-model
+make demo-10m-preflight
+make test
+make test-policy
 ```
 
-## Live run
+Run the pre-flight before the session, never while presenting. It confirms the
+strict profile cannot substitute the scripted model or deterministic fallbacks.
+
+## Live Run
 
 ```bash
-DEMO_PAUSE=1.5 make present
+make showcase-live
+make demo-10m
 ```
 
-`make present` runs Run A then Run B sequentially through `scripts/present.sh`,
-colourising each `[LABEL]` verdict and pacing the output. It never runs the two
-runs concurrently, because they share `sandbox/`. Set `GARAK_LIMIT=55` for the
-full admitted red-team campaign (~15 minutes); the default 5 is a fast
-iteration run reported `PARTIAL`.
+The first command is optional and display-only. The second resets generated
+state and runs S0-S5, S8, and fixed local model requests. It leaves S6 and the
+full Garak campaign outside the timing-critical path.
 
-If `tmux` is available and stdout is a TTY, the run starts inside a session;
-`DEMO_TMUX=0` forces inline output. `NO_COLOR=1` disables colour.
-
-## Fallback
-
-If the live environment fails, do not improvise. Replay the deterministic run:
+## Appendices
 
 ```bash
+make pipeline
+make GARAK_LIMIT=5 demo
 make GARAK_LIMIT=55 demo
-make test-container
 ```
 
-`record/*.mp4` and `record/*.webm` are git-ignored; a recorded video is a local
-presentation aid only and must not contain prompts, secrets or raw fixtures. The
-committed fallback is the deterministic `make demo` transcript above.
+`make pipeline` uses named local scanners, Cosign, and OPA in the restricted
+container. `GARAK_LIMIT=5` is `PARTIAL`; the 55-prompt run takes longer than the
+presentation and tests the endpoint guards, not FLAN jailbreak resistance.
 
-## Run of show
+## Non-Claims
 
-1. `make GARAK_LIMIT=5 demo` (fast) to show both runs and the scorecard.
-2. Point at `scorecard/delta.csv` and the chapter levels in `scorecard/out.md`.
-3. Walk the honest labels: `MEASURED` (ran here), `RECORDED` (external package),
-   `SCRIPTED` (test double), `DESIGNED`/`NOT TESTED` (not executed).
-4. `make pipeline` for the 11-stage offline pipeline; `make stage-8` shows the
-   red-team gate enforcing `controls/ci/gates.yaml`.
-5. `make GARAK_LIMIT=55 demo` for the full campaign, then `make test-container`.
-
-Talking points are the control, not the tool: Run A has no boundary and no
-observability; Run B default-denies and binds every grant to tool, parameters,
-requester, descriptor and one use. Never present a detector or model output as
-authorization.
+Do not describe the synthetic fixtures as production data, the scorecard as
+certification, S5 as LLM tool execution, or the local gateway as a production
+service. The permitted phrasing is: “real local integrations, safe synthetic
+inputs, and explicit evidence labels.”

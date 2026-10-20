@@ -15,6 +15,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,7 +23,10 @@ from typing import Callable
 
 import yaml
 
-from app.demo import ARTIFACTS, ROOT, Event, EvidenceWriter, _make_model_fixtures, _pickle_scan, _safe_path, _sign, _verify, admit, reset
+from app.common import ARTIFACTS, ROOT
+from app.evidence import Event, EvidenceWriter
+from app.sandbox import reset
+from app.security import model_admission as admission
 
 BUILD_DIRS = ("app", "controls")
 SECRET = re.compile(
@@ -60,6 +64,7 @@ def _label(path: Path) -> str:
         return path.name
 
 
+# Pipeline stages: each returns evidence; later stages stop after a failed gate.
 def stage_secrets() -> StageOutcome:
     hits: list[str] = []
     for path in _python_files():
@@ -96,26 +101,37 @@ def stage_dependencies() -> StageOutcome:
 
 
 def stage_model_scan() -> StageOutcome:
-    malicious, _ = _make_model_fixtures()
-    detected = _pickle_scan(malicious)
-    return StageOutcome(5, "model scan", "BLOCKED" if detected else "FAIL", detected, "MEASURED", "static scan flagged the unsafe pickle opcode in the synthetic model fixture" if detected else "the synthetic malicious fixture was not detected")
+    if os.environ.get("OPS_DEMO_FICKLING") != "1" or os.environ.get("OPS_DEMO_MODELSCAN") != "1":
+        return StageOutcome(5, "model scan", "NOT TESTED", True, "NOT TESTED", "Fickling and ModelScan are required; stdlib fallback does not earn pipeline evidence")
+    malicious, _ = admission.make_model_fixtures()
+    try:
+        severity = admission.fickling_scan(malicious)
+        findings = admission.modelscan_scan(malicious)
+    except RuntimeError:
+        return StageOutcome(5, "model scan", "FAIL", False, "MEASURED", "a required admitted model scanner did not complete")
+    detected = severity != "LIKELY_SAFE" and findings > 0
+    return StageOutcome(5, "model scan", "BLOCKED" if detected else "FAIL", detected, "MEASURED", f"Fickling reported {severity}; ModelScan reported {findings} issue(s) in the synthetic unsafe fixture")
 
 
 def stage_sign_bom() -> StageOutcome:
+    if os.environ.get("OPS_DEMO_COSIGN") != "1":
+        return StageOutcome(6, "sign and BOM", "NOT TESTED", True, "NOT TESTED", "Cosign is required; the demo HMAC fallback does not earn pipeline evidence")
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     model = ARTIFACTS / "pipeline-model.safetensors"
     model.write_bytes(b"SAFE_TENSORS_PIPELINE\nweights=synthetic\n")
     aibom = {"model": "pipeline-synthetic", "sha256": hashlib.sha256(model.read_bytes()).hexdigest(), "base_model": "synthetic", "license": "demo-only", "dataset_origin": "synthetic"}
     aibom_path = ARTIFACTS / "pipeline-aibom.json"
     aibom_path.write_text(json.dumps(aibom, sort_keys=True), encoding="utf-8")
-    signature = _sign(model)
-    passed = _verify(model, signature) and _verify(aibom_path, _sign(aibom_path))
-    return StageOutcome(6, "sign and BOM", "ALLOWED" if passed else "FAIL", passed, "MEASURED", "model and AI BOM signed and verified with the pinned offline signer")
+    signature = admission.sign(model)
+    passed = admission.verify(model, signature) and admission.verify(aibom_path, admission.sign(aibom_path))
+    return StageOutcome(6, "sign and BOM", "ALLOWED" if passed else "FAIL", passed, "MEASURED", "model and AI BOM signed and verified with pinned offline Cosign")
 
 
 def stage_admission() -> StageOutcome:
-    passed = admit(True, True, True) and not admit(False, True, True)
-    return StageOutcome(7, "admission", "ALLOWED" if passed else "FAIL", passed, "MEASURED", "policy admits only safe, signed, BOM-complete artifacts and denies the unsafe-format variant")
+    if os.environ.get("OPS_DEMO_OPA") != "1":
+        return StageOutcome(7, "admission", "NOT TESTED", True, "NOT TESTED", "OPA is required; deterministic fallback rules do not earn pipeline evidence")
+    passed = admission.admit(True, True, True) and not admission.admit(False, True, True)
+    return StageOutcome(7, "admission", "ALLOWED" if passed else "FAIL", passed, "MEASURED", "OPA admits only safe, signed, BOM-complete artifacts and denies the unsafe-format variant")
 
 
 def stage_redteam() -> StageOutcome:
@@ -166,6 +182,7 @@ STAGES: tuple[Callable[[], StageOutcome], ...] = (
 )
 
 
+# Orchestration: execute stages in order and fail closed when a required gate fails.
 def run_pipeline(writer: EvidenceWriter | None = None, only: int | None = None) -> list[StageOutcome]:
     reset()
     writer = writer or EvidenceWriter()

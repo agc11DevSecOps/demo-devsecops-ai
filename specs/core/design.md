@@ -34,9 +34,9 @@ requester and runbook question. Before inference it validates sizes and types,
 normalizes and inspects the question, redacts sensitive values, retrieves only
 trusted Qdrant documents and builds a fixed prompt that clearly delimits the
 untrusted question and retrieved material. It returns a bounded JSON response
-with a plain-text answer and code-generated citations; model output never names
-or invokes a tool. Output is length-limited, redacted and rejected if it
-contains a system-prompt marker or an unverified citation.
+with a plain-text answer and code-generated retrieval citations; model output
+never names or invokes a tool. Output is length-limited, redacted and rejected
+if it contains a system-prompt marker or source delimiter.
 
 The local `google/flan-t5-small` model is an optional, admitted inference path
 mounted read-only under `vendor/models/`. A deterministic scripted generator is

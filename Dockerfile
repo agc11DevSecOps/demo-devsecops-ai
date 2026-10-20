@@ -16,6 +16,7 @@ COPY policies /app/policies
 COPY app /app/app
 COPY fixtures /app/fixtures
 COPY controls /app/controls
+COPY vendor/python.lock.json /app/vendor/python.lock.json
 ENV PYTHONDONTWRITEBYTECODE=1
 USER 10001:10001
 ENTRYPOINT ["python", "-m", "app.cli"]

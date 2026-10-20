@@ -1,7 +1,7 @@
 """Thin FastAPI gateway over the bounded Ops Assist workload.
 
 The gateway is a transport adapter only: it validates the HTTP envelope, applies
-a constant-time optional bearer token, forwards the request to
+a constant-time required bearer token, forwards the request to
 :func:`app.workload.handle_payload` and never turns model output into an
 authorization decision. It binds to loopback by default and exposes no docs,
 OpenAPI schema or CORS surface.
@@ -31,10 +31,13 @@ def _blocked(status_code: int, code: str) -> JSONResponse:
     return JSONResponse({"decision": "BLOCKED", "code": code}, status_code=status_code, headers=SECURITY_HEADERS)
 
 
+# Transport authentication: gateway mode never accepts an anonymous request.
+# The token is still demo-only, but requiring it prevents the presentation
+# transport from normalizing an unsafe deployment pattern.
 def _authorized(request: Request) -> bool:
     token = os.environ.get("OPS_DEMO_GATEWAY_TOKEN")
     if not token:
-        return True
+        return False
     header = request.headers.get("authorization", "")
     scheme, _, value = header.partition(" ")
     return scheme.lower() == "bearer" and hmac.compare_digest(value, token)
@@ -52,6 +55,7 @@ def create_app() -> FastAPI:
         lines = [f'ops_assist_gateway_requests_total{{outcome="{name}"}} {count}' for name, count in sorted(_METRICS.items())]
         return PlainTextResponse("\n".join(lines) + "\n", headers=SECURITY_HEADERS)
 
+    # HTTP validation happens here; the workload applies AI-specific controls next.
     @app.post("/chat")
     async def chat(request: Request) -> JSONResponse:
         if not _authorized(request):

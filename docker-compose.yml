@@ -1,8 +1,6 @@
-# Minimal, offline composition for the Ops Assist gateway.
-#
-# The workload is self-contained: retrieval uses an in-memory Qdrant client and
-# the OPA/Cosign binaries ship inside the image, so no sidecar services are
-# required. Every service runs non-root, read-only and without capabilities.
+# Local-only composition for the real Ops Assist workload. It is not an
+# internet-facing deployment: the published port is loopback-only. The separate
+# evaluation runner uses ``--network none``; Compose is a local transport profile.
 services:
   gateway:
     build:
@@ -10,19 +8,40 @@ services:
       target: runtime
     image: demo-devsecops-ai:local
     command: ["gateway"]
+    environment:
+      OPS_DEMO_GATEWAY_HOST: 0.0.0.0
+      OPS_DEMO_GATEWAY_TOKEN: ${OPS_DEMO_GATEWAY_TOKEN:?Set a local demo bearer token}
+      OPS_DEMO_WORKLOAD_MODE: local
+      OPS_DEMO_WORKLOAD_MODEL: /models/flan-t5-small
+      OPS_DEMO_PROMPT_GUARD: "1"
+      OPS_DEMO_PROMPT_GUARD_MODEL: /models/prompt-guard-2-22m
+      OPS_DEMO_PRESIDIO: "1"
+      OPS_DEMO_VECTOR: "1"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      OMP_NUM_THREADS: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      OPS_DEMO_SANDBOX: /sandbox
+      OPS_DEMO_EVIDENCE: /evidence
+      OPS_DEMO_ARTIFACTS: /artifacts
     read_only: true
     tmpfs:
       - /tmp:rw,size=1m
-    user: "10001:10001"
+    user: "${OPS_DEMO_UID:?Use make compose-up}:${OPS_DEMO_GID:?Use make compose-up}"
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
     pids_limit: 64
-    mem_limit: 512m
+    mem_limit: 2g
     cpus: 0.5
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${OPS_DEMO_GATEWAY_PORT:-8080}:8080"
+    volumes:
+      - ./vendor/models:/models:ro
+      - ./sandbox:/sandbox:rw
+      - ./evidence:/evidence:rw
+      - ./artifacts:/artifacts:rw
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz')"]
       interval: 10s

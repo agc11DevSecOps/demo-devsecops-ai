@@ -16,7 +16,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from app.demo import ARTIFACTS, _safe_path, canonical, sha256
+from app.common import ARTIFACTS, canonical, safe_sandbox_path, sha256
 
 DEFAULT_TTL_SECONDS = 300
 FIELDS = ("tool", "parameters", "requester", "descriptor_sha256", "expires_at")
@@ -26,7 +26,7 @@ def _key() -> bytes:
     configured = os.environ.get("OPS_DEMO_APPROVAL_KEY")
     if configured:
         return configured.encode("utf-8")
-    path = _safe_path("model/signing.key")
+    path = safe_sandbox_path("model/signing.key")
     if not path.is_file():
         raise ValueError("approval_key_unavailable")
     return path.read_bytes()
@@ -36,6 +36,7 @@ def _sign(body: str) -> str:
     return hmac.new(_key(), body.encode("ascii"), hashlib.sha256).hexdigest()
 
 
+# Approval binding: sign the exact tool, parameters, requester, and descriptor.
 def issue(tool: str, parameters: dict[str, Any], requester: str, descriptor_sha256: str, *, ttl_seconds: int = DEFAULT_TTL_SECONDS) -> str:
     payload = {
         "tool": tool,
@@ -68,6 +69,7 @@ def verify(token: str, *, tool: str, parameters: dict[str, Any], requester: str,
     )
 
 
+# Audit boundary: persist only a hash of the requested parameters.
 def record_decision(approver: str, tool: str, parameters: dict[str, Any], descriptor_sha256: str, decision: str) -> None:
     """Append an immutable, hash-only audit record for a human approval action."""
     if decision not in {"approved", "denied"}:

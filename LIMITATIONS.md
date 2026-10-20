@@ -22,3 +22,10 @@
   demonstrate the binding contract, not production key management.
 - The retrieval embedding is a deterministic local function rather than a named
   embedding model; embeddings are for retrieval, never authorization.
+- Local FLAN-T5-small generation is measured only when the mounted weights pass
+  the pinned hash check; the scripted path remains `SCRIPTED` and is never
+  presented as live inference.
+- A fast Garak run covers 5/55 prompts and is labelled `PARTIAL`; only the full
+  55-prompt campaign can produce a `BLOCKED` S7 event.
+- Garak currently exercises the loopback endpoint's pre-inference guards through
+  the scripted adapter. It is not evidence of FLAN-T5 jailbreak resistance.

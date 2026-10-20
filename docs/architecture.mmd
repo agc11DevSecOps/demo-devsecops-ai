@@ -1,12 +1,35 @@
 flowchart LR
-  U[User input] --> G[Gateway]
-  G --> R[Retrieval]
-  R --> L[Scripted or hosted LLM]
-  L --> B[Tool boundary]
-  B --> T[Sandbox tools]
-  G --> E[JSONL evidence]
-  B --> E
-  E --> S[Scorecard]
-  C[Run B controls] -. enforce .-> G
+  subgraph DELIVERY[Offline DevSecOps delivery lane]
+    M[Model artifact] --> SC[Fickling and ModelScan]
+    SC --> SG[Cosign AI BOM signature]
+    SG --> PA[OPA admission policy]
+    PA --> C[Restricted local runtime]
+  end
+
+  subgraph ANSWER[Read-only answer lane]
+    U[User request] --> G[Bounded gateway]
+    G --> I[Input inspection and redaction]
+    I --> R[Approved retrieval]
+    R --> L[Scripted or local LLM]
+    L --> O[Output validation]
+    O --> A[Bounded answer with code-generated citations]
+  end
+
+  subgraph LAB[S5 authorization lab: separate from workload]
+    Q[Fixed synthetic S5 request] --> B[Tool boundary]
+    B -->|read-only request allowed| M[Local MCP search_docs]
+    B -->|high-impact request denied| D[Decision recorded; not forwarded]
+    H[Out-of-band human approval] --> B
+    B -->|approval result| V[REVIEW only; no executor]
+  end
+
+  X[Scenario evidence with AISVS IDs] --> E[(evidence/A and evidence/B JSONL)]
+  A --> X
+  B --> X
+  E --> S[Derived AISVS scorecard]
+
+  C -. enforce .-> G
+  C -. enforce .-> I
   C -. enforce .-> R
+  C -. enforce .-> O
   C -. enforce .-> B

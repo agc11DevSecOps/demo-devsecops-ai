@@ -1,11 +1,15 @@
 flowchart LR
-  S1[1 Secrets] --> G1{Pass?}
-  G1 -->|yes| S2[2 Static analysis]
+  S1[1 Secrets<br/>MEASURED] --> G1{Pass?}
+  G1 -->|yes| S2
   G1 -->|no| STOP[Red stop]
-  S2 --> G2{Pass?}
-  G2 -->|yes| S3[3 Optional AI triage]
+  S2[2 Static analysis<br/>MEASURED] --> G2{Pass?}
+  G2 -->|yes| S3[3 Optional AI triage<br/>DESIGNED / NOT TESTED]
   G2 -->|no| STOP
-  S3 --> S4[4 Dependency audit] --> S5[5 Model scan] --> S6[6 Sign and BOM]
-  S6 --> S7[7 Admission] --> S8[8 Red team] --> S9[9 Deploy] --> S10[10 Runtime]
-  S10 --> S11[11 Recorded S6 evidence]
-  S9 --> DEPLOY[Green deploy]
+  S3 --> S4[4 Dependency integrity<br/>MEASURED; advisory lookup NOT TESTED]
+  S4 --> S5[5 Fickling and ModelScan<br/>MEASURED in strict profile; otherwise NOT TESTED] --> S6[6 Cosign sign and BOM<br/>MEASURED in strict profile; otherwise NOT TESTED]
+  S6 --> S7[7 OPA admission<br/>MEASURED in strict profile; otherwise NOT TESTED]
+  S7 --> S8[8 Red team<br/>MEASURED only with admitted campaign; otherwise NOT TESTED]
+  S8 --> S9[9 Deploy<br/>DESIGNED / NOT TESTED; no target]
+  S9 --> S10[10 Runtime stop control<br/>MEASURED]
+  S10 --> S11[11 Recorded S6 evidence<br/>NOT TESTED]
+  P[Pipeline events carry no AISVS IDs] -. cannot change .-> SC[ AISVS scorecard]
