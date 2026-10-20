@@ -2,15 +2,25 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
 import unittest
+from pathlib import Path
 from unittest import mock
 
+ROOT = Path(__file__).resolve().parents[1]
+
+# The gateway transport needs fastapi and httpx, which are provisioned inside
+# the image. The import guard must cover the application module as well: an
+# unguarded "from app.gateway import ..." raises ImportError before the skip
+# below can be applied, which breaks the host test suite.
 try:
     from fastapi.testclient import TestClient
+    from app.gateway import create_app
 except ImportError:  # pragma: no cover - fastapi/httpx are container-provisioned
     TestClient = None
+    create_app = None
 
-from app.gateway import create_app
 from app.sandbox import reset
 from app.workload import MAX_BODY_BYTES
 
@@ -54,6 +64,36 @@ class GatewayTests(unittest.TestCase):
         self.assertEqual(self.client.get("/docs").status_code, 404)
         self.assertEqual(self.client.get("/openapi.json").status_code, 404)
         self.assertEqual(self.client.get("/metrics").status_code, 200)
+
+
+class GatewayImportTests(unittest.TestCase):
+    """The host suite must stay importable when the optional transport is absent."""
+
+    def test_module_imports_without_the_optional_gateway_dependencies(self) -> None:
+        code = (
+            "import sys;"
+            "sys.modules['fastapi'] = None;"
+            "import tests.test_gateway;"
+            "print('imported')"
+        )
+        result = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("imported", result.stdout)
+
+    def test_ci_runs_the_gateway_contract_inside_the_image(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "ci.yml"
+        if not workflow.is_file():
+            self.skipTest("the repository checkout is not mounted in this runner")
+        self.assertIn("test-gateway-unit", workflow.read_text(encoding="utf-8"))
+
+    def test_makefile_exposes_the_gateway_unit_target(self) -> None:
+        makefile = ROOT / "Makefile"
+        if not makefile.is_file():
+            self.skipTest("the repository checkout is not mounted in this runner")
+        text = makefile.read_text(encoding="utf-8")
+        self.assertRegex(text, r"(?m)^test-gateway-unit:")
+        phony = next(line for line in text.splitlines() if line.startswith(".PHONY:"))
+        self.assertIn("test-gateway-unit", phony)
 
 
 if __name__ == "__main__":

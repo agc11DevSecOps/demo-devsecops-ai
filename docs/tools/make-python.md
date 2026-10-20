@@ -76,6 +76,7 @@ consistency checks.
 | `make test-policy` | OPA Rego tests |
 | `make test-container` | Restricted runner assertions |
 | `make test-gateway-compose` | Authenticated gateway smoke test |
+| `make test-gateway-unit` | Gateway contract tests inside the restricted image |
 | `make policy-template` | Generate a reviewable policy draft |
 | `make policy-template-test` | Catalogue and standards checks |
 | `make demo-10m` | The strict ten-minute demo |

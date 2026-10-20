@@ -55,6 +55,17 @@ that an unauthenticated request is rejected, checks that an authenticated
 benign request is answered by the local model, and checks that an injection
 request is blocked.
 
+The gateway contract unit tests need `fastapi` and `httpx`, which are
+provisioned inside the image rather than on the host. They run in the
+restricted runner:
+
+```bash
+make test-gateway-unit
+```
+
+On a host without those packages, the same tests are skipped with an explicit
+reason instead of failing the suite. CI runs them inside the image.
+
 ## Supported Configuration
 
 | Variable | Meaning | Default |

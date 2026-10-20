@@ -31,6 +31,8 @@ jobs:
         run: docker pull python@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
       - name: Verify pinned Rego policy
         run: make test-policy
+      - name: Verify the gateway contract in the restricted image
+        run: make test-gateway-unit
       - name: Run offline A/B demo
         run: make GARAK_LIMIT=5 demo
       - name: Verify container boundary artifacts
