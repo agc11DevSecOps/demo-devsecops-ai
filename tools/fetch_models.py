@@ -99,10 +99,25 @@ def fetch_file(repo: str, revision: str, name: str, dest: Path, expected: str | 
     return actual
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("models", nargs="*", choices=sorted(MODELS))
-    selected = parser.parse_args().models or sorted(MODELS)
+def parse_models(argv: list[str] | None = None) -> list[str]:
+    """Return the requested model names, defaulting to every known model.
+
+    The validation is done here instead of with argparse's ``choices=``
+    because Python 3.10 and 3.11 validate an empty ``nargs="*"`` list against
+    the choices and reject it, so ``fetch_models`` without arguments failed on
+    those interpreters. Manual validation behaves the same everywhere.
+    """
+    parser = argparse.ArgumentParser(description="Download pinned model files with hash verification.")
+    parser.add_argument("models", nargs="*", metavar="model", help="model to fetch; defaults to every known model")
+    args = parser.parse_args(argv)
+    unknown = sorted({name for name in args.models if name not in MODELS})
+    if unknown:
+        parser.error(f"unknown model: {', '.join(unknown)}; choose from {', '.join(sorted(MODELS))}")
+    return args.models or sorted(MODELS)
+
+
+def main(argv: list[str] | None = None) -> int:
+    selected = parse_models(argv)
     token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
     report: dict[str, dict[str, str]] = {}
     for name in selected:

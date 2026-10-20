@@ -197,3 +197,13 @@ runtime or used to allow, deny or escalate an action. The tests in
 `tests/test_standards_mapping.py` enforce both the register-to-document
 consistency and the absence of compliance claims.
 
+## D-021: The model fetcher validates its own arguments
+
+`tools/fetch_models.py` validates the requested model names in code instead of
+using argparse's `choices=`. Python 3.10 and 3.11 validate an empty
+`nargs="*"` list against the choices and reject it, so `make fetch-models`
+without arguments failed on those interpreters even though the supported
+container interpreter is 3.12. Manual validation behaves identically on every
+interpreter and produces an actionable message. `tests/test_fetch_models.py`
+covers the empty selection, the explicit selection and the unknown-model
+refusal, and the suite runs on both 3.10 and 3.12.
