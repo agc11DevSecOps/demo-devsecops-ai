@@ -23,6 +23,10 @@ def reset(*, clear_evidence: bool = True) -> None:
     from app.workload import reset_rate_limiter
 
     reset_rate_limiter()
+    preserved_evidence = {
+        path.relative_to(EVIDENCE): path.read_bytes()
+        for path in EVIDENCE.rglob("*.jsonl")
+    } if not clear_evidence else {}
     shutil.rmtree(SANDBOX, ignore_errors=True)
     SANDBOX.mkdir(mode=0o700, exist_ok=True)
     for run in ("A", "B"):
@@ -33,6 +37,11 @@ def reset(*, clear_evidence: bool = True) -> None:
                 path.unlink()
     if clear_evidence:
         shutil.rmtree(VISUAL_EVIDENCE, ignore_errors=True)
+    else:
+        for relative, data in preserved_evidence.items():
+            path = EVIDENCE / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
     # Supporting artifacts (Garak aggregate, approvals, scanner reports) are part
     # of the evidence surface, so preserve them when evidence is preserved.
     preserved = {

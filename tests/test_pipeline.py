@@ -39,6 +39,12 @@ class PipelineTests(unittest.TestCase):
     def test_pipeline_evidence_does_not_break_the_scorecard(self) -> None:
         run_pipeline(self.writer)
         self.assertTrue(build()["requirements"])
+    def test_pipeline_preserves_prior_evidence(self) -> None:
+        prior = EVIDENCE / "A" / "s0.jsonl"
+        prior.write_text('{"run":"A","scenario":"S0","aisvs_ids":[]}\n', encoding="utf-8")
+        run_pipeline(self.writer)
+        self.assertEqual(prior.read_text(encoding="utf-8"), '{"run":"A","scenario":"S0","aisvs_ids":[]}\n')
+
 
     def test_secrets_and_static_stages_pass_on_the_clean_build(self) -> None:
         self.assertTrue(stage_secrets().passed)

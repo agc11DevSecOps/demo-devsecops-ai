@@ -184,7 +184,7 @@ STAGES: tuple[Callable[[], StageOutcome], ...] = (
 
 # Orchestration: execute stages in order and fail closed when a required gate fails.
 def run_pipeline(writer: EvidenceWriter | None = None, only: int | None = None) -> list[StageOutcome]:
-    reset()
+    reset(clear_evidence=False)
     writer = writer or EvidenceWriter()
     results: list[StageOutcome] = []
     for index, stage in enumerate(STAGES, start=1):
