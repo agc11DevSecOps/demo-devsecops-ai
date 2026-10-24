@@ -145,7 +145,11 @@ aisvs-catalog:
 	@test -n "$(AISVS_SOURCE_DIR)" || (printf '%s\n' 'Set AISVS_SOURCE_DIR to the reviewed local 1.01/en snapshot.'; exit 2)
 	$(PYTHON) -m tools.import_aisvs --source-dir "$(AISVS_SOURCE_DIR)"
 
+# The host suite runs against a temporary sandbox, evidence and artifact root,
+# so a test run never clears a recording or a bundle in the repository.
 test:
+	@tmp=$$(mktemp -d); trap 'rm -rf "$$tmp"' EXIT; \
+	OPS_DEMO_SANDBOX="$$tmp/sandbox" OPS_DEMO_EVIDENCE="$$tmp/evidence" OPS_DEMO_ARTIFACTS="$$tmp/artifacts" \
 	$(PYTHON) -m unittest discover -s tests -v
 
 test-container:
