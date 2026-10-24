@@ -41,7 +41,17 @@ class ShowcaseTests(unittest.TestCase):
             directory = evidence / run
             directory.mkdir(parents=True)
             (directory / "s2.jsonl").write_text(json.dumps(_event(run, "S2")) + "\n", encoding="utf-8")
-        return mock.patch.multiple("app.showcase", EVIDENCE=evidence, SHOWCASE_ROOT=root / "record" / "showcase-runs")
+        stack = contextlib.ExitStack()
+        stack.enter_context(mock.patch.multiple("app.ledger", EVIDENCE=evidence))
+        stack.enter_context(mock.patch.multiple("app.showcase", SHOWCASE_ROOT=root / "record" / "showcase-runs"))
+        stack.enter_context(mock.patch.multiple(
+            "app.presentation",
+            ARTIFACTS=root / "artifacts",
+            INSPECT_RESULTS=root / "artifacts" / "inspect-live.json",
+            INSPECT_VIEW_DIR=root / "artifacts" / "inspect-view",
+            RECORDING=root / "artifacts" / "recording.json",
+        ))
+        return stack
 
     def test_bundle_snapshots_validated_evidence_and_detects_tampering(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -54,6 +64,14 @@ class ShowcaseTests(unittest.TestCase):
                 observations.write_text("{}\n", encoding="utf-8")
                 with self.assertRaisesRegex(ShowcaseError, "showcase_bundle_tampered"):
                     verify_bundle(run_id)
+
+    def test_incomplete_bundle_is_refused_for_presentation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self._patch_roots(root):
+                run_id = create_bundle("demo-incomplete")
+                with self.assertRaisesRegex(ShowcaseError, "showcase_bundle_incomplete"):
+                    verify_bundle(run_id, require_complete=True)
 
     def test_challenge_rejects_non_allowlisted_nonce_and_path(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -75,13 +93,13 @@ class ShowcaseTests(unittest.TestCase):
 
     def test_dashboard_does_not_use_html_data_sink(self) -> None:
         root = Path(__file__).resolve().parents[1] / "showcase"
-        for filename in ("app.js", "live.js"):
+        for filename in ("app.js", "present.js"):
             script = (root / filename).read_text(encoding="utf-8")
             self.assertNotIn("innerHTML", script)
             self.assertIn("textContent", script)
 
     def test_live_dashboard_shows_the_honest_evidence_label(self) -> None:
-        script = (Path(__file__).resolve().parents[1] / "showcase" / "live.js").read_text(encoding="utf-8")
+        script = (Path(__file__).resolve().parents[1] / "showcase" / "present.js").read_text(encoding="utf-8")
         self.assertIn("event.label", script)
 
     def test_cli_uses_distinct_safe_default_ports(self) -> None:
@@ -173,7 +191,7 @@ class ShowcaseTests(unittest.TestCase):
     def test_visual_dossier_is_bound_to_its_hash_only_event(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             evidence = Path(directory) / "evidence"
-            with mock.patch.multiple("app.evidence", EVIDENCE=evidence, VISUAL_EVIDENCE=evidence / "visual"), mock.patch("app.showcase.EVIDENCE", evidence):
+            with mock.patch.multiple("app.evidence", EVIDENCE=evidence, VISUAL_EVIDENCE=evidence / "visual"), mock.patch("app.ledger.EVIDENCE", evidence):
                 EvidenceWriter().emit(Event("A", "S3", "PII in answer", "ALLOWED", "synthetic only", ("v1.01-C8.2.1",), input_value="synthetic", visual={"input": {"document": "synthetic"}, "control": {"redaction": "absent"}, "observation": {"returned_answer": "synthetic"}, "state": {"masked": False}}))
                 events, _ = _load_events("A")
                 visual = _load_visual_events("A", events)

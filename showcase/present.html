@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Control Room — Recorded A/B Presentation</title>
+  <link rel="stylesheet" href="present.css">
+</head>
+<body>
+  <header class="top">
+    <div class="top-left">
+      <p class="eyebrow">RECORDED A/B PRESENTATION · READ-ONLY</p>
+      <h1>Same payload. Without controls, then with them.</h1>
+      <p id="recording" class="recording">Loading the recorded run…</p>
+    </div>
+    <div class="top-right">
+      <div class="progress" aria-live="polite">
+        <output id="progress-text">0 / 0 complete</output>
+        <div class="progress-track"><div id="progress-bar" class="progress-bar"></div></div>
+      </div>
+      <p id="inspect-summary" class="muted">Inspect: not run.</p>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="View">
+    <button id="tab-overview" type="button" class="tab">Overview</button>
+    <button id="tab-present" type="button" class="tab is-active">Presentation</button>
+    <button id="tab-map" type="button" class="tab">Integration map</button>
+  </nav>
+
+  <main>
+    <section id="overview" class="view" hidden>
+      <div class="section-title">
+        <p class="eyebrow">SCENARIOS</p>
+        <h2>Recorded evidence</h2>
+        <p class="muted">Select a scenario to present it. Use the arrow keys to move.</p>
+      </div>
+      <div id="overview-grid" class="overview-grid"></div>
+    </section>
+
+    <section id="present" class="view">
+      <div class="scenario-nav">
+        <button id="prev-scenario" type="button" class="nav-button">← Previous scenario</button>
+        <span id="scenario-position" class="muted"></span>
+        <button id="next-scenario" type="button" class="nav-button">Next scenario →</button>
+      </div>
+      <article id="scenario" class="scenario" aria-live="polite"></article>
+      <div class="step-nav">
+        <button id="prev-step" type="button" class="nav-button">← Previous step</button>
+        <div id="steps" class="steps" role="tablist" aria-label="Step"></div>
+        <button id="next-step" type="button" class="nav-button">Next step →</button>
+      </div>
+    </section>
+
+    <section id="map" class="view" hidden>
+      <div class="section-title">
+        <p class="eyebrow">INTEGRATION MAP</p>
+        <h2>Every control, its flag and its integration point</h2>
+        <p class="muted">Source excerpts are extracted from this repository when the projection is built.</p>
+      </div>
+      <figure class="diagram-figure">
+        <img id="map-diagram" alt="Control integration map" src="">
+      </figure>
+      <div id="map-controls" class="map-controls"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p id="footnote" class="muted">Recorded evidence. Nothing on this page executes a scenario, a model or a tool.</p>
+    <p class="muted">Keys: ← → step · ↑ ↓ scenario · O overview · M map</p>
+  </footer>
+
+  <script src="present.js"></script>
+</body>
+</html>

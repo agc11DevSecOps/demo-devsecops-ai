@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -14,19 +13,39 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from app.common import EVIDENCE, ROOT, SANDBOX, sha256
-
+from app.common import ARTIFACTS, EVIDENCE, ROOT, SANDBOX, sha256
+from app.ledger import (
+    HEX_DIGEST,
+    LedgerError,
+    bound_visuals,
+    hash_file,
+    load_events as _ledger_load_events,
+    load_visual_events as _ledger_load_visual_events,
+    visual_for,
+)
+from app.presentation import DIAGRAMS, build_projection, diagram_path
 
 SHOWCASE_ROOT = ROOT / "record" / "showcase-runs"
 ASSET_ROOT = ROOT / "showcase"
+INSPECT_VIEW = ARTIFACTS / "inspect-view"
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 NONCE = re.compile(r"^[A-Za-z0-9-]{8,48}$")
-HEX_DIGEST = re.compile(r"^[0-9a-f]{64}$")
-EVENT_KEYS = frozenset({"format_version", "timestamp", "run", "scenario", "control", "decision", "reason", "label", "input_sha256", "aisvs_ids"})
-ALLOWED_FILES = frozenset({"index.html", "app.js", "style.css", "manifest.json", "observations.json", "dossier.json", "challenge.json", "trace.json", "response.json", "replay.json"})
-VISUAL_EVENT_KEYS = frozenset({"format_version", "timestamp", "run", "scenario", "control", "decision", "label", "reason", "input_sha256", "aisvs_ids", "observation_kind", "details", "event_sha256"})
-MAX_EVENTS = 256
-MAX_TEXT = 4_096
+ALLOWED_EXACT = frozenset({
+    "index.html", "app.js", "style.css", "present.html", "present.js", "present.css",
+    "manifest.json", "observations.json", "dossier.json", "challenge.json", "trace.json",
+    "response.json", "replay.json", "presentation.json", "recording.json",
+}) | frozenset(f"diagram-{name}.svg" for name in DIAGRAMS)
+ALLOWED_PREFIXES = ("inspect/",)
+ASSET_FILES = {"index.html": "index.html", "app.js": "app.js", "style.css": "style.css", "present.html": "present.html", "present.js": "present.js", "present.css": "present.css"}
+CONTENT_TYPES = {
+    ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript",
+    ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml",
+    ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".map": "application/json",
+    ".png": "image/png", ".ico": "image/x-icon",
+}
+STRICT_CSP = "default-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; connect-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self'"
+VIEWER_CSP_FILE = "content-security-policy.json"
+MAX_VIEW_FILE = 64 * 1024 * 1024
 
 
 class ShowcaseError(ValueError):
@@ -35,14 +54,6 @@ class ShowcaseError(ValueError):
 
 def _utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
-
-
-def _hash_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def _validate_run_id(run_id: str) -> str:
@@ -71,101 +82,23 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _write_json(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
 
 
-# Source evidence validation: display data is never trusted without this contract.
-def _validate_event(record: Any, run: str) -> dict[str, Any]:
-    if type(record) is not dict or set(record) != EVENT_KEYS:
-        raise ShowcaseError("invalid_evidence_record")
-    if record.get("format_version") != 1 or record.get("run") != run:
-        raise ShowcaseError("invalid_evidence_record")
-    if not all(isinstance(record.get(key), str) and len(record[key]) <= MAX_TEXT for key in ("timestamp", "scenario", "control", "decision", "reason", "label", "input_sha256")):
-        raise ShowcaseError("invalid_evidence_record")
-    if HEX_DIGEST.fullmatch(record["input_sha256"]) is None:
-        raise ShowcaseError("invalid_evidence_record")
-    if type(record["aisvs_ids"]) is not list or not all(isinstance(item, str) and len(item) <= 32 for item in record["aisvs_ids"]):
-        raise ShowcaseError("invalid_evidence_record")
-    return record
-
-
+# Ledger wrappers: keep the historical private names for existing callers/tests.
 def _load_events(run: str) -> tuple[list[dict[str, Any]], dict[str, str]]:
-    directory = EVIDENCE / run
-    paths = sorted(directory.glob("*.jsonl"))
-    if not paths:
-        raise ShowcaseError(f"missing_evidence_{run.lower()}")
-    events: list[dict[str, Any]] = []
-    hashes: dict[str, str] = {}
-    for path in paths:
-        hashes[f"{run}/{path.name}"] = _hash_file(path)
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except OSError as error:
-            raise ShowcaseError("invalid_evidence_record") from error
-        for line in lines:
-            try:
-                events.append(_validate_event(json.loads(line), run))
-            except json.JSONDecodeError as error:
-                raise ShowcaseError("invalid_evidence_record") from error
-    if not events or len(events) > MAX_EVENTS:
-        raise ShowcaseError("invalid_evidence_count")
-    return events, hashes
-
-
-def _validate_visual_value(value: Any, *, depth: int = 0) -> None:
-    if depth > 4:
-        raise ShowcaseError("invalid_visual_evidence")
-    if value is None or type(value) in {bool, int}:
-        return
-    if isinstance(value, str):
-        if len(value) > MAX_TEXT:
-            raise ShowcaseError("invalid_visual_evidence")
-        return
-    if type(value) is list:
-        if len(value) > 32:
-            raise ShowcaseError("invalid_visual_evidence")
-        for item in value:
-            _validate_visual_value(item, depth=depth + 1)
-        return
-    if type(value) is dict:
-        if len(value) > 24 or any(not isinstance(key, str) or re.fullmatch(r"[a-z][a-z0-9_]{0,47}", key) is None for key in value):
-            raise ShowcaseError("invalid_visual_evidence")
-        for item in value.values():
-            _validate_visual_value(item, depth=depth + 1)
-        return
-    raise ShowcaseError("invalid_visual_evidence")
+    try:
+        return _ledger_load_events(run)
+    except LedgerError as error:
+        raise ShowcaseError(str(error)) from error
 
 
 def _load_visual_events(run: str, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    directory = EVIDENCE / "visual" / run
-    paths = sorted(directory.glob("*.jsonl"))
-    if not paths:
-        return []
-    source_hashes = {sha256(json.dumps(event, sort_keys=True, separators=(",", ":"))) for event in events}
-    visual: list[dict[str, Any]] = []
-    for path in paths:
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except OSError as error:
-            raise ShowcaseError("invalid_visual_evidence") from error
-        for line in lines:
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError as error:
-                raise ShowcaseError("invalid_visual_evidence") from error
-            if type(record) is not dict or set(record) != VISUAL_EVENT_KEYS or record.get("format_version") != 1 or record.get("run") != run:
-                raise ShowcaseError("invalid_visual_evidence")
-            if not all(isinstance(record.get(key), str) and len(record[key]) <= MAX_TEXT for key in ("timestamp", "scenario", "control", "decision", "label", "reason", "input_sha256", "event_sha256")):
-                raise ShowcaseError("invalid_visual_evidence")
-            if HEX_DIGEST.fullmatch(record["input_sha256"]) is None or HEX_DIGEST.fullmatch(record["event_sha256"]) is None or record["event_sha256"] not in source_hashes:
-                raise ShowcaseError("invalid_visual_evidence")
-            if record.get("observation_kind") not in {"fixture", "observed"} or type(record.get("aisvs_ids")) is not list or type(record.get("details")) is not dict:
-                raise ShowcaseError("invalid_visual_evidence")
-            _validate_visual_value(record["details"])
-            visual.append(record)
-    if len(visual) > MAX_EVENTS:
-        raise ShowcaseError("invalid_visual_evidence")
-    return visual
+    try:
+        return _ledger_load_visual_events(run, events)
+    except LedgerError as error:
+        raise ShowcaseError(str(error)) from error
 
 
 def _live_observations() -> dict[str, Any]:
@@ -187,20 +120,45 @@ def _live_observations() -> dict[str, Any]:
 
 # Immutable bundle construction: snapshot only validated data and fixed assets.
 def _copy_assets(bundle: Path) -> None:
-    for filename in ("index.html", "app.js", "style.css"):
-        source = ASSET_ROOT / filename
+    for filename, source_name in ASSET_FILES.items():
+        source = ASSET_ROOT / source_name
         if not source.is_file():
             raise ShowcaseError("showcase_assets_unavailable")
         shutil.copyfile(source, bundle / filename)
+    for name in DIAGRAMS:
+        source = diagram_path(name)
+        if source is None:
+            raise ShowcaseError("showcase_diagram_unavailable")
+        shutil.copyfile(source, bundle / f"diagram-{name}.svg")
+
+
+def _copy_inspect_view(bundle: Path) -> None:
+    """Copy the scanned Inspect View bundle when the live evaluation produced one."""
+    if not INSPECT_VIEW.is_dir():
+        return
+    target = bundle / "inspect"
+    shutil.copytree(INSPECT_VIEW, target)
+    for path in target.rglob("*"):
+        if path.is_symlink():
+            raise ShowcaseError("showcase_inspect_symlink")
+        if path.is_file() and path.stat().st_size > MAX_VIEW_FILE:
+            raise ShowcaseError("showcase_inspect_oversized")
+
+
+def _bundle_files(bundle: Path) -> dict[str, str]:
+    return {
+        str(path.relative_to(bundle)): hash_file(path)
+        for path in sorted(bundle.rglob("*"))
+        if path.is_file() and path.name != "manifest.json"
+    }
 
 
 def _manifest(bundle: Path, *, source_evidence: dict[str, str]) -> dict[str, Any]:
-    assets = {path.name: _hash_file(path) for path in sorted(bundle.iterdir()) if path.is_file() and path.name != "manifest.json"}
     return {
         "format_version": 1,
         "created_at": _utcnow(),
         "source_evidence_sha256": source_evidence,
-        "assets_sha256": assets,
+        "assets_sha256": _bundle_files(bundle),
     }
 
 
@@ -222,6 +180,10 @@ def create_bundle(run_id: str | None = None) -> str:
     try:
         _write_json(bundle / "observations.json", {"format_version": 1, "generated_at": _utcnow(), "runs": {"A": events_a, "B": events_b}})
         _write_json(bundle / "dossier.json", {"format_version": 1, "generated_at": _utcnow(), "runs": {"A": visual_a, "B": visual_b}})
+        _write_json(bundle / "presentation.json", build_projection())
+        if (ARTIFACTS / "recording.json").is_file():
+            shutil.copyfile(ARTIFACTS / "recording.json", bundle / "recording.json")
+        _copy_inspect_view(bundle)
         _copy_assets(bundle)
         _write_manifest(bundle, source_evidence={**hashes_a, **hashes_b})
     except Exception:
@@ -354,21 +316,57 @@ def replay_challenge(run_id: str) -> str:
 
 
 # Read-only serving: verify every declared asset before exposing it on loopback.
-def verify_bundle(run_id: str) -> None:
+def _allowed(name: str) -> bool:
+    if name in ALLOWED_EXACT:
+        return True
+    return any(name.startswith(prefix) and ".." not in name and "\\" not in name for prefix in ALLOWED_PREFIXES)
+
+
+def verify_bundle(run_id: str, *, require_complete: bool = False) -> None:
     """Verify every declared non-manifest asset before exposing a bundle."""
     bundle = _bundle_dir(run_id)
     manifest = _read_json(bundle / "manifest.json")
     if manifest.get("format_version") != 1 or type(manifest.get("assets_sha256")) is not dict:
         raise ShowcaseError("invalid_showcase_manifest")
     declared = manifest["assets_sha256"]
-    if not declared or "manifest.json" in declared or set(declared) - ALLOWED_FILES:
+    if not declared or "manifest.json" in declared:
         raise ShowcaseError("invalid_showcase_manifest")
     for filename, digest in declared.items():
         if not isinstance(filename, str) or not isinstance(digest, str) or HEX_DIGEST.fullmatch(digest) is None:
             raise ShowcaseError("invalid_showcase_manifest")
+        if not _allowed(filename):
+            raise ShowcaseError("invalid_showcase_manifest")
         path = bundle / filename
-        if not path.is_file() or _hash_file(path) != digest:
+        if not path.is_file() or hash_file(path) != digest:
             raise ShowcaseError("showcase_bundle_tampered")
+    if require_complete:
+        presentation = _read_json(bundle / "presentation.json")
+        if presentation.get("phase") != "complete":
+            raise ShowcaseError("showcase_bundle_incomplete")
+
+
+def _viewer_csp(bundle: Path) -> str:
+    """Read the Content-Security-Policy shipped with the Inspect View dist."""
+    path = bundle / "inspect" / VIEWER_CSP_FILE
+    if not path.is_file():
+        return STRICT_CSP
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return STRICT_CSP
+    if type(payload) is not dict or payload.get("version") != 1 or type(payload.get("directives")) is not dict:
+        return STRICT_CSP
+    parts = []
+    for name, sources in payload["directives"].items():
+        if name == "frame-ancestors" or not isinstance(name, str) or not isinstance(sources, list):
+            continue
+        if any(not isinstance(source, str) or not source or any(not 0x21 <= ord(char) <= 0x7E or char in ";," for char in source) for source in sources):
+            return STRICT_CSP
+        parts.append(" ".join([name, *sources]))
+    if not parts:
+        return STRICT_CSP
+    parts.append("frame-ancestors 'none'")
+    return "; ".join(parts)
 
 
 class _ShowcaseHandler(BaseHTTPRequestHandler):
@@ -377,19 +375,21 @@ class _ShowcaseHandler(BaseHTTPRequestHandler):
     server_version = "VisualAssurance/1"
     sys_version = ""
     bundle: Path
+    csp: str = STRICT_CSP
 
     def do_GET(self) -> None:  # noqa: N802
         requested = self.path.split("?", 1)[0]
-        filename = "index.html" if requested == "/" else requested.removeprefix("/")
-        if filename not in ALLOWED_FILES or "/" in filename or "\\" in filename:
+        filename = "present.html" if requested == "/" else requested.removeprefix("/")
+        if not _allowed(filename) or ".." in filename or "\\" in filename:
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain; charset=utf-8")
             return
         path = self.bundle / filename
         if not path.is_file():
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain; charset=utf-8")
             return
-        content_type = "application/json" if filename.endswith(".json") else "text/javascript" if filename.endswith(".js") else "text/css" if filename.endswith(".css") else "text/html; charset=utf-8"
-        self._send(HTTPStatus.OK, path.read_bytes(), content_type)
+        content_type = CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream")
+        csp = _viewer_csp(self.bundle) if filename.startswith("inspect/") else self.csp
+        self._send(HTTPStatus.OK, path.read_bytes(), content_type, csp)
 
     def do_POST(self) -> None:  # noqa: N802
         self._send(HTTPStatus.METHOD_NOT_ALLOWED, b"method not allowed", "text/plain; charset=utf-8")
@@ -397,24 +397,26 @@ class _ShowcaseHandler(BaseHTTPRequestHandler):
     def log_message(self, _format: str, *_args: Any) -> None:
         return
 
-    def _send(self, status: HTTPStatus, body: bytes, content_type: str) -> None:
+    def _send(self, status: HTTPStatus, body: bytes, content_type: str, csp: str | None = None) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Security-Policy", "default-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; connect-src 'self'; img-src 'none'; script-src 'self'; style-src 'self'")
+        self.send_header("Content-Security-Policy", csp or self.csp)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.end_headers()
         self.wfile.write(body)
 
 
-def serve_bundle(run_id: str, port: int = 8090) -> None:
+def serve_bundle(run_id: str, port: int = 8090, *, require_complete: bool = False) -> None:
     if not isinstance(port, int) or not 1024 <= port <= 65535:
         raise ShowcaseError("invalid_showcase_port")
-    verify_bundle(run_id)
-    handler = type("ShowcaseHandler", (_ShowcaseHandler,), {"bundle": _bundle_dir(run_id)})
+    verify_bundle(run_id, require_complete=require_complete)
+    bundle = _bundle_dir(run_id)
+    handler = type("ShowcaseHandler", (_ShowcaseHandler,), {"bundle": bundle, "csp": _viewer_csp(bundle)})
     with ThreadingHTTPServer(("127.0.0.1", port), handler) as server:
+        print(f"Recorded presentation: http://127.0.0.1:{server.server_address[1]}/ (read-only; Ctrl-C to stop)", flush=True)
         server.serve_forever()
 
 
@@ -423,17 +425,44 @@ class _LiveShowcaseHandler(BaseHTTPRequestHandler):
 
     server_version = "VisualAssuranceLive/1"
     sys_version = ""
-    static_files = {"/": "live.html", "/live.js": "live.js", "/style.css": "style.css"}
+    static_files = {
+        "/": "present.html", "/present.js": "present.js", "/present.css": "present.css",
+        "/index.html": "index.html", "/app.js": "app.js", "/style.css": "style.css",
+    }
 
     def do_GET(self) -> None:  # noqa: N802
         path = self.path.split("?", 1)[0]
-        if path == "/live/observations.json":
+        if path in {"/live/observations.json"}:
             try:
                 body = _canonical_json(_live_observations())
             except ShowcaseError:
                 self._send(HTTPStatus.SERVICE_UNAVAILABLE, b'{"code":"evidence_unavailable"}', "application/json")
                 return
             self._send(HTTPStatus.OK, body, "application/json")
+            return
+        if path in {"/presentation.json", "/live/presentation.json"}:
+            try:
+                body = _canonical_json(build_projection())
+            except ShowcaseError:
+                self._send(HTTPStatus.SERVICE_UNAVAILABLE, b'{"code":"presentation_unavailable"}', "application/json")
+                return
+            self._send(HTTPStatus.OK, body, "application/json")
+            return
+        if path.startswith("/diagram-") and path.endswith(".svg"):
+            name = path.removeprefix("/diagram-").removesuffix(".svg")
+            asset = diagram_path(name)
+            if asset is None:
+                self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain; charset=utf-8")
+                return
+            self._send(HTTPStatus.OK, asset.read_bytes(), "image/svg+xml")
+            return
+        if path.startswith("/inspect/"):
+            name = path.removeprefix("/inspect/")
+            target = (INSPECT_VIEW / name).resolve()
+            if INSPECT_VIEW.resolve() not in target.parents or not target.is_file():
+                self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain; charset=utf-8")
+                return
+            self._send(HTTPStatus.OK, target.read_bytes(), CONTENT_TYPES.get(target.suffix.lower(), "application/octet-stream"), _viewer_csp(INSPECT_VIEW))
             return
         filename = self.static_files.get(path)
         if filename is None:
@@ -443,8 +472,7 @@ class _LiveShowcaseHandler(BaseHTTPRequestHandler):
         if not asset.is_file():
             self._send(HTTPStatus.SERVICE_UNAVAILABLE, b"assets unavailable", "text/plain; charset=utf-8")
             return
-        content_type = "text/javascript" if filename.endswith(".js") else "text/css" if filename.endswith(".css") else "text/html; charset=utf-8"
-        self._send(HTTPStatus.OK, asset.read_bytes(), content_type)
+        self._send(HTTPStatus.OK, asset.read_bytes(), CONTENT_TYPES.get(asset.suffix.lower(), "application/octet-stream"))
 
     def do_POST(self) -> None:  # noqa: N802
         self._send(HTTPStatus.METHOD_NOT_ALLOWED, b"method not allowed", "text/plain; charset=utf-8")
@@ -452,12 +480,12 @@ class _LiveShowcaseHandler(BaseHTTPRequestHandler):
     def log_message(self, _format: str, *_args: Any) -> None:
         return
 
-    def _send(self, status: HTTPStatus, body: bytes, content_type: str) -> None:
+    def _send(self, status: HTTPStatus, body: bytes, content_type: str, csp: str | None = None) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Security-Policy", "default-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; connect-src 'self'; img-src 'none'; script-src 'self'; style-src 'self'")
+        self.send_header("Content-Security-Policy", csp or STRICT_CSP)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.end_headers()
