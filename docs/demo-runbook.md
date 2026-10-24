@@ -70,26 +70,66 @@ make test-policy
 
 Expected: `OK (skipped=5)` and `PASS: 14/14`.
 
+### Record First (T-1 hour)
+
+The presentation is recorded before the talk, unattended, and then presented
+from the frozen bundle. Recording executes the real local flows; presenting
+executes nothing.
+
+```bash
+make demo-record
+```
+
+This runs, in order: the strict preflight, every A/B pair (`reset -> A ->
+reset -> B`), the delivery pipeline and the live Inspect check. It writes
+`artifacts/recording.json`, builds a bundle, verifies every declared file and
+refuses to accept a recording over the budget. Measured on this machine:
+
+```text
+recording: preflight 2s, scenarios 130s, inspect 45s
+total: 177s (limit 900s)
+Bundle: record/showcase-runs/showcase-...
+```
+
+The optional red-team appendix runs separately, because the full 55-prompt
+Garak campaign does not fit the main budget:
+
+```bash
+make demo-record-appendix
+```
+
+On a headless host nothing changes for recording. `DEMO_RECORD_LIMIT` changes
+the budget only if you deliberately accept a different one.
+
 ### The Room
 
-You need three surfaces. The audience sees the browser; you drive the
-terminal.
+You need one surface. The audience sees the browser; your terminal only starts
+the viewer.
 
 | Surface | What it shows | How to open it |
 | --- | --- | --- |
-| Terminal A | Every command and every verdict line | Your main terminal |
-| Terminal B | The live evidence timeline | `make showcase-live`, then `http://127.0.0.1:8091/` |
-| Browser | The live evidence timeline, and optionally the scorecard | `http://127.0.0.1:8091/` and `file://.../scorecard/out.html` |
-
-Start the viewer **before** the demo: it fills up as the evidence is written.
+| Browser | Recorded cards: payload, Run A, control configuration, Run B, result and Inspect transcripts | `make present-visual` opens `http://127.0.0.1:8091/` |
 
 ```bash
-make showcase-live
-# Visual Assurance Live: http://127.0.0.1:8091/ (read-only; Ctrl-C to stop)
+make present-visual
+# Presentation: http://127.0.0.1:8091/
+# Bundle: record/showcase-runs/showcase-... (read-only; Ctrl-C to stop)
 ```
 
-The viewer is display-only. It cannot change a decision, and it is not
-required for the demo to work.
+At presentation time the command verifies the latest bundle manifest, refuses
+an incomplete or altered bundle, needs no Docker and no models, and serves only
+declared files. The viewer states the recording time and the durations. Use
+`DEMO_OPEN=0` on a headless host and `DEMO_PORT` to choose another port.
+
+Keys: `→` / `←` move step, `↑` / `↓` move scenario, `O` opens the overview and
+`M` the control integration map.
+
+To rehearse the underlying run again without overwriting the presented bundle,
+use a separate evidence run in a terminal:
+
+```bash
+make demo-ab
+```
 
 ## The Run Of Show
 
@@ -157,7 +197,9 @@ matching."
 `artifacts/modelscan-s1.json` and `artifacts/aibom.json`.
 
 **If it fails**: `make container-build` and run the scenario again. The
-container is the same one you built in the pre-flight.
+container is the same one you built in the pre-flight. If the visual viewer is
+unavailable, the terminal verdicts remain authoritative; do not narrate a card
+that the viewer did not load.
 
 ### 2:00-3:15 · The model actually answering (S0)
 
@@ -346,8 +388,9 @@ skip this: it is the part that makes the rest believable.
 
 ## Timing
 
-Measured on the development machine. The machine work is about 50 seconds in
-total; the rest of the slot is talking.
+Measured on the development machine for the recorded bundle. Recording is
+unattended and takes about three minutes; the ten-minute slot is talking over
+the frozen recording.
 
 | Block | Machine time | Clock |
 | --- | --- | --- |
@@ -359,7 +402,7 @@ total; the rest of the slot is talking.
 | S0 model | 10 s | 2:00-3:15 |
 | S5 tool boundary | 3.4 s | 5:30-6:30 |
 | S8 bounds | 11.6 s | 6:30-7:30 |
-| Whole `make demo-10m` | 50 s | - |
+| Whole `make demo-record` | 177 s | - |
 
 The gap between the blocks is container start-up, not model latency. If a
 scenario looks slow, it is the container starting, and that is the same for

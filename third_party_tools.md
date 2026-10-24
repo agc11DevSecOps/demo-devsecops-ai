@@ -14,6 +14,8 @@ new repository needs its own provenance and isolated review.
 | Qdrant | local vector store | C1 admitted for S4 | in-memory client in the restricted Docker runner; provenance-filtered retrieval |
 | MCP Python SDK | direct-stdio local server | C1 admitted for S5 | local subprocess over stdio; every call gated by the tool boundary |
 | Garak | bounded red-team stage | C1 admitted for S7 | fixed offline REST campaign in the restricted `demo-devsecops-ai:garak` runner; aggregate hash-only summary only |
+| Archify | build-time diagram authoring only | C1 admitted for presentation diagrams | pinned local skill; diagrams authored, validated and delivered offline; only sanitized inline SVG enters the repository |
+| Inspect AI | isolated live behavioural check | C1 admitted for the fixed live dataset | CPython 3.12 lock, hash-verified wheels; internal Docker network to the local evaluation target only |
 | Giskard/PyRIT | bounded red-team stage | planned | separate admission per tool |
 
 ## C0-2026-10-17-Docker-Synthetic-Runner
@@ -322,3 +324,66 @@ To avoid a NumPy version conflict (ModelScan requires `numpy>=1.24.3` while spaC
 | Result | The complete offline campaign finished in ~13 minutes and blocked **55/55** prompts (`encoding.InjectBase64`) with no successful injection. Run B emitted `Garak campaign -> BLOCKED :: Garak 0.10.3.1 encoding.InjectBase64 blocked all 55/55 campaign prompts`, flipping AISVS C12.1.1–C12.1.4 and C12.2.1 from `NOT TESTED` to `PASS`. |
 | Decision boundary | Garak is admitted only for this fixed single-probe loopback REST campaign over the full 55-prompt corpus. Any probe, payload, prompt count, generator config, Garak version, wheel, runner profile or target change requires a new C0/C1 review. A missing package, non-zero worker exit, timeout, malformed/oversized report, count mismatch or missing summary fails closed to `NOT TESTED`. A campaign that breaches any prompt is reported as `FAIL`, not `BLOCKED`. The campaign result is detection evidence, never an authorization or safety verdict. |
 | Status | Admitted for S7 in the fixed `demo-devsecops-ai:garak` runner. |
+
+## C1-2026-10-23-Archify-Presentation
+
+| Field | Value |
+| --- | --- |
+| Publisher/source | `tt-a1i`, `https://github.com/tt-a1i/archify`; local skill at `/home/agc11/.agents/skills/archify`; MIT. |
+| Immutable version | `2.17.0-dev.1` (`package.json` and `skill-release.json`). The local copy is not a Git worktree, so the release identity is anchored by content hashes rather than a commit. |
+| Content hashes | `package.json` `7fe2a96f0d6730b2d35811d7d4f5e7e969c166a47a0c87543cdf667a221815be`; `package-lock.json` `f875c29b190f6f5dc14bea7e56879ad2282c0a5212253b24937f77b4f6198054`; `skill-release.json` `269772492c38663b5d19730a54e5d7ad973ef04e47eb4f75b6dfa2e249614097`; `bin/archify.mjs` `a9e02fa9e359ff853e4852c4fa378e438e50e85c63614a4a860bf369c14be640`. |
+| Retrieval/review date | 2026-10-23. |
+| Review | `node bin/archify.mjs doctor` passed all runtime and renderer checks under Node `v22.23.2`. Authoring was offline; no credential, production data or external diagram service was supplied. The five candidate specifications passed `validate --quality showcase` with all 9 artifact checks, 0 composition errors and 0 warnings, then `deliver --quality showcase` succeeded. |
+| Output boundary | Archify is a build-time authoring dependency, never a runtime dependency of the demo. Only the inline `<svg>` is extracted by `tools/extract_diagrams.py` (`de618d02f39848acff2367d1f8e0c4eb4f014489a4e4307e0e6c21ad3cc7c014`), checked for scripts/foreignObject/iframes/event handlers/external URLs, XML-parsed and written to `showcase/diagrams/*.svg`; the script also reports each SHA-256. The standalone HTML in `presentation/archify/out/` is ignored and is not served. |
+| Revision 2 artifacts (2026-10-23) | `presentation/archify/ai-flow-unguarded.workflow.json` `fd5ee60cfe3b9d57c9999c4de1cee04b89259ba001b531f923bf1c815501e1d4`; `ai-flow-guarded.workflow.json` `341a362dffc0e8d74894be8d6bcb57ce8a347a8110545f94c4cc1c9653c654a1`; `model-admission-before.workflow.json` `189adfa56b22363b2246633971621df870fe27b166cd7091d546b1de5626b151`; `control-integration-map.workflow.json` `a506423f56bc7736326ff2244a768f49c77c0742dd5cc728c6f0c26150c56953`; `inspect-eval-topology.workflow.json` `960b011c020fd3b7b32a5ddb919f29bc8e2bc665f3a0f84ac8e5a4e408141e76`. |
+| Revision 2 outputs | `showcase/diagrams/ai-flow-unguarded.svg` `768f28a194ce9e60cb6456490eb4bb59cbd07afc6846fe4a4a00a23299621831`; `ai-flow-guarded.svg` `a800a237279c0cfcd2d08a6c5a241d3e3a4e2351fa9a3b83fab1750fad0350b4`; `model-admission-before.svg` `6e5b063d508b3b0e309aac6c175b0d12f514445963d8175a057112988991e351`; `control-integration-map.svg` `c0ceacfff14d2ef59926b0eb7b00028c13198ec7e3af9706e20353a3400096e3`; `inspect-eval-topology.svg` `8c9054979e7706f084062fcb0bad4fae1816cec0dcef4cb21d8d162d9d1b43bb`. |
+| Revision 3 correction | Two diagrams labelled Inspect as model-free after the live evaluation replaced it. The Inspect topology tag now reads deterministic scoring and the evidence provenance node reads live checks. Both were re-validated, re-delivered and re-extracted. |
+| Revision 2 review | Five additional specifications passed `validate --quality showcase` and `deliver --quality showcase` offline. The integration map needed one composition repair (wide nodes reduced, one column merged) before acceptance. `tools/extract_diagrams.py` re-ran the script/foreignObject/iframe/event-handler/external-URL checks and hashed each output. |
+| Admitted artifacts | `showcase/diagrams/model-admission.svg` `ee38d4918dca754be12605d54cf8ed5779dccfb9a9a4c766645bf4340112609e`; `request-guardrails.svg` `337f8051d22ec6ba2e948dd6d772f4061fb7c5c28c100f5d6224f37591046891`; `rag-provenance.svg` `000e500c187bcece30fba21a8737d140ce88ab5a655b8918e156b2b37cc12179`; `tool-boundary.svg` `ecf6d68006f955ae30666151bcc00b31fca1409738512233b9a044d9fcce89d3`; `evidence-provenance.svg` `12a38bde35415d37d193c44c929378f0a6cb1fcbb959d4fe3098fe8c7f673515`. |
+| Decision boundary | A diagram is explanatory material derived from reviewed code, never evidence that a control executed. Source specifications live in `presentation/archify/*.json`; regeneration must repeat validation, sanitization and hashing. |
+| Status | Admitted for the ten fixed presentation diagrams above (five from revision 1, five from revision 2). Any Archify version, specification, renderer, sanitizer or output-path change requires a new review. |
+
+
+## C0-2026-10-23-Inspect-AI
+
+| Field | Value |
+| --- | --- |
+| Publisher/source | UK AI Security Institute, `https://github.com/UKGovernmentBEIS/inspect_ai`, MIT. |
+| Immutable artifact | PyPI `inspect-ai==0.3.283`, wheel `inspect_ai-0.3.283-py3-none-any.whl`, SHA-256 `9a08f86879b878efc5a15408c1d5dcbfb2195c9ee1d69726bf5f060a4c36f1ed`; source URL and hash pinned in `evals/wheels.lock.json`. |
+| Compatibility | Requires Python `>=3.11`; the isolated image uses CPython 3.12. Inspect requires `fsspec<=2026.6.0`, while the runtime image pins `fsspec==2026.9.0`; the separate target avoids that conflict. |
+| Review date | 2026-10-23. |
+| Review findings | The package pulls cloud and provider extras (boto3, s3fs, aiobotocore, tiktoken, FastAPI/uvicorn). None is reachable in this task: the image has no network, no credentials, no model provider, no sandbox backend and no volume other than the artifact directory. The Inspect harness still requires a model slot; the task supplies `mockllm/model` and a custom solver that never calls it. |
+| Decision boundary | Inspect scores whether a recorded public observation matches a declared deterministic invariant. It never reads the authoritative ledger, never executes a scenario, never calls a model or tool, and never produces a security verdict. |
+| Status | C0 reviewed; see the C1 admission below. |
+
+## C1-2026-10-23-Inspect-AI-Behavior
+
+| Field | Value |
+| --- | --- |
+| Requirement | Add an independent, model-free behavioral check over the browser-safe projection without weakening the runtime image or claiming a security verdict. |
+| Environment | `demo-devsecops-ai:inspect` built from the pinned `python:3.12-slim` base with `--network none`; run with read-only root, 64 MiB `/tmp` tmpfs, 512 MiB, 0.5 CPU, 64 PIDs, all capabilities dropped, `no-new-privileges`, non-root and only `artifacts/` writable. |
+| Lock | `evals/requirements.lock` (80 packages, every line hash-pinned, generated for CPython 3.12 / manylinux x86_64 from `inspect-ai==0.3.283`); `evals/wheels.lock.json` provides the pinned HTTPS source URLs. SHA-256 of the lock `acaf5b1ad4468d5edabf382229c42a3b6a5a07e709a335e1e37dba7f562d3775`; wheel manifest `bb5924a77ba15cf20cdee503411c373e4dd5520f80be9be57fedbbde5b7b6f15`. |
+| Fetch | `make fetch-inspect` runs `tools/fetch_inspect.py` (`77b5b9fc3d451dfc4efe6ce1c82da09f5eec0501300e08499163cf85009b3a02`), accepts only `https://files.pythonhosted.org`, enforces the manifest hash, writes atomically and verifies every existing wheel with `--verify-only`. |
+| Task | `evals/inspect_task.py` (`0fdcebc436807b5ef52ae5f4b5eb6cac1c103d830d8aa6f67cd6e54d9dfeda82`) reads `/artifacts/presentation.json`, applies `evals/invariants.json` (`29c8ce47346c0ad3f32dd589d41540873f004af569a07d52208d55e9f0e270f1`), runs a custom no-op solver and `behavior_match` scorer, and writes the normalized result. |
+| Result | On the full A/B projection the task produced `match` for S1, S0, S2, S3, S4, S5 and S8, and `not_run` for PIPELINE because it declares no deterministic invariant. The image hash at review was `sha256:8191bda76e196a42529a92046215c512a4ad12fefdae63693aaeec4c0cdff38e`. |
+| Decision boundary | Admitted only for the fixed invariants and projection schema. A missing projection, no evaluable card, non-success Inspect log, malformed result or unexpected scenario fails closed; the viewer then shows `Inspect: not_run`. Any Inspect version, lock, invariant, task, image or input-contract change requires a new review. |
+| Status | Superseded by `C1-2026-10-23-Inspect-AI-Live`. The model-free projection replay is no longer run or presented. |
+
+
+## C1-2026-10-23-Inspect-AI-Live
+
+| Field | Value |
+| --- | --- |
+| Requirement | Replace the model-free replay with a live check of both local flows over a fixed synthetic dataset, without weakening the runtime image. |
+| Publisher/artifact | Same as `C0-2026-10-23-Inspect-AI`: UK AI Security Institute, PyPI `inspect-ai==0.3.283`, wheel SHA-256 `9a08f86879b878efc5a15408c1d5dcbfb2195c9ee1d69726bf5f060a4c36f1ed`. |
+| Isolation | Inspect runs in the pinned `demo-devsecops-ai:inspect` image (`sha256:efbc83bacb7f8ad3378ab82a6af7eb4c1f814a6c2024c9135bab2c1631ab6ac3`) with `--network` set to a per-run `docker network create --internal` network, read-only root, 64 MiB `/tmp`, 1 GiB memory, 0.5 CPU, 128 PIDs, all capabilities dropped, `no-new-privileges`, non-root and only `artifacts/` writable. |
+| Evaluation target | `app/eval_target.py` (`83ddc2ed67d2bdae386c0c50888d768fbbdbac286c08565083aa733695cba855`) runs in the pinned runtime image (`sha256:0dd612afe63d8164cc592388b0a7debdf67647f56612aaf57ca1f862a4c7e436`) on the same internal network with no published port, read-only root, tmpfs `/tmp` and `/sandbox`, models mounted read-only, 3 GiB memory, 0.5 CPU and the full control profile plus `OPS_DEMO_UNGUARDED_LAB=1`. It resets its tmpfs sandbox before every sample. |
+| Network boundary | The internal network has no gateway to the host or the internet. The target is the only reachable peer. This is not the `--network none` profile of the scenario runners and is not presented as one. |
+| Inputs | `evals/dataset.json` (`1d43986e3f426629a42d1041df398f5dd63735ef8ab52b39cb42d2189101aaef`) is exported from the fixed lab cases and checked by `tests/test_live_evaluation.py`; 18 samples (S0, S2, S3, S4, S5, S8). The target accepts only a question whose text matches a dataset sample exactly. |
+| Authentication | A 32-byte random token per run, passed to both containers through an owner-only (`0600`) env file and removed on exit; it is never printed, never placed on a command line and never stored in evidence. |
+| Task and scoring | `evals/live_task.py` (`b0020d0b9f118d5be146814c210231a1a53f039b5b66fb850b63c564e47577ff`) registers `opsassist/unguarded` and `opsassist/guarded`, sends each sample to the target and applies deterministic rules per check (benign, prompt leak, PII, untrusted context, tool effect, marker, input bound, attribution). A blocked benign request is recorded as safe and explained as fail-closed. |
+| Orchestration | `scripts/inspect_live.sh` (`50c595769458b8beba700c7cb11edc1575d376974cf6a08d1c1f691e368735ba`) creates the internal network, starts and health-checks the target, runs the Inspect container and removes the target, token file and network even on failure. |
+| Output boundary | Results are written to `artifacts/inspect-live.json`. Every file under `artifacts/inspect-logs` is scanned for a 64-hex digest, the ephemeral token and `Bearer` before the Inspect View bundle is retained; a hit discards the output and the viewer shows `Inspect: not run`. The frozen bundle serves the view under `/inspect/` with the CSP shipped by the Inspect dist (validated, plus `frame-ancestors 'none'`). |
+| Result | On the recorded run: 18 samples; unguarded 6 unsafe / 12 safe, guarded 0 unsafe / 18 safe. Unguarded unsafe: S3 PII, S4 untrusted context with a tool effect, S5 tool effect, S8 marker, unbounded input and model-written citation. |
+| Decision boundary | Inspect observes and scores fixed synthetic samples; it never authorizes an action, never reads the authoritative ledger and never produces a security verdict. Any change to the dataset, checks, scorer, target, provider, lock, image or network profile requires a new review. |
+| Status | Admitted for the fixed live dataset above. |

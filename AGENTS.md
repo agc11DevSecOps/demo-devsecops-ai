@@ -30,10 +30,15 @@ action, deployment decision or security verdict by themselves.
 
 ## External Skills
 
-If external development skills are adopted, keep them only under
-`.agents/skills/` and record their publisher, source, immutable commit, content
-hash, review and retrieval date before use. They are not runtime dependencies.
-No external development skill is currently admitted by this repository.
+External development skills are build-time authoring aids, never runtime
+dependencies. Before use, record their publisher, source, immutable version or
+commit, content hashes, review and retrieval date in `third_party_tools.md`.
+Keep a skill under `.agents/skills/`, or, for a user-level installation outside
+the repository, re-verify the recorded content hashes before every use. Only
+reviewed, sanitized outputs of a skill enter the repository.
+
+Currently admitted: Archify, user-level installation, for the presentation
+diagrams only (`C1-2026-10-23-Archify-Presentation`).
 
 ## Local Secrets
 

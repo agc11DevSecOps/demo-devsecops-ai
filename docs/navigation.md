@@ -129,7 +129,13 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `scenarios/s0_baseline/` through `scenarios/s8_workload_bounds/` | Each directory holds only `expected_a.txt` and `expected_b.txt` for one scenario. | Documentation tests and operators. |
 | `scripts/present.sh` | Runs one sequential, paced presentation. | `make present`. |
 | `showcase/index.html`, `showcase/app.js`, `showcase/style.css` | Static immutable-bundle dashboard. | `showcase-build` output. |
-| `showcase/live.html`, `showcase/live.js` | Read-only live evidence timeline. | `make showcase-live`. |
+| `showcase/present.html`, `showcase/present.js`, `showcase/present.css` | Recorded five-step A/B presentation (English). | `make present-visual`, live monitor. |
+| `app/flow.py`, `app/unguarded.py`, `app/guarded.py`, `app/lab.py` | Shared stage trace, unguarded Run A lab, guarded flow and sandbox lab helpers. | Scenarios, evaluation target. |
+| `app/control_catalog.py` | Control excerpts, enabling flags, versions and integration points. | Presentation projection and tests. |
+| `app/eval_target.py`, `evals/live_task.py`, `evals/dataset.json` | Live Inspect evaluation target, provider/scorers and fixed dataset. | `make inspect-eval`. |
+| `scripts/demo_record.sh`, `scripts/demo_record_appendix.sh`, `scripts/inspect_live.sh` | Timed recording, S7 appendix and internal-network Inspect run. | `make demo-record`, `make demo-record-appendix`, `make inspect-eval`. |
+| `docs/visual-presentation-requirements.md`, `…-design.md`, `…-tasks.md` | Revised capability records for the recorded presentation. | Design traceability. |
+| `tests/test_presentation.py`, `tests/test_live_evaluation.py` | Projection, control catalog, lab gating and evaluation-target tests. | `make test`. |
 | `specs/core/design.md`, `requirements.md`, `tasks.md` | Original core capability records. | Design traceability. |
 | `specs/visual_assurance/design.md`, `requirements.md`, `tasks.md` | Showcase capability records. | Design traceability. |
 | `specs/policy-tooling-documentation/design.md`, `requirements.md`, `tasks.md` | Policy documentation and template catalogue records. | Design traceability. |
