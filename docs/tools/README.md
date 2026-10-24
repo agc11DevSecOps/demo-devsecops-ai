@@ -40,6 +40,8 @@ page says so and links to the official documentation.
 | MCP | [mcp.md](mcp.md) | The local stdio tool transport |
 | Garak | [garak.md](garak.md) | The bounded red-team campaign |
 | FastAPI gateway | [gateway-fastapi.md](gateway-fastapi.md) | The optional loopback transport |
+| Inspect AI | [inspect.md](inspect.md) | The live, deterministic evaluation of both flows |
+| Archify | [archify.md](archify.md) | Build-time authoring of the sanitized diagrams |
 | GitHub Actions | [github-actions.md](github-actions.md) | The read-only CI verification |
 
 ## The First Time Path
@@ -103,15 +105,17 @@ make test-policy
 
 Expected: `PASS: 14/14` for the two active policies.
 
-### 6. Run the strict demo
+### 6. Record and present the demo
 
 ```bash
-make demo-10m
+make demo-record
+make present-visual
 ```
 
-The demo runs the verbose policy tests, S1, S2, S3, S4, S0, a fixed injection
-request, S5 and S8. See [`../demo-10min.md`](../demo-10min.md) and the full
-presenter script in [`../demo-runbook.md`](../demo-runbook.md).
+`demo-record` runs every A/B pair, the pipeline and the live Inspect check, then
+freezes a verified bundle. `present-visual` serves that bundle read-only. See
+[`../demo-runbook.md`](../demo-runbook.md). The terminal-only fallback is
+`make demo-10m`; see [`../demo-10min.md`](../demo-10min.md).
 
 ### 7. Read the evidence and fix what broke
 

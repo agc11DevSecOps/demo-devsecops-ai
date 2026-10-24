@@ -20,7 +20,7 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `DECISIONS.md` | Architecture and security decisions D-001 through D-018. | Review and maintenance. |
 | `LIMITATIONS.md` | Explicit non-claims and remaining constraints. | Review and presentation. |
 | `REHEARSAL.md` | Live-demo run of show. | `make present` operators. |
-| `docs/demo-10min.md` | Timed strict-profile narrative and permitted claims. | Presenters. |
+| `docs/demo-10min.md` | Terminal-only, Run-B-only fallback narrative. | Presenters without a recorded bundle. |
 | `docs/demo-runbook.md` | Full presenter runbook: commands, timings, evidence map, contingencies, Q&A. | Presenters. |
 | `docs/code-tour.md` | Source-level routes through the end-to-end workflow. | Reviewers and presenters. |
 | `docs/policies.md` | How the OPA policies are written, called, tested and promoted. | Reviewers and policy authors. |
@@ -128,7 +128,6 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `scenarios/README.md` | Maps the human-readable scenario directories to S0-S8. | Operators. |
 | `scenarios/s0_baseline/` through `scenarios/s8_workload_bounds/` | Each directory holds only `expected_a.txt` and `expected_b.txt` for one scenario. | Documentation tests and operators. |
 | `scripts/present.sh` | Runs one sequential, paced presentation. | `make present`. |
-| `showcase/index.html`, `showcase/app.js`, `showcase/style.css` | Static immutable-bundle dashboard. | `showcase-build` output. |
 | `showcase/present.html`, `showcase/present.js`, `showcase/present.css` | Recorded five-step A/B presentation (English). | `make present-visual`, live monitor. |
 | `app/flow.py`, `app/unguarded.py`, `app/guarded.py`, `app/lab.py` | Shared stage trace, unguarded Run A lab, guarded flow and sandbox lab helpers. | Scenarios, evaluation target. |
 | `app/control_catalog.py` | Control excerpts, enabling flags, versions and integration points. | Presentation projection and tests. |
@@ -137,7 +136,6 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `docs/visual-presentation-requirements.md`, `…-design.md`, `…-tasks.md` | Revised capability records for the recorded presentation. | Design traceability. |
 | `tests/test_presentation.py`, `tests/test_live_evaluation.py` | Projection, control catalog, lab gating and evaluation-target tests. | `make test`. |
 | `specs/core/design.md`, `requirements.md`, `tasks.md` | Original core capability records. | Design traceability. |
-| `specs/visual_assurance/design.md`, `requirements.md`, `tasks.md` | Showcase capability records. | Design traceability. |
 | `specs/policy-tooling-documentation/design.md`, `requirements.md`, `tasks.md` | Policy documentation and template catalogue records. | Design traceability. |
 | `docs/architecture.mmd`, `docs/pipeline.mmd` | Source diagrams for the answer lane and pipeline. | Documentation. |
 | `docs/control-register.md`, `evidence-ledger.md`, `fixtures-and-fallbacks.md`, `tool-action-boundary.md` | Control, authority, fixture, and action-boundary references. | Review and navigation. |

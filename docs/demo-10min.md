@@ -1,11 +1,15 @@
-# Ten-Minute Demonstration
+# Ten-Minute Demonstration (Terminal Fallback)
+
+The primary flow is the recorded presentation: `make demo-record`, then
+`make present-visual`. This page keeps the older terminal-only, Run-B-only
+narrative for a machine where the recorded bundle cannot be used.
 
 ## Before The Audience
 
 Run `make demo-10m-preflight`. It confirms the pinned local FLAN-T5 and Prompt
 Guard files, the OPA and Cosign binaries, and the restricted runtime image. Start
-`make showcase-live` in another terminal only if the evidence timeline is useful;
-the page is display-only.
+`make showcase-live` in another terminal only if you want the live projection
+while this fallback runs; the page is display-only.
 
 ## Run Of Show
 

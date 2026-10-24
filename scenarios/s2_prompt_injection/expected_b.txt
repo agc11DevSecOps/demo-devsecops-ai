@@ -1,1 +1,1 @@
-Prompt Guard + normalization block the 10 attacks; benign paraphrase ALLOWED. Without the classifier, rules block the attacks and the evidence remains labelled accordingly.
+Normalization and rules block 10/10 attacks; Prompt Guard 2 22M flags 8/10; the benign paraphrase passes the screen.

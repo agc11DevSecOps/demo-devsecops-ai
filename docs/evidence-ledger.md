@@ -6,6 +6,8 @@
 | AISVS catalog and applicability | `scorecard/requirements_v1.01.json`, `applicability.yaml` | Pinned requirement catalog and declared exclusions | Defines scorecard rows and denominator |
 | Scorecard views | `app/scorecard.py` writes `scorecard/out.md`, `scorecard/out.html`, and `scorecard/delta.csv` | Derived requirement and chapter summaries | Output only; not evidence input |
 | Visual evidence | `evidence/visual/` | Bounded presentation records bound to the corresponding event hash | Display only; never scorecard input |
+| Live evaluation | `artifacts/inspect-live.json`, `artifacts/inspect-logs/`, `artifacts/inspect-view/` | Deterministic Inspect results, scanned logs and the frozen viewer bundle | Display only; never scorecard input |
+| Recording | `artifacts/recording.json`, `record/showcase-runs/<id>/` | Phase timings, the digest-free projection and a manifest of every declared file | Presentation input, verified before serving |
 | Workload audit | `artifacts/ops-assist.jsonl` | Hash-only request, decision, model, and citation metadata | Supporting audit record; no AISVS scorecard authority |
 | S5 approval audit | `artifacts/approvals.jsonl` | Hash-only approval decision record | Supporting audit record; authorization evidence remains in S5 JSONL |
 | Garak aggregate | `artifacts/garak-s7.json` | Schema-checked campaign aggregate used to emit S7 evidence | Supporting input, not scorecard input by itself |

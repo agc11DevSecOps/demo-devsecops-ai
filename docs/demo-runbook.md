@@ -1,8 +1,9 @@
 # Demo Runbook
 
-This is the complete presenter script. It assumes you have read
-[`demo-10min.md`](demo-10min.md) at least once and rehearsed the run of show
-below. Every command, output and file path here is real and is exercised by
+This is the complete presenter script for the recorded presentation. Run
+`make demo-record` and `make demo-record-appendix` before the session, then
+present from the frozen bundle with `make present-visual`. Rehearse the run of
+show below at least once. Every command, output and file path here is real and is exercised by
 the test suite.
 
 ## How To Use This Runbook
@@ -556,7 +557,7 @@ make GARAK_LIMIT=5 demo
 | A scenario fails with `Permission denied` on `evidence/` | The mounts are root-owned | `make prepare-writable-dirs` | "A file-permission detail in the container mounts; one second." |
 | The image is missing | Rebuild | `make container-build` | "Rebuilding the restricted image." |
 | Port 8080 or 8091 is busy | Change the port | `OPS_DEMO_GATEWAY_PORT=18080 make compose-up` | "The gateway moves to another local port." |
-| The viewer shows nothing | It was started after the demo | Start it first: `make showcase-live` | "The browser view is a live tail; the evidence files are the source of truth." |
+| The viewer shows nothing | No complete bundle, or the bundle was altered | `make demo-record`, then `make present-visual` | "The presentation is a verified recording; let me restart it." |
 | `opa` is missing | Fetch it | `make fetch-tools` | "The policy engine is a pinned binary that has to be fetched." |
 | The demo command fails halfway | Re-run the block | `make SCENARIO=Sn container-run-b-exec` | "Let me re-run that control." |
 | Everything is broken | Fall back to the talk | Show `docs/architecture.mmd` and `docs/policies.md` | "The artefacts are on disk; let me walk you through the design while the environment recovers." |
@@ -569,11 +570,13 @@ T-1 HOUR
 [ ] make test                     -> OK (skipped=5)
 [ ] make test-policy              -> PASS: 14/14
 [ ] make demo-10m-preflight       -> no output means success
+[ ] make demo-record              -> bundle verified, within budget
+[ ] make demo-record-appendix     -> optional full 55/55 S7 appendix
 [ ] HF_TOKEN rotated if it was pasted in a chat or a log
 
 T-15 MINUTES
-[ ] Terminal A ready, font large
-[ ] Terminal B: make showcase-live -> http://127.0.0.1:8091/
+[ ] Terminal ready, font large
+[ ] make present-visual           -> http://127.0.0.1:8091/
 [ ] Browser tab open on 127.0.0.1:8091
 [ ] scorecard/out.html open in a second tab
 [ ] docs/architecture.mmd and docs/policies.md open in the editor

@@ -138,7 +138,12 @@ consistency checks.
 | `make test-gateway-unit` | Gateway contract tests inside the restricted image |
 | `make policy-template` | Generate a reviewable policy draft |
 | `make policy-template-test` | Catalogue and standards checks |
-| `make demo-10m` | The strict ten-minute demo |
+| `make demo-record` | Record the presentation unattended, timed and verified |
+| `make demo-record-appendix` | Add the full 55-prompt S7 campaign to a new bundle |
+| `make present-visual` | Serve the latest verified bundle, read-only |
+| `make demo-10m` | The strict, Run-B-only ten-minute terminal fallback |
+| `make inspect-eval` | Live Inspect check on an internal Docker network |
+| `make diagrams` | Re-extract the sanitized Archify SVGs |
 | `make GARAK_LIMIT=5 demo` | The full scenario catalogue |
 | `make pipeline` | The offline delivery pipeline |
 | `make scorecard` | Derive the scorecard views |

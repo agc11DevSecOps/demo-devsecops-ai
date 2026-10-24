@@ -21,6 +21,8 @@ TOOL_PAGES = (
     "qdrant.md",
     "mcp.md",
     "garak.md",
+    "inspect.md",
+    "archify.md",
     "gateway-fastapi.md",
     "github-actions.md",
 )

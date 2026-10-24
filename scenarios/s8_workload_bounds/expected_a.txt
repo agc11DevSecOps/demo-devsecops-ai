@@ -1,1 +1,1 @@
-Unbounded input/output and model-generated attribution (baseline).
+Over-length question reaches the model; a source marker and a model-written citation are returned. The over-length answer baseline remains DESIGNED.
