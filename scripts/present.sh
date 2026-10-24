@@ -11,12 +11,13 @@
 #   DEMO_COLOR=1         force colour even when not a TTY
 #   GARAK_LIMIT=N        forwarded to the red-team campaign (default 5)
 #   DEMO_TMUX=0          never use tmux, run inline
+#   DEMO_TARGET=target    make target to run (default: demo)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 run_demo() {
-  make "GARAK_LIMIT=${GARAK_LIMIT:-5}" demo 2>&1 | python3 -m app.present
+  make "GARAK_LIMIT=${GARAK_LIMIT:-5}" "${DEMO_TARGET:-demo}" 2>&1 | python3 -m app.present
 }
 
 if [ "${DEMO_TMUX:-1}" = "1" ] && [ "${1:-}" != "--inline" ] && command -v tmux >/dev/null 2>&1 && [ -t 1 ]; then

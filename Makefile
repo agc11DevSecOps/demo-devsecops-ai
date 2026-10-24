@@ -18,6 +18,11 @@ RUNB_WORKLOAD_READY := $(and $(wildcard $(PROMPT_GUARD_MODEL)),$(wildcard $(WORK
 RUNB_MEMORY := $(if $(RUNB_WORKLOAD_READY),2g,$(if $(wildcard $(PROMPT_GUARD_MODEL)),1g,512m))
 RUNB_MODELS_VOLUME := $(if $(or $(wildcard $(PROMPT_GUARD_MODEL)),$(wildcard $(WORKLOAD_MODEL))),--volume "$(CURDIR)/vendor/models:/models:ro",)
 RUNB_PROMPT_GUARD := $(if $(wildcard $(PROMPT_GUARD_MODEL)),--env OPS_DEMO_PROMPT_GUARD=1 --env OPS_DEMO_PROMPT_GUARD_MODEL=/models/prompt-guard-2-22m --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1,)
+# Run A uses the unguarded lab (real FLAN-T5, no application controls) when the
+# workload model is present. Lab containment stays: same restricted runner, no
+# network, models read-only, sandbox-only effects. No control flag is ever set.
+RUNA_LAB_READY := $(wildcard $(WORKLOAD_MODEL))
+RUNA_PROFILE := $(if $(RUNA_LAB_READY),--memory 2g --cpus 0.5 --pids-limit 64 --env OPS_DEMO_UNGUARDED_LAB=1 --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1 --env TOKENIZERS_PARALLELISM=false --volume "$(CURDIR)/vendor/models:/models:ro",--memory 128m --cpus 0.5 --pids-limit 32)
 RUNB_WORKLOAD := $(if $(RUNB_WORKLOAD_READY),--env OPS_DEMO_WORKLOAD=1 --env OPS_DEMO_WORKLOAD_MODE=local --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env TOKENIZERS_PARALLELISM=false,)
 LOCAL_WORKLOAD_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 2g --cpus 0.5 --pids-limit 64 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_PROMPT_GUARD=1 --env OPS_DEMO_PROMPT_GUARD_MODEL=/models/prompt-guard-2-22m --env OPS_DEMO_PRESIDIO=1 --env OPS_DEMO_VECTOR=1 --env OPS_DEMO_WORKLOAD_MODE=local --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1 --env TOKENIZERS_PARALLELISM=false --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/vendor/models:/models:ro" --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local
 PIPELINE_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 2g --cpus 0.5 --pids-limit 64 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_FICKLING=1 --env OPS_DEMO_MODELSCAN=1 --env OPS_DEMO_COSIGN=1 --env OPS_DEMO_OPA=1 --env OPS_DEMO_PROMPT_GUARD=1 --env OPS_DEMO_PROMPT_GUARD_MODEL=/models/prompt-guard-2-22m --env OPS_DEMO_PRESIDIO=1 --env OPS_DEMO_VECTOR=1 --env OPS_DEMO_WORKLOAD_MODE=local --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1 --env TOKENIZERS_PARALLELISM=false --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/vendor/models:/models:ro" --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local
@@ -25,7 +30,7 @@ PIPELINE_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1
 # for the final run. A reduced run is reported PARTIAL and never counts as PASS.
 GARAK_LIMIT ?= 5
 
-.PHONY: reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose test-gateway-unit prepare-writable-dirs provision env-check setup demo demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present policy-template policy-template-test showcase-build showcase-serve showcase-live challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
+.PHONY: demo-record demo-record-appendix reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose test-gateway-unit prepare-writable-dirs provision env-check setup demo demo-ab demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present present-visual diagrams inspect-build inspect-eval fetch-inspect policy-template policy-template-test showcase-build showcase-serve showcase-live challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
 
 setup: provision
 
@@ -83,7 +88,7 @@ container-run-a: container-build
 
 # Run one optional scenario from the already-built Run A image.
 container-run-a-exec:
-	docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 128m --cpus 0.5 --pids-limit 32 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_IN_CONTAINER=1 --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local run --run A $(if $(SCENARIO),--scenario $(SCENARIO))
+	docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m $(RUNA_PROFILE) --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_IN_CONTAINER=1 --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local run --run A $(if $(SCENARIO),--scenario $(SCENARIO))
 
 container-run-b: container-build
 	$(MAKE) container-run-b-exec
@@ -187,6 +192,29 @@ demo: reset container-build garak-build
 
 # Ten-minute narrative: the local models and named controls are mandatory.
 # It avoids the full Garak campaign and keeps S6 as a documented appendix.
+# Visual presentation: paired A/B evidence for the main cards, excluding S6/S7.
+# The S7 appendix is run separately with the full admitted Garak campaign.
+# Record the presentation ahead of the talk. Unattended, sequential and timed;
+# fails when the recording exceeds the budget. Nothing runs during the talk.
+demo-record:
+	./scripts/demo_record.sh
+
+# Optional red-team appendix (full 55-prompt Garak campaign) on top of the main
+# recording. A reduced campaign stays PARTIAL.
+demo-record-appendix:
+	./scripts/demo_record_appendix.sh
+
+demo-ab: reset container-build
+	$(MAKE) demo-s0
+	$(MAKE) demo-s1
+	$(MAKE) demo-s2
+	$(MAKE) demo-s3
+	$(MAKE) demo-s4
+	$(MAKE) demo-s5
+	$(MAKE) demo-s8
+	$(MAKE) pipeline
+	$(MAKE) scorecard
+
 demo-10m-preflight: container-build
 	@test -x vendor/opa || (printf '%s\n' 'Missing pinned OPA binary: run make fetch-tools.'; exit 2)
 	@test -x vendor/cosign || (printf '%s\n' 'Missing pinned Cosign binary: run make fetch-tools.'; exit 2)
@@ -326,6 +354,27 @@ container-pipeline: demo-10m-preflight
 
 present:
 	./scripts/present.sh --inline
+
+present-visual:
+	./scripts/present_visual.sh
+
+diagrams:
+	@test -d presentation/archify/out || (printf '%s\n' 'Missing Archify output: rerun the admitted authoring and delivery flow.'; exit 2)
+	$(PYTHON) tools/extract_diagrams.py
+
+fetch-inspect:
+	$(PYTHON) tools/fetch_inspect.py
+
+inspect-build:
+	@test -d vendor/inspect || (printf '%s\n' 'Missing Inspect wheel set: run make fetch-inspect.'; exit 2)
+	docker build --network none --target inspect -t demo-devsecops-ai:inspect .
+
+# Live behaviour check on an internal Docker network (no egress, no published
+# port). The target is reachable only by the Inspect container.
+inspect-eval: inspect-build container-build
+	@mkdir -p artifacts
+	./scripts/inspect_live.sh
+
 
 showcase-build:
 	$(PYTHON) -m app.cli showcase-build $(if $(SHOWCASE_RUN_ID),--showcase-run-id $(SHOWCASE_RUN_ID))

@@ -26,3 +26,6 @@ policy-drafts/
 .env
 .env.local
 !.env.example
+
+presentation/archify/out/
+vendor/inspect/
