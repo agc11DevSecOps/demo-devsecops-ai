@@ -30,13 +30,17 @@ ASSET_ROOT = ROOT / "showcase"
 INSPECT_VIEW = ARTIFACTS / "inspect-view"
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 NONCE = re.compile(r"^[A-Za-z0-9-]{8,48}$")
+# The first three names are legacy audit assets retained in bundles frozen
+# before the recorded viewer replaced the old dashboard. New bundles do not
+# copy them; the allow-list only keeps old bundles verifiable.
 ALLOWED_EXACT = frozenset({
-    "index.html", "app.js", "style.css", "present.html", "present.js", "present.css",
+    "index.html", "app.js", "style.css",
+    "present.html", "present.js", "present.css",
     "manifest.json", "observations.json", "dossier.json", "challenge.json", "trace.json",
     "response.json", "replay.json", "presentation.json", "recording.json",
 }) | frozenset(f"diagram-{name}.svg" for name in DIAGRAMS)
 ALLOWED_PREFIXES = ("inspect/",)
-ASSET_FILES = {"index.html": "index.html", "app.js": "app.js", "style.css": "style.css", "present.html": "present.html", "present.js": "present.js", "present.css": "present.css"}
+ASSET_FILES = {"present.html": "present.html", "present.js": "present.js", "present.css": "present.css"}
 CONTENT_TYPES = {
     ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript",
     ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml",
@@ -427,7 +431,6 @@ class _LiveShowcaseHandler(BaseHTTPRequestHandler):
     sys_version = ""
     static_files = {
         "/": "present.html", "/present.js": "present.js", "/present.css": "present.css",
-        "/index.html": "index.html", "/app.js": "app.js", "/style.css": "style.css",
     }
 
     def do_GET(self) -> None:  # noqa: N802

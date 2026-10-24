@@ -92,11 +92,9 @@ class ShowcaseTests(unittest.TestCase):
                     create_challenge("../escape", "audience-002")
 
     def test_dashboard_does_not_use_html_data_sink(self) -> None:
-        root = Path(__file__).resolve().parents[1] / "showcase"
-        for filename in ("app.js", "present.js"):
-            script = (root / filename).read_text(encoding="utf-8")
-            self.assertNotIn("innerHTML", script)
-            self.assertIn("textContent", script)
+        script = (Path(__file__).resolve().parents[1] / "showcase" / "present.js").read_text(encoding="utf-8")
+        self.assertNotIn("innerHTML", script)
+        self.assertIn("textContent", script)
 
     def test_live_dashboard_shows_the_honest_evidence_label(self) -> None:
         script = (Path(__file__).resolve().parents[1] / "showcase" / "present.js").read_text(encoding="utf-8")
