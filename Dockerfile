@@ -29,3 +29,17 @@ RUN python -m pip install --no-index --no-cache-dir --no-deps --require-hashes \
         --find-links /tmp/garak-wheels -r /tmp/garak-requirements.lock \
     && rm -rf /tmp/garak-wheels /tmp/garak-requirements.lock
 USER 10001:10001
+
+FROM python:3.12-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f AS inspect
+
+WORKDIR /app
+COPY vendor/inspect /tmp/wheels
+COPY evals/requirements.lock /tmp/inspect-requirements.lock
+RUN python -m pip install --no-index --no-cache-dir --require-hashes \
+        --find-links /tmp/wheels -r /tmp/inspect-requirements.lock \
+    && rm -rf /tmp/wheels /tmp/inspect-requirements.lock
+COPY evals /app/evals
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+USER 10001:10001
+ENTRYPOINT ["python", "-m", "evals.live_task"]

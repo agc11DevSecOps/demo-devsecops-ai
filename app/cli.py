@@ -19,7 +19,7 @@ DEMO_REQUESTS = {
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["reset", "run", "workload", "demo-request", "gateway", "garak", "kill", "unkill", "pipeline", "showcase-build", "showcase-serve", "showcase-live", "challenge-create", "challenge-run", "challenge-replay"])
+    parser.add_argument("command", choices=["reset", "run", "workload", "demo-request", "gateway", "garak", "kill", "unkill", "pipeline", "showcase-build", "showcase-serve", "showcase-live", "showcase-verify", "eval-target", "challenge-create", "challenge-run", "challenge-replay"])
     parser.add_argument("--run", choices=["A", "B"])
     parser.add_argument("--scenario", choices=sorted(SCENARIOS))
     parser.add_argument("--stage", type=int, choices=range(1, 12))
@@ -31,11 +31,20 @@ def main() -> None:
     parser.add_argument("--case", choices=sorted(DEMO_REQUESTS))
     parser.add_argument("--showcase-run-id")
     parser.add_argument("--nonce")
+    parser.add_argument("--require-complete", action="store_true")
     # Servers use different safe defaults; leave selection to each command.
     parser.add_argument("--port", type=int)
     args = parser.parse_args()
     if args.command == "reset":
         reset(clear_evidence=not args.preserve_evidence)
+        return
+    if args.command == "eval-target":
+        from app.eval_target import EvalTargetError, serve as serve_eval_target
+
+        try:
+            serve_eval_target()
+        except EvalTargetError as error:
+            parser.error(str(error))
         return
     if args.command == "gateway":
         from app.gateway import serve as serve_gateway
@@ -64,6 +73,14 @@ def main() -> None:
                 return
             if args.showcase_run_id is None:
                 parser.error("challenge and showcase serve commands require --showcase-run-id")
+            if args.command == "showcase-verify":
+                if args.showcase_run_id is None:
+                    parser.error("showcase-verify requires --showcase-run-id")
+                from app.showcase import verify_bundle
+
+                verify_bundle(args.showcase_run_id, require_complete=args.require_complete)
+                print(args.showcase_run_id)
+                return
             if args.command == "showcase-serve":
                 serve_bundle(args.showcase_run_id, 8090 if args.port is None else args.port)
                 return
