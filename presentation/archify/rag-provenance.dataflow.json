@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Retrieval Provenance Filter",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      680
+    ],
+    "output": "presentation/archify/out/rag-provenance.html"
+  },
+  "stages": [
+    {
+      "label": "Corpus"
+    },
+    {
+      "label": "Admission"
+    },
+    {
+      "label": "Index"
+    },
+    {
+      "label": "Query"
+    },
+    {
+      "label": "Use"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "upload",
+      "type": "external",
+      "label": "Synthetic document",
+      "sublabel": "fixture content",
+      "stage": 0,
+      "row": 1,
+      "tag": "untrusted"
+    },
+    {
+      "id": "allowlist",
+      "type": "security",
+      "label": "Writer allowlist",
+      "sublabel": "source + path",
+      "stage": 1,
+      "row": 0,
+      "tag": "ingest gate"
+    },
+    {
+      "id": "quarantine",
+      "type": "security",
+      "label": "Quarantine",
+      "sublabel": "rejected document",
+      "stage": 1,
+      "row": 2,
+      "tag": "not indexed"
+    },
+    {
+      "id": "index",
+      "type": "database",
+      "label": "Qdrant",
+      "sublabel": "trusted chunks",
+      "stage": 2,
+      "row": 0,
+      "tag": "local"
+    },
+    {
+      "id": "filtered",
+      "type": "security",
+      "label": "Trusted retrieval",
+      "sublabel": "provenance filter",
+      "stage": 3,
+      "row": 0,
+      "tag": "enforced B"
+    },
+    {
+      "id": "unfiltered",
+      "type": "security",
+      "label": "Blind retrieval",
+      "sublabel": "filter disabled",
+      "stage": 3,
+      "row": 2,
+      "tag": "baseline A"
+    },
+    {
+      "id": "model",
+      "type": "backend",
+      "label": "Local answer",
+      "sublabel": "bounded output",
+      "stage": 4,
+      "row": 0,
+      "tag": "trusted context"
+    },
+    {
+      "id": "deny",
+      "type": "security",
+      "label": "Reject context",
+      "sublabel": "no poisoned answer",
+      "stage": 4,
+      "row": 2,
+      "tag": "fail closed"
+    }
+  ],
+  "flows": [
+    {
+      "from": "upload",
+      "to": "allowlist",
+      "label": "submit",
+      "classification": "untrusted content",
+      "variant": "emphasis"
+    },
+    {
+      "from": "allowlist",
+      "to": "quarantine",
+      "label": "source denied",
+      "classification": "quarantined",
+      "variant": "security",
+      "labelAt": [
+        315,
+        200
+      ]
+    },
+    {
+      "from": "allowlist",
+      "to": "index",
+      "label": "trusted writer",
+      "classification": "admitted chunks",
+      "variant": "emphasis"
+    },
+    {
+      "from": "index",
+      "to": "filtered",
+      "label": "retrieve",
+      "classification": "provenance bound",
+      "variant": "emphasis",
+      "route": "straight",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        610,
+        110
+      ]
+    },
+    {
+      "from": "index",
+      "to": "unfiltered",
+      "label": "retrieve all",
+      "classification": "provenance ignored",
+      "variant": "security"
+    },
+    {
+      "from": "filtered",
+      "to": "model",
+      "label": "trusted context",
+      "classification": "answer allowed",
+      "variant": "emphasis"
+    },
+    {
+      "from": "unfiltered",
+      "to": "deny",
+      "label": "poisoned hit",
+      "classification": "answer suppressed",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Provenance Is Checked",
+      "items": [
+        "Ingest records writer and source path",
+        "Retrieval filters on admitted provenance",
+        "The model only sees trusted context"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Baseline Contrast",
+      "items": [
+        "The same synthetic poison is reachable without the filter",
+        "The restricted baseline cannot exercise production data",
+        "A blocked hit is evidence of the control, not general immunity"
+      ]
+    }
+  ]
+}

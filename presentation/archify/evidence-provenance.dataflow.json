@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Evidence Ledger To Public Projection",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      700
+    ],
+    "output": "presentation/archify/out/evidence-provenance.html"
+  },
+  "stages": [
+    {
+      "label": "Execute"
+    },
+    {
+      "label": "Record"
+    },
+    {
+      "label": "Validate"
+    },
+    {
+      "label": "Project"
+    },
+    {
+      "label": "Audit"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "runner",
+      "type": "backend",
+      "label": "Scenario runner",
+      "sublabel": "A / B pairs",
+      "stage": 0,
+      "row": 0,
+      "tag": "localhost"
+    },
+    {
+      "id": "tools",
+      "type": "security",
+      "label": "Local controls",
+      "sublabel": "scanners + OPA",
+      "stage": 0,
+      "row": 2,
+      "tag": "no network"
+    },
+    {
+      "id": "ledger",
+      "type": "database",
+      "label": "Authoritative ledger",
+      "sublabel": "hash-bound events",
+      "stage": 1,
+      "row": 0,
+      "tag": "retained",
+      "width": 144
+    },
+    {
+      "id": "visual",
+      "type": "database",
+      "label": "Visual evidence",
+      "sublabel": "safe payload",
+      "stage": 1,
+      "row": 2,
+      "tag": "display only"
+    },
+    {
+      "id": "projector",
+      "type": "security",
+      "label": "Projection",
+      "sublabel": "allowlist + redact",
+      "stage": 2,
+      "row": 1,
+      "tag": "fail closed"
+    },
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Browser viewer",
+      "sublabel": "no hashes",
+      "stage": 3,
+      "row": 0,
+      "tag": "loopback"
+    },
+    {
+      "id": "inspect",
+      "type": "backend",
+      "label": "Inspect checks",
+      "sublabel": "live A/B checks",
+      "stage": 3,
+      "row": 2,
+      "tag": "live checks"
+    },
+    {
+      "id": "bundle",
+      "type": "cloud",
+      "label": "Retained bundle",
+      "sublabel": "manifest + diagrams",
+      "stage": 4,
+      "row": 1,
+      "tag": "hashed"
+    }
+  ],
+  "flows": [
+    {
+      "from": "tools",
+      "to": "runner",
+      "label": "results",
+      "classification": "measured",
+      "variant": "emphasis",
+      "labelAt": [
+        100,
+        428
+      ]
+    },
+    {
+      "from": "runner",
+      "to": "ledger",
+      "label": "append event",
+      "classification": "authoritative",
+      "variant": "emphasis",
+      "route": "straight",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        190,
+        110
+      ]
+    },
+    {
+      "from": "runner",
+      "to": "visual",
+      "label": "safe fields",
+      "classification": "display only",
+      "variant": "default"
+    },
+    {
+      "from": "ledger",
+      "to": "projector",
+      "label": "bind by event hash",
+      "classification": "integrity check",
+      "variant": "security"
+    },
+    {
+      "from": "visual",
+      "to": "projector",
+      "label": "visual facts",
+      "classification": "validated",
+      "variant": "default"
+    },
+    {
+      "from": "projector",
+      "to": "browser",
+      "label": "public JSON",
+      "classification": "redacted",
+      "variant": "emphasis"
+    },
+    {
+      "from": "projector",
+      "to": "inspect",
+      "label": "observations",
+      "classification": "bounded",
+      "variant": "default"
+    },
+    {
+      "from": "browser",
+      "to": "bundle",
+      "label": "presentation",
+      "classification": "review artifact",
+      "variant": "dashed"
+    },
+    {
+      "from": "inspect",
+      "to": "bundle",
+      "label": "checks",
+      "classification": "review artifact",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "One Authoritative Record",
+      "items": [
+        "The ledger is written by code, not the model",
+        "The visual record is bound by event hash",
+        "Hashes stay inside the retained artifact"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Public Surface Is Narrow",
+      "items": [
+        "The projector allows only declared fields",
+        "Long digests and secrets are removed",
+        "The browser cannot read the authoritative ledger"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Run B: The Same AI Flow With Controls Enforced",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/ai-flow-guarded.html"
+  },
+  "lanes": [
+    { "id": "request", "label": "Synthetic request" },
+    { "id": "guardrails", "label": "Deterministic controls" },
+    { "id": "model", "label": "Local model" },
+    { "id": "boundary", "label": "Boundary and result" }
+  ],
+  "mainPath": ["prompt", "input", "screen", "retrieve", "infer", "output", "gate", "noeffect"],
+  "nodes": [
+    { "id": "prompt", "lane": "request", "col": 0, "type": "frontend", "label": "Fixed payload", "sublabel": "same as Run A", "width": 120 },
+    { "id": "input", "lane": "guardrails", "col": 1, "type": "security", "label": "Input contract", "sublabel": "schema + 1,024 chars", "tag": "fail closed", "width": 132 },
+    { "id": "screen", "lane": "guardrails", "col": 2, "type": "security", "label": "Injection screen", "sublabel": "normalize, rules, Prompt Guard", "tag": "threshold 0.5", "width": 168 },
+    { "id": "retrieve", "lane": "guardrails", "col": 3, "type": "security", "label": "PII + provenance", "sublabel": "Presidio, writer allow-list", "tag": "Qdrant writer=trusted", "width": 152 },
+    { "id": "infer", "lane": "model", "col": 4, "type": "backend", "label": "FLAN-T5-small", "sublabel": "pinned SafeTensors", "tag": "local CPU, offline", "width": 136 },
+    { "id": "output", "lane": "guardrails", "col": 5, "type": "security", "label": "Output contract", "sublabel": "length, markers, PII", "tag": "code citations", "width": 132 },
+    { "id": "gate", "lane": "boundary", "col": 5, "type": "security", "label": "Tool boundary", "sublabel": "OPA deny by default", "tag": "approval binding", "width": 132 },
+    { "id": "noeffect", "lane": "boundary", "col": 5, "type": "backend", "label": "No effect", "sublabel": "denied, nothing executed", "tag": "evidence only", "width": 132, "yOffset": 120 }
+  ],
+  "edges": [
+    { "from": "prompt", "to": "input", "label": "validated" },
+    { "from": "input", "to": "screen", "label": "bounded text" },
+    { "from": "screen", "to": "retrieve", "label": "benign only" },
+    { "from": "retrieve", "to": "infer", "label": "masked trusted context" },
+    { "from": "infer", "to": "output", "label": "raw output" },
+    { "from": "output", "to": "gate", "label": "any tool proposal" },
+    { "from": "gate", "to": "noeffect", "label": "denied", "variant": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Same Payload, Enforced Path",
+      "items": [
+        "Each control sits at the stage it protects",
+        "A block or denial is recorded before any inference or effect",
+        "Citations and effects are produced by code, never by the model"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Limits Stay Visible",
+      "items": [
+        "Cosign uses a local key and no transparency log",
+        "Qdrant uses a deterministic demo embedding",
+        "A block is evidence, never a general safety verdict"
+      ]
+    }
+  ]
+}

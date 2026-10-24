@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Model Admission Before Load",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/model-admission.html"
+  },
+  "lanes": [
+    { "id": "artifact", "label": "Artifact source" },
+    { "id": "scan", "label": "Static inspection" },
+    { "id": "policy", "label": "Admission decision" },
+    { "id": "runtime", "label": "Runtime" },
+    { "id": "blocked", "label": "Quarantine", "variant": "exception" }
+  ],
+  "mainPath": ["pickle", "fickling", "modelscan", "safetensors", "cosign", "opa", "loader"],
+  "nodes": [
+    { "id": "pickle", "lane": "artifact", "col": 0, "type": "database", "label": "Fixture model", "sublabel": "synthetic artifact" },
+    { "id": "fickling", "lane": "scan", "col": 1, "type": "security", "label": "Fickling", "sublabel": "pickle opcodes", "tag": "MEASURED" },
+    { "id": "modelscan", "lane": "scan", "col": 2, "type": "security", "label": "ModelScan", "sublabel": "malicious patterns", "tag": "MEASURED" },
+    { "id": "safetensors", "lane": "scan", "col": 3, "type": "security", "label": "Format check", "sublabel": "safetensors only" },
+    { "id": "cosign", "lane": "scan", "col": 4, "type": "security", "label": "Signature", "sublabel": "cosign verify", "tag": "optional" },
+    { "id": "opa", "lane": "policy", "col": 5, "type": "security", "label": "OPA policy", "sublabel": "admission.rego" },
+    { "id": "loader", "lane": "runtime", "col": 5, "type": "backend", "label": "Load model", "sublabel": "after allow" },
+    { "id": "quarantine", "lane": "blocked", "col": 3, "type": "security", "label": "Deny + retain", "sublabel": "no unpickle", "tag": "fail closed" }
+  ],
+  "edges": [
+    { "from": "pickle", "to": "fickling", "label": "inspect" },
+    { "from": "fickling", "to": "modelscan", "label": "clean" },
+    { "from": "modelscan", "to": "safetensors", "label": "clean" },
+    { "from": "safetensors", "to": "cosign", "label": "eligible" },
+    { "from": "cosign", "to": "opa", "label": "evidence" },
+    { "from": "opa", "to": "loader", "label": "allow" },
+    { "from": "fickling", "to": "quarantine", "label": "unsafe opcode", "variant": "security", "role": "error" },
+    { "from": "modelscan", "to": "quarantine", "label": "malicious", "variant": "security", "role": "error" },
+    { "from": "opa", "to": "quarantine", "label": "deny", "variant": "security", "role": "error" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Verified Before Load", "items": ["The fixture is inspected before deserialization", "Format and signature checks are independent", "Policy consumes scanner evidence, not a model claim"] },
+    { "dot": "rose", "title": "No Silent Import", "items": ["A scanner hit retains evidence and stops the load", "The baseline only demonstrates the unsafe reachability", "Admission does not prove general model safety"] }
+  ]
+}

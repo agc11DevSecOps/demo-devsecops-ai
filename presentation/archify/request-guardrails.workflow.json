@@ -1,0 +1,181 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Guarded Local AI Request",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/request-guardrails.html"
+  },
+  "lanes": [
+    {
+      "id": "request",
+      "label": "Request"
+    },
+    {
+      "id": "guardrails",
+      "label": "Deterministic guardrails"
+    },
+    {
+      "id": "model",
+      "label": "Local model"
+    },
+    {
+      "id": "result",
+      "label": "Bounded result"
+    },
+    {
+      "id": "blocked",
+      "label": "Blocked path",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "prompt",
+    "normalize",
+    "guard",
+    "retrieve",
+    "infer",
+    "validate",
+    "answer"
+  ],
+  "nodes": [
+    {
+      "id": "prompt",
+      "lane": "request",
+      "col": 0,
+      "type": "frontend",
+      "label": "Synthetic prompt",
+      "sublabel": "bounded input",
+      "width": 112
+    },
+    {
+      "id": "normalize",
+      "lane": "guardrails",
+      "col": 1,
+      "type": "security",
+      "label": "Normalize",
+      "sublabel": "special tokens",
+      "tag": "app/security/input.py"
+    },
+    {
+      "id": "guard",
+      "lane": "guardrails",
+      "col": 2,
+      "type": "security",
+      "label": "Prompt Guard",
+      "sublabel": "classifier + rules",
+      "tag": "threshold 0.5"
+    },
+    {
+      "id": "retrieve",
+      "lane": "guardrails",
+      "col": 3,
+      "type": "security",
+      "label": "Provenance filter",
+      "sublabel": "trusted writer only",
+      "width": 112
+    },
+    {
+      "id": "infer",
+      "lane": "model",
+      "col": 4,
+      "type": "backend",
+      "label": "FLAN-T5-small",
+      "sublabel": "local CPU only",
+      "tag": "offline"
+    },
+    {
+      "id": "validate",
+      "lane": "guardrails",
+      "col": 5,
+      "type": "security",
+      "label": "Output contract",
+      "sublabel": "length + marker",
+      "tag": "code-derived citations",
+      "width": 112
+    },
+    {
+      "id": "answer",
+      "lane": "result",
+      "col": 5,
+      "type": "backend",
+      "label": "Bounded answer",
+      "sublabel": "untrusted data"
+    },
+    {
+      "id": "reject",
+      "lane": "blocked",
+      "col": 3,
+      "type": "security",
+      "label": "Reject",
+      "sublabel": "fail closed",
+      "tag": "no inference"
+    }
+  ],
+  "edges": [
+    {
+      "from": "prompt",
+      "to": "normalize",
+      "label": "input"
+    },
+    {
+      "from": "normalize",
+      "to": "guard",
+      "label": "normalized"
+    },
+    {
+      "from": "guard",
+      "to": "reject",
+      "label": "attack",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "guard",
+      "to": "retrieve",
+      "label": "benign"
+    },
+    {
+      "from": "retrieve",
+      "to": "infer",
+      "label": "trusted context"
+    },
+    {
+      "from": "infer",
+      "to": "validate",
+      "label": "raw output"
+    },
+    {
+      "from": "validate",
+      "to": "answer",
+      "label": "valid"
+    },
+    {
+      "from": "validate",
+      "to": "reject",
+      "label": "invalid",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "One Main Path",
+      "items": [
+        "Input is bounded before any model work",
+        "Retrieval and output are separate deterministic checks",
+        "The answer remains untrusted data"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Fail Closed",
+      "items": [
+        "A classifier or normalization hit stops the request",
+        "Invalid model output never reaches the caller",
+        "No model output authorizes a tool"
+      ]
+    }
+  ]
+}

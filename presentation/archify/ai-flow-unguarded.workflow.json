@@ -1,0 +1,178 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Run A: Local AI Flow Without Application Controls",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/ai-flow-unguarded.html"
+  },
+  "lanes": [
+    {
+      "id": "request",
+      "label": "Synthetic request"
+    },
+    {
+      "id": "absent",
+      "label": "Application controls absent",
+      "variant": "exception"
+    },
+    {
+      "id": "model",
+      "label": "Local model"
+    },
+    {
+      "id": "effect",
+      "label": "Naive agent and sandbox effect"
+    }
+  ],
+  "mainPath": [
+    "prompt",
+    "input",
+    "screen",
+    "retrieve",
+    "infer",
+    "output",
+    "agent",
+    "effect"
+  ],
+  "nodes": [
+    {
+      "id": "prompt",
+      "lane": "request",
+      "col": 0,
+      "type": "frontend",
+      "label": "Fixed payload",
+      "sublabel": "synthetic question + corpus",
+      "width": 128
+    },
+    {
+      "id": "input",
+      "lane": "absent",
+      "col": 1,
+      "type": "security",
+      "label": "No input contract",
+      "sublabel": "no schema, no length limit",
+      "tag": "absent",
+      "width": 136
+    },
+    {
+      "id": "screen",
+      "lane": "absent",
+      "col": 2,
+      "type": "security",
+      "label": "No injection screen",
+      "sublabel": "raw text to prompt",
+      "tag": "absent",
+      "width": 148
+    },
+    {
+      "id": "retrieve",
+      "lane": "absent",
+      "col": 3,
+      "type": "security",
+      "label": "Unfiltered retrieval",
+      "sublabel": "Qdrant, no filter",
+      "tag": "untrusted upload ranked",
+      "width": 148
+    },
+    {
+      "id": "infer",
+      "lane": "model",
+      "col": 4,
+      "type": "backend",
+      "label": "FLAN-T5-small",
+      "sublabel": "pinned SafeTensors",
+      "tag": "local CPU, offline",
+      "width": 136
+    },
+    {
+      "id": "output",
+      "lane": "absent",
+      "col": 5,
+      "type": "security",
+      "label": "No output validation",
+      "sublabel": "raw model text returned",
+      "tag": "absent",
+      "width": 148
+    },
+    {
+      "id": "agent",
+      "lane": "effect",
+      "col": 5,
+      "type": "backend",
+      "label": "Naive tool agent",
+      "sublabel": "runs tool names it reads",
+      "tag": "delete_branch, export",
+      "width": 140
+    },
+    {
+      "id": "effect",
+      "lane": "effect",
+      "col": 5,
+      "type": "security",
+      "label": "Sandbox effect",
+      "sublabel": "branch removed, CSV written",
+      "tag": "contained in sandbox/",
+      "yOffset": 120,
+      "width": 128
+    }
+  ],
+  "edges": [
+    {
+      "from": "prompt",
+      "to": "input",
+      "label": "accepted as-is"
+    },
+    {
+      "from": "input",
+      "to": "screen",
+      "label": "unscreened"
+    },
+    {
+      "from": "screen",
+      "to": "retrieve",
+      "label": "raw question"
+    },
+    {
+      "from": "retrieve",
+      "to": "infer",
+      "label": "poisoned or raw context"
+    },
+    {
+      "from": "infer",
+      "to": "output",
+      "label": "raw output"
+    },
+    {
+      "from": "output",
+      "to": "agent",
+      "label": "tool text"
+    },
+    {
+      "from": "agent",
+      "to": "effect",
+      "label": "executes",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Every Application Control Is Absent",
+      "items": [
+        "No input contract, injection screen, PII redaction or provenance filter",
+        "The same local model, prompt template and Qdrant engine as Run B",
+        "The model repeats what it retrieved, including hostile instructions"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Lab Containment Stays",
+      "items": [
+        "No network, read-only root filesystem, sandbox-only effects",
+        "Fixed tool set and fixed synthetic parameters",
+        "Kill switch and 512-token truncation remain active"
+      ]
+    }
+  ]
+}

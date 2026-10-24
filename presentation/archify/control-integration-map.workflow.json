@@ -1,0 +1,173 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Where Every Control Is Configured and Wired In",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/control-integration-map.html"
+  },
+  "lanes": [
+    {
+      "id": "request",
+      "label": "Request"
+    },
+    {
+      "id": "runtime",
+      "label": "Runtime controls"
+    },
+    {
+      "id": "supply",
+      "label": "Supply chain"
+    },
+    {
+      "id": "delivery",
+      "label": "Delivery and evaluation"
+    }
+  ],
+  "mainPath": [
+    "input",
+    "data",
+    "model",
+    "output",
+    "tools"
+  ],
+  "nodes": [
+    {
+      "id": "admission",
+      "lane": "supply",
+      "col": 0,
+      "type": "security",
+      "label": "Model admission",
+      "sublabel": "scanners + Cosign + OPA",
+      "tag": "four tools",
+      "width": 150
+    },
+    {
+      "id": "input",
+      "lane": "runtime",
+      "col": 0,
+      "type": "security",
+      "label": "Input and injection",
+      "sublabel": "schema, rules, Guard",
+      "tag": "0.5",
+      "width": 150
+    },
+    {
+      "id": "data",
+      "lane": "runtime",
+      "col": 1,
+      "type": "security",
+      "label": "PII and provenance",
+      "sublabel": "Presidio + provenance",
+      "tag": "writer=trusted",
+      "width": 150
+    },
+    {
+      "id": "model",
+      "lane": "runtime",
+      "col": 2,
+      "type": "backend",
+      "label": "Verified local model",
+      "sublabel": "FLAN-T5, SHA-256",
+      "tag": "OPS_DEMO_WORKLOAD=1",
+      "width": 140
+    },
+    {
+      "id": "output",
+      "lane": "runtime",
+      "col": 3,
+      "type": "security",
+      "label": "Output contract",
+      "sublabel": "length, markers, PII",
+      "tag": "always on",
+      "width": 140
+    },
+    {
+      "id": "tools",
+      "lane": "runtime",
+      "col": 4,
+      "type": "security",
+      "label": "Tool boundary",
+      "sublabel": "OPA, approval, MCP",
+      "tag": "OPS_DEMO_OPA, MCP=1",
+      "width": 150
+    },
+    {
+      "id": "pipeline",
+      "lane": "delivery",
+      "col": 4,
+      "type": "backend",
+      "label": "Delivery gates",
+      "sublabel": "11 fail-closed stages",
+      "tag": "make pipeline",
+      "width": 130
+    },
+    {
+      "id": "inspect",
+      "lane": "delivery",
+      "col": 5,
+      "type": "external",
+      "label": "Inspect live check",
+      "sublabel": "fixed samples",
+      "tag": "no authorization",
+      "width": 130
+    }
+  ],
+  "edges": [
+    {
+      "from": "input",
+      "to": "data",
+      "label": "screened"
+    },
+    {
+      "from": "data",
+      "to": "model",
+      "label": "trusted context"
+    },
+    {
+      "from": "admission",
+      "to": "model",
+      "label": "admitted artifact"
+    },
+    {
+      "from": "model",
+      "to": "output",
+      "label": "raw output"
+    },
+    {
+      "from": "output",
+      "to": "tools",
+      "label": "proposals only"
+    },
+    {
+      "from": "output",
+      "to": "pipeline",
+      "label": "evidence"
+    },
+    {
+      "from": "tools",
+      "to": "inspect",
+      "label": "behaviour observed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Configuration",
+      "items": [
+        "Each flag is set by the Makefile Run B profile",
+        "Pinned versions: Fickling 0.1.12, ModelScan 0.8.8, Cosign 3.1.3, OPA 1.21.2",
+        "Presidio 2.2.364, Prompt Guard 2 22M, Qdrant 1.19.1, MCP SDK 2.3.0"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Integration",
+      "items": [
+        "Controls run in app/security and policies/",
+        "The gateway only forwards bounded requests",
+        "No detector or model output authorizes an action"
+      ]
+    }
+  ]
+}

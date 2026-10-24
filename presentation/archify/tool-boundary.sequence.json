@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Tool Call Authorization Boundary",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      900
+    ],
+    "output": "presentation/archify/out/tool-boundary.html"
+  },
+  "participants": [
+    {
+      "id": "model",
+      "type": "backend",
+      "label": "Local model",
+      "sublabel": "untrusted output"
+    },
+    {
+      "id": "boundary",
+      "type": "security",
+      "label": "Tool boundary",
+      "sublabel": "code-owned"
+    },
+    {
+      "id": "opa",
+      "type": "security",
+      "label": "OPA",
+      "sublabel": "tool_boundary.rego"
+    },
+    {
+      "id": "approval",
+      "type": "backend",
+      "label": "Approval",
+      "sublabel": "synthetic gate"
+    },
+    {
+      "id": "mcp",
+      "type": "messagebus",
+      "label": "MCP server",
+      "sublabel": "read-only"
+    },
+    {
+      "id": "sandbox",
+      "type": "database",
+      "label": "Sandbox repo",
+      "sublabel": "disposable"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 390,
+      "label": "Denied write"
+    },
+    {
+      "from": 408,
+      "to": 630,
+      "label": "Allowed read"
+    },
+    {
+      "from": 648,
+      "to": 840,
+      "label": "Gated delete"
+    }
+  ],
+  "messages": [
+    {
+      "from": "model",
+      "to": "boundary",
+      "y": 180,
+      "label": "propose delete_branch",
+      "variant": "security"
+    },
+    {
+      "from": "boundary",
+      "to": "opa",
+      "y": 222,
+      "label": "evaluate action",
+      "variant": "emphasis"
+    },
+    {
+      "from": "opa",
+      "to": "boundary",
+      "y": 264,
+      "label": "deny",
+      "variant": "return"
+    },
+    {
+      "from": "boundary",
+      "to": "model",
+      "y": 306,
+      "label": "denied, no execution",
+      "variant": "security"
+    },
+    {
+      "from": "model",
+      "to": "boundary",
+      "y": 438,
+      "label": "propose search_docs",
+      "variant": "default"
+    },
+    {
+      "from": "boundary",
+      "to": "opa",
+      "y": 480,
+      "label": "evaluate action",
+      "variant": "emphasis"
+    },
+    {
+      "from": "opa",
+      "to": "boundary",
+      "y": 522,
+      "label": "allow read",
+      "variant": "return"
+    },
+    {
+      "from": "boundary",
+      "to": "mcp",
+      "y": 564,
+      "label": "execute read",
+      "variant": "emphasis"
+    },
+    {
+      "from": "mcp",
+      "to": "sandbox",
+      "y": 606,
+      "label": "query",
+      "variant": "default"
+    },
+    {
+      "from": "sandbox",
+      "to": "mcp",
+      "y": 670,
+      "label": "result",
+      "variant": "return"
+    },
+    {
+      "from": "mcp",
+      "to": "boundary",
+      "y": 710,
+      "label": "bounded result",
+      "variant": "return"
+    },
+    {
+      "from": "boundary",
+      "to": "model",
+      "y": 752,
+      "label": "return data",
+      "variant": "return"
+    },
+    {
+      "from": "model",
+      "to": "boundary",
+      "y": 788,
+      "label": "request delete grant",
+      "variant": "dashed"
+    },
+    {
+      "from": "boundary",
+      "to": "approval",
+      "y": 806,
+      "label": "human review",
+      "variant": "security"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "boundary",
+      "from": 174,
+      "to": 312,
+      "type": "security"
+    },
+    {
+      "participant": "opa",
+      "from": 216,
+      "to": 270,
+      "type": "security"
+    },
+    {
+      "participant": "boundary",
+      "from": 432,
+      "to": 738,
+      "type": "security"
+    },
+    {
+      "participant": "opa",
+      "from": 474,
+      "to": 528,
+      "type": "security"
+    },
+    {
+      "participant": "mcp",
+      "from": 558,
+      "to": 696,
+      "type": "messagebus"
+    },
+    {
+      "participant": "sandbox",
+      "from": 664,
+      "to": 680,
+      "type": "database"
+    },
+    {
+      "participant": "approval",
+      "from": 798,
+      "to": 817,
+      "type": "backend"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Code Owns Authorization",
+      "items": [
+        "The model only proposes an action",
+        "OPA decides from the declared action and context",
+        "The boundary executes only after an allow"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "No Implicit Trust",
+      "items": [
+        "Prompt text never becomes a grant",
+        "Writes are denied by default",
+        "Delete requires a separate human gate"
+      ]
+    }
+  ]
+}

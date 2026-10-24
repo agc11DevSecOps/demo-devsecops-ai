@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "S1 Run A: A Pickle Artifact Is Loaded Without Admission",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/model-admission-before.html"
+  },
+  "lanes": [
+    { "id": "request", "label": "Synthetic artifact" },
+    { "id": "absent", "label": "No admission control", "variant": "exception" },
+    { "id": "effect", "label": "Sandbox effect" }
+  ],
+  "mainPath": ["artifact", "load", "execute", "marker"],
+  "nodes": [
+    { "id": "artifact", "lane": "request", "col": 0, "type": "external", "label": "model.pkl", "sublabel": "self-made pickle fixture", "tag": "untrusted artifact", "width": 132 },
+    { "id": "load", "lane": "absent", "col": 1, "type": "backend", "label": "pickle.load()", "sublabel": "no scan, no signature", "tag": "executable format", "width": 140 },
+    { "id": "execute", "lane": "absent", "col": 2, "type": "security", "label": "Payload runs", "sublabel": "on deserialization", "tag": "no SafeTensors gate", "width": 132 },
+    { "id": "marker", "lane": "effect", "col": 3, "type": "security", "label": "PWNED_BY_MODEL", "sublabel": "marker in sandbox/", "tag": "effects stay contained", "width": 140 }
+  ],
+  "edges": [
+    { "from": "artifact", "to": "load", "label": "loaded as-is" },
+    { "from": "load", "to": "execute", "label": "opcode executes", "variant": "security" },
+    { "from": "execute", "to": "marker", "label": "writes marker" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Run A",
+      "items": [
+        "No Fickling or ModelScan before deserialization",
+        "No SafeTensors format gate and no signature check",
+        "The marker is written only inside sandbox/"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Scope",
+      "items": [
+        "The pickle is synthetic and self-authored",
+        "The runner has no network and a read-only root",
+        "The effect is not a production compromise"
+      ]
+    }
+  ]
+}

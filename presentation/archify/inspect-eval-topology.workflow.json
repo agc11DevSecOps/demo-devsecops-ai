@@ -1,0 +1,153 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Live Inspect Evaluation on an Internal Network",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/inspect-eval-topology.html"
+  },
+  "lanes": [
+    {
+      "id": "viewer",
+      "label": "Loopback only"
+    },
+    {
+      "id": "inspect",
+      "label": "Inspect container"
+    },
+    {
+      "id": "network",
+      "label": "Internal Docker network"
+    },
+    {
+      "id": "target",
+      "label": "Evaluation target"
+    },
+    {
+      "id": "artifacts",
+      "label": "Scanned artifacts"
+    }
+  ],
+  "mainPath": [
+    "viewer",
+    "task",
+    "net",
+    "target",
+    "flows",
+    "results"
+  ],
+  "nodes": [
+    {
+      "id": "viewer",
+      "lane": "viewer",
+      "col": 0,
+      "type": "frontend",
+      "label": "Recorded viewer",
+      "sublabel": "127.0.0.1, read-only",
+      "tag": "no execution",
+      "width": 140
+    },
+    {
+      "id": "task",
+      "lane": "inspect",
+      "col": 1,
+      "type": "backend",
+      "label": "Inspect task",
+      "sublabel": "fixed dataset, scorers",
+      "tag": "deterministic scoring",
+      "width": 150
+    },
+    {
+      "id": "net",
+      "lane": "network",
+      "col": 2,
+      "type": "security",
+      "label": "Internal network",
+      "sublabel": "no egress, no published port",
+      "tag": "--internal",
+      "width": 160
+    },
+    {
+      "id": "target",
+      "lane": "target",
+      "col": 3,
+      "type": "security",
+      "label": "Eval target",
+      "sublabel": "fixed samples + token",
+      "tag": "body limit",
+      "width": 150
+    },
+    {
+      "id": "flows",
+      "lane": "target",
+      "col": 4,
+      "type": "backend",
+      "label": "Two flows",
+      "sublabel": "unguarded and guarded",
+      "tag": "same payload",
+      "width": 150
+    },
+    {
+      "id": "results",
+      "lane": "artifacts",
+      "col": 5,
+      "type": "database",
+      "label": "Scanned results",
+      "sublabel": "no digest, no token",
+      "tag": "fail closed",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "from": "viewer",
+      "to": "task",
+      "label": "bundle"
+    },
+    {
+      "from": "task",
+      "to": "net",
+      "label": "fixed samples"
+    },
+    {
+      "from": "net",
+      "to": "target",
+      "label": "bearer token"
+    },
+    {
+      "from": "target",
+      "to": "flows",
+      "label": "local model"
+    },
+    {
+      "from": "flows",
+      "to": "results",
+      "label": "observed output"
+    },
+    {
+      "from": "results",
+      "to": "viewer",
+      "label": "A/B checks"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Isolation",
+      "items": [
+        "No credentials, Docker socket, model weights or egress",
+        "Only fixed synthetic samples are accepted",
+        "Inspect scores behaviour; it never authorizes an action"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Evidence",
+      "items": [
+        "Transcripts stay on loopback",
+        "A digest or token in the logs discards the result",
+        "A missing result is shown as not run"
+      ]
+    }
+  ]
+}
