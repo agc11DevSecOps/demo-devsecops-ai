@@ -22,6 +22,7 @@ from typing import Any
 
 from app.common import ARTIFACTS, SANDBOX, sha256
 from app.errors import WorkloadError
+from app.flow import STAGE_CONTROLS, FlowTrace
 from app.llm import LOCAL_ADAPTER, SCRIPTED_ADAPTER
 from app.llm.runtime import (
     generate_local as _generate_local,
@@ -36,6 +37,7 @@ MAX_BODY_BYTES = 8_192
 MAX_QUESTION_CHARS = 1_024
 MAX_ANSWER_CHARS = 1_200
 MAX_SOURCES = 3
+MAX_PROMPT_CHARS = 4_096
 MAX_REQUESTS_PER_MINUTE = 5
 REQUEST_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 REQUESTER = re.compile(r"^[a-z][a-z0-9._-]{0,63}$")
@@ -193,17 +195,55 @@ def _require_local_controls() -> None:
 
 
 # Input safety: normalize, block prompt injection, and redact PII before retrieval.
-def _check_question(request: AssistRequest) -> str:
+def _check_question(request: AssistRequest, flow: FlowTrace | None = None) -> str:
     normalized, candidates = normalize(request.question)
     if any(INJECTION.search(candidate) for candidate in candidates):
+        if flow is not None:
+            flow.record("injection_screen", "blocked", STAGE_CONTROLS["injection_screen"], f"normalization and rules matched a known injection pattern across {len(candidates)} representation(s)")
         raise WorkloadError("prompt_injection_blocked", HTTPStatus.FORBIDDEN)
     if os.environ.get("OPS_DEMO_WORKLOAD_MODE") == "local":
         scores = _prompt_guard_scores((normalized,))
         if len(scores) != 1 or scores[0] >= PROMPT_GUARD_THRESHOLD:
+            if flow is not None:
+                flow.record("injection_screen", "blocked", STAGE_CONTROLS["injection_screen"], f"Prompt Guard 2 22M score {scores[0]:.3f} >= threshold {PROMPT_GUARD_THRESHOLD}" if scores else "Prompt Guard 2 22M returned no score")
             raise WorkloadError("prompt_injection_blocked", HTTPStatus.FORBIDDEN)
-        masked, _ = _presidio_redact(normalized)
+        if flow is not None:
+            flow.record("injection_screen", "passed", STAGE_CONTROLS["injection_screen"], f"no rule matched; Prompt Guard 2 22M score {scores[0]:.3f} < {PROMPT_GUARD_THRESHOLD}")
+        masked, entities = _presidio_redact(normalized)
+        if flow is not None:
+            flow.record("pii_redaction", "masked" if entities else "passed", STAGE_CONTROLS["pii_redaction"], "question: " + (", ".join(entities) if entities else "no entity found"))
         return masked
-    return redact(normalized)
+    masked = redact(normalized)
+    if flow is not None:
+        flow.record("injection_screen", "passed", STAGE_CONTROLS["injection_screen"], "no rule matched (scripted profile has no classifier)")
+        flow.record("pii_redaction", "masked" if masked != normalized else "passed", STAGE_CONTROLS["pii_redaction"], "question: deterministic fallback redaction")
+    return masked
+
+
+def _ingest(extra: tuple[tuple[str, str, str], ...], *, use_presidio: bool, flow: FlowTrace | None = None) -> tuple[tuple[tuple[str, str, str], ...], list[str]]:
+    """Admit extra documents one by one; quarantine and never index the rest."""
+    admitted: list[tuple[str, str, str]] = []
+    quarantined: list[str] = []
+    entities: set[str] = set()
+    for document in extra:
+        try:
+            admitted_documents((document,))
+        except ValueError:
+            quarantined.append(f"{document[0]} (writer {document[1]})" if type(document) is tuple and len(document) == 3 else "invalid document")
+            continue
+        source_id, writer, text = document
+        if use_presidio:
+            masked, found = _presidio_redact(text)
+            entities.update(found)
+        else:
+            masked = redact(text)
+        admitted.append((source_id, writer, masked))
+    if flow is not None and extra:
+        previous = next((item for item in flow.stages if item["stage"] == "pii_redaction"), None)
+        detail = previous["detail"] if previous else ""
+        status = "masked" if entities or (previous is not None and previous["status"] == "masked") else "passed"
+        flow.record("pii_redaction", status, STAGE_CONTROLS["pii_redaction"], "; ".join(item for item in (detail, "documents at ingestion: " + (", ".join(sorted(entities)) if entities else "no entity found")) if item))
+    return tuple(admitted), quarantined
 
 
 def _challenge_docs() -> tuple[tuple[str, str, str], ...]:
@@ -221,9 +261,9 @@ def _challenge_docs() -> tuple[tuple[str, str, str], ...]:
 
 
 # Trusted retrieval: select only provenance-approved documents for the prompt.
-def _retrieve(question: str, *, require_vector: bool, challenge: bool = False) -> tuple[tuple[str, str], ...]:
+def _retrieve(question: str, *, require_vector: bool, challenge: bool = False, extra: tuple[tuple[str, str, str], ...] = ()) -> tuple[tuple[str, str], ...]:
     try:
-        documents = admitted_documents(_challenge_docs() + APPROVED_DOCUMENTS if challenge else APPROVED_DOCUMENTS)
+        documents = admitted_documents((_challenge_docs() + APPROVED_DOCUMENTS if challenge else APPROVED_DOCUMENTS) + extra)
     except ValueError as error:
         raise WorkloadError("retrieval_unavailable", HTTPStatus.SERVICE_UNAVAILABLE) from error
     if require_vector:
@@ -241,10 +281,15 @@ def _retrieve(question: str, *, require_vector: bool, challenge: bool = False) -
     return documents[:MAX_SOURCES]
 
 
-def _build_prompt(question: str, sources: tuple[tuple[str, str], ...]) -> str:
+def _render_prompt(question: str, sources: tuple[tuple[str, str], ...]) -> str:
+    """Render the shared prompt template; the unguarded lab uses it unbounded."""
     source_text = "\n".join(f"[SOURCE {source_id}]\n{text}\n[END SOURCE]" for source_id, text in sources)
-    prompt = f"{WORKLOAD_SYSTEM_PROMPT}\n\n{source_text}\n\n[QUESTION]\n{question}\n[END QUESTION]\nAnswer:"
-    if len(prompt) > 4_096:
+    return f"{WORKLOAD_SYSTEM_PROMPT}\n\n{source_text}\n\n[QUESTION]\n{question}\n[END QUESTION]\nAnswer:"
+
+
+def _build_prompt(question: str, sources: tuple[tuple[str, str], ...]) -> str:
+    prompt = _render_prompt(question, sources)
+    if len(prompt) > MAX_PROMPT_CHARS:
         raise WorkloadError("prompt_too_long")
     return prompt
 
@@ -289,9 +334,30 @@ def _record_stop(request: AssistRequest) -> None:
             handle.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")
 
 
-def assist(payload: Any, *, mode: str | None = None, trace: GenerationTrace | None = None, challenge: bool = False) -> AssistResponse:
-    """Run the bounded workload with a local model or a scripted test adapter."""
-    request = AssistRequest.from_payload(payload)
+def assist(
+    payload: Any,
+    *,
+    mode: str | None = None,
+    trace: GenerationTrace | None = None,
+    challenge: bool = False,
+    flow: FlowTrace | None = None,
+    extra_documents: tuple[tuple[str, str, str], ...] = (),
+) -> AssistResponse:
+    """Run the bounded workload with a local model or a scripted test adapter.
+
+    ``flow`` records the stage trace for display only. ``extra_documents`` is a
+    fixed lab corpus supplied by repository code (never by an HTTP caller); every
+    document still passes provenance admission and redaction before indexing.
+    """
+    try:
+        request = AssistRequest.from_payload(payload)
+    except WorkloadError as error:
+        if flow is not None:
+            size = len(payload.get("question", "")) if type(payload) is dict and isinstance(payload.get("question"), str) else 0
+            flow.record("input", "blocked", STAGE_CONTROLS["input"], f"{error.code}: {size} chars against the {MAX_QUESTION_CHARS}-char limit, rejected before inference")
+        raise
+    if flow is not None:
+        flow.record("input", "passed", STAGE_CONTROLS["input"], f"schema valid; {len(request.question)} of {MAX_QUESTION_CHARS} chars")
     if _stop_enabled():
         _record_stop(request)
         raise WorkloadError("inference_stopped", HTTPStatus.SERVICE_UNAVAILABLE)
@@ -304,14 +370,45 @@ def assist(payload: Any, *, mode: str | None = None, trace: GenerationTrace | No
         raise WorkloadError("local_workload_required", HTTPStatus.SERVICE_UNAVAILABLE)
     if selected_mode == "local":
         _require_local_controls()
-    question = _check_question(request)
-    sources = _retrieve(question, require_vector=selected_mode == "local", challenge=challenge)
+    question = _check_question(request, flow)
+    extra, quarantined = _ingest(extra_documents, use_presidio=selected_mode == "local", flow=flow)
+    if flow is not None:
+        flow.quarantined = list(quarantined)
+    sources = _retrieve(question, require_vector=selected_mode == "local", challenge=challenge, extra=extra)
+    if flow is not None:
+        flow.record(
+            "retrieval",
+            "filtered" if quarantined else "passed",
+            STAGE_CONTROLS["retrieval"],
+            "; ".join(item for item in (
+                ("quarantined before indexing: " + ", ".join(quarantined)) if quarantined else "",
+                ("Qdrant filter writer=trusted returned: " if selected_mode == "local" else "approved corpus: ") + ", ".join(source_id for source_id, _ in sources),
+            ) if item),
+        )
     adapter = LOCAL_ADAPTER if selected_mode == "local" else SCRIPTED_ADAPTER
-    prompt = _build_prompt(question, sources)
+    try:
+        prompt = _build_prompt(question, sources)
+    except WorkloadError:
+        if flow is not None:
+            flow.record("prompt", "blocked", STAGE_CONTROLS["prompt"], f"prompt over {MAX_PROMPT_CHARS} chars")
+        raise
+    if flow is not None:
+        flow.record("prompt", "passed", STAGE_CONTROLS["prompt"], f"{len(prompt)} of {MAX_PROMPT_CHARS} chars")
     if trace is not None:
         trace.begin(adapter.name, prompt, sources)
     answer = adapter.generate(prompt, sources=sources, trace=trace)
-    validated_answer = _validate_answer(answer, use_presidio=selected_mode == "local")
+    if flow is not None:
+        flow.record("model", "executed", STAGE_CONTROLS["model"], f"{adapter.name.split('@')[0]} generated {len(answer) if isinstance(answer, str) else 0} chars")
+    try:
+        validated_answer = _validate_answer(answer, use_presidio=selected_mode == "local")
+    except WorkloadError as error:
+        if flow is not None:
+            flow.record("output_validation", "blocked", STAGE_CONTROLS["output_validation"], f"{error.code}: the model output was withheld from the user")
+            flow.withheld_output = redact(answer)[:400] if isinstance(answer, str) else ""
+        raise
+    if flow is not None:
+        changed = isinstance(answer, str) and validated_answer != answer.strip()
+        flow.record("output_validation", "masked" if changed else "passed", STAGE_CONTROLS["output_validation"], "sensitive values masked in the answer" if changed else "length, marker and injection checks passed")
     if trace is not None:
         trace.complete(answer, validated_answer)
     response = AssistResponse(
