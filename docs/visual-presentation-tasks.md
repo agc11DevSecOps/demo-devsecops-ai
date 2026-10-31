@@ -47,11 +47,11 @@ its own with `make inspect-eval`.
 
 | Command | Result |
 | --- | --- |
-| `make test` | 208 tests, `OK` (5 skipped) |
+| `make test` | 213 tests, `OK` (5 skipped) |
 | `make test-policy` | OPA 14/14 |
 | `make policy-template-test` | 34 tests, `OK` |
 | `make demo-10m-preflight` | `OK` |
-| `make demo-record` | `OK`; 208 s of a 900 s budget; preflight 1 s, scenarios 152 s, inspect 55 s; bundle verified complete |
+| `make demo-record` | `OK`; 192 s of a 900 s budget; preflight 2 s, scenarios 140 s, inspect 50 s; bundle verified complete |
 | `make demo-record-appendix` | `OK`; full Garak campaign blocked 55/55 prompts; appendix bundle verified complete (separate from the main budget) |
 | `make inspect-eval` | 18 samples; unguarded 6 unsafe / 12 safe, guarded 0 unsafe / 18 safe; Inspect View bundle produced |
 | `make present-visual` | Verified bundle served read-only on loopback; no Docker or models required |
@@ -60,9 +60,25 @@ its own with `make inspect-eval`.
 | `make test-container` | 3 tests, `OK` |
 | `git diff --check` | Clean |
 
-Main bundle: `record/showcase-runs/showcase-20261023T234713Z`.
-Final bundle with the S7 appendix and Inspect View:
-`record/showcase-runs/showcase-20261024T000421Z`.
+Main bundle: `record/showcase-runs/showcase-20261031T185450Z`.
+Final bundle with the S7 appendix, Inspect View and per-sample transcript links:
+`record/showcase-runs/showcase-20261031T191055Z`.
+
+### Presentation verification (2026-10-31)
+
+- Standalone SVGs now carry the SVG namespace; every served diagram is
+  recognised as an image instead of a broken placeholder.
+- The bundle server uses the presentation CSP for the viewer and diagrams, and
+  the Inspect dist CSP only under `/inspect/`.
+- `HEAD` and single byte `Range` requests are supported, so the frozen Inspect
+  View opens its `.eval` logs. The viewer deep-links each sample with
+  `#/logs/<side>/<file>.eval/samples/sample/<id>`.
+- The payload step shows the full fixture: artifact, format, protocol, static
+  pickle opcodes, resolved globals, command and effect.
+- Before/After render the retrieved context, model output (or the withheld
+  output), tool proposals with parameters, effects and per-prompt rows.
+- S3 renders a labelled table: raw values in Run A and `<IBAN_CODE>`,
+  `<EMAIL_ADDRESS>`, `<PHONE_NUMBER>` and `<API_KEY>` in Run B.
 
 ### Unguarded versus guarded observations
 

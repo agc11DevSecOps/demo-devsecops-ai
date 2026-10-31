@@ -123,7 +123,8 @@ declared files. The viewer states the recording time and the durations. Use
 `DEMO_OPEN=0` on a headless host and `DEMO_PORT` to choose another port.
 
 Keys: `→` / `←` move step, `↑` / `↓` move scenario, `O` opens the overview and
-`M` the control integration map.
+`M` the control integration map. In the Result step, each Inspect check links
+to the recorded Run A and Run B transcript for that exact sample.
 
 To rehearse the underlying run again without overwriting the presented bundle,
 use a separate evidence run in a terminal:

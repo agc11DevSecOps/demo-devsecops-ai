@@ -129,9 +129,12 @@ The viewer has an overview, one five-step block per scenario
 appendix when recorded. Navigation uses the arrow keys. It renders exclusively
 with `textContent` and states "Recorded on <date>" with per-phase durations.
 
-The bundle server serves only manifest-declared files. Inspect View is served
-under `/inspect/` with the Content-Security-Policy shipped by the Inspect dist,
-validated before use, plus `frame-ancestors 'none'`.
+The bundle server serves only manifest-declared files. The presentation uses its
+own policy; Inspect View is served under `/inspect/` with the
+Content-Security-Policy shipped by the Inspect dist, validated before use, plus
+`frame-ancestors 'none'`. The server answers `HEAD` and single byte `Range`
+requests so the frozen Inspect View can read its `.eval` logs, and the
+normalized result records one log path per side for per-sample deep links.
 
 ## Failure Handling
 
