@@ -16,6 +16,7 @@ new repository needs its own provenance and isolated review.
 | Garak | bounded red-team stage | C1 admitted for S7 | fixed offline REST campaign in the restricted `demo-devsecops-ai:garak` runner; aggregate hash-only summary only |
 | Archify | build-time diagram authoring only | C1 admitted for presentation diagrams | pinned local skill; diagrams authored, validated and delivered offline; only sanitized inline SVG enters the repository |
 | Inspect AI | isolated live behavioural check | C1 admitted for the fixed live dataset | CPython 3.12 lock, hash-verified wheels; internal Docker network to the local evaluation target only |
+| Chrome for Testing headless shell | presentation build and visual verification | C1 admitted for local screenshots only | fixed hash-verified local binary; loopback-only validated showcase bundles |
 | Giskard/PyRIT | bounded red-team stage | planned | separate admission per tool |
 
 ## C0-2026-10-17-Docker-Synthetic-Runner
@@ -390,3 +391,17 @@ To avoid a NumPy version conflict (ModelScan requires `numpy>=1.24.3` while spaC
 | Decision boundary | Inspect observes and scores fixed synthetic samples; it never authorizes an action, never reads the authoritative ledger and never produces a security verdict. Any change to the dataset, checks, scorer, target, provider, lock, image or network profile requires a new review. |
 | Revision 2 browser access | The frozen Inspect View reads its `.eval` logs with `HEAD` and byte `Range` requests. The loopback bundle server now answers both (206 with `Content-Range`, 416 for an invalid range) and serves the presentation with its own CSP instead of the Inspect dist policy. The normalized result also records one log path per side (`unguarded/...eval`, `guarded/...eval`) so the viewer can deep-link a sample. |
 | Status | Admitted for the fixed live dataset above. |
+
+## C1-2026-10-31-Chrome-Headless-Presentation-Check
+
+| Field | Value |
+| --- | --- |
+| Publisher/source | Google Chrome for Testing, local Playwright browser cache installed by the admitted Archify build-time authoring tool. No download, installation, update or runtime dependency is introduced by this admission. |
+| Artifact | `/home/agc11/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell`; `Google Chrome for Testing 147.0.7727.15`; SHA-256 `22d72b589f908111fa29ff4e61ead8a0601e925177f59c70e2e851c22e9b1886`. |
+| Review date | 2026-10-31. |
+| Command/configuration | Fixed binary invoked by `tools/present_check.py` with `--headless`, `--disable-gpu`, `--hide-scrollbars`, `--virtual-time-budget=3000`, `--dump-dom` or a fixed screenshot path. It opens only the verified local bundle served on `127.0.0.1` by `python -m app.cli showcase-serve`. |
+| Input sensitivity | Only the repository's synthetic, already-validated showcase bundle and its local SVG assets are rendered. The checker neither accepts scenario paths nor processes credentials, model output, free-form commands or production data. |
+| Output boundary | DOM receipts and PNG screenshots are written only under `artifacts/present-check/`; screenshots are build evidence, never runtime assets. |
+| Result | Initial manual browser capture confirmed that the self-contained control integration SVG renders with Archify colors rather than black fallback shapes. The complete automated check remains NOT TESTED until `make present-check SHOWCASE_RUN_ID=<new bundle>` succeeds. |
+| Decision boundary | Chrome is admitted only for local presentation build and visual verification. It never participates in a scenario, an authorization decision, a deployment decision or application runtime. A missing binary, hash drift, failed DOM assertion, failed local server check or screenshot error fails the presentation check. |
+| Status | Admitted for the fixed binary and scope above. Any binary hash, command, output path, host binding or scope change requires a new review. |

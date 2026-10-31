@@ -43,7 +43,7 @@ class ShowcaseTests(unittest.TestCase):
             (directory / "s2.jsonl").write_text(json.dumps(_event(run, "S2")) + "\n", encoding="utf-8")
         stack = contextlib.ExitStack()
         stack.enter_context(mock.patch.multiple("app.ledger", EVIDENCE=evidence))
-        stack.enter_context(mock.patch.multiple("app.showcase", SHOWCASE_ROOT=root / "record" / "showcase-runs"))
+        stack.enter_context(mock.patch.multiple("app.showcase", SHOWCASE_ROOT=root / "record" / "showcase-runs", INSPECT_VIEW=root / "artifacts" / "inspect-view"))
         stack.enter_context(mock.patch.multiple(
             "app.presentation",
             ARTIFACTS=root / "artifacts",
@@ -138,6 +138,13 @@ class ShowcaseTests(unittest.TestCase):
         script = (Path(__file__).resolve().parents[1] / "showcase" / "present.js").read_text(encoding="utf-8")
         self.assertNotIn("innerHTML", script)
         self.assertIn("textContent", script)
+
+    def test_dashboard_appends_rendered_nodes_and_uses_sample_epochs(self) -> None:
+        script = (Path(__file__).resolve().parents[1] / "showcase" / "present.js").read_text(encoding="utf-8")
+        self.assertNotIn('el("dd", "", renderValue(', script)
+        self.assertNotIn('el("dd", "", fixtureView(', script)
+        self.assertIn('/samples/sample/${encodeURIComponent(check.id)}/1', script)
+        self.assertIn("applyHash", script)
 
     def test_live_dashboard_shows_the_honest_evidence_label(self) -> None:
         script = (Path(__file__).resolve().parents[1] / "showcase" / "present.js").read_text(encoding="utf-8")

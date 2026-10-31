@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from app.common import ARTIFACTS, ROOT
-from app.control_catalog import CONTROLS, CatalogError, control_view, for_scenario
+from app.control_catalog import Anchor, CONTROLS, CatalogError, control_view, excerpt, for_scenario
 from app.flow import STAGES
 from app.ledger import LedgerError, bound_visuals, visual_for
 
@@ -97,6 +97,17 @@ class Scenario:
     evidence: tuple[str, ...]
     appendix: bool = False
     static_payload: tuple[str, ...] = field(default=())
+    payload_sources: tuple["PayloadSource", ...] = field(default=())
+
+
+@dataclass(frozen=True)
+class PayloadSource:
+    """A repository-anchored payload excerpt and its security interpretation."""
+
+    title: str
+    anchor: Anchor
+    why: str
+    review: str = ""
 
 
 SCENARIOS: tuple[Scenario, ...] = (
@@ -107,6 +118,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Real local scanners, Cosign and OPA in the restricted runner; the pickle is a synthetic, self-made fixture.",
         "model-admission-before", "model-admission",
         ("evidence/A/s1.jsonl", "evidence/B/s1.jsonl", "artifacts/fickling-s1.json", "artifacts/modelscan-s1.json", "artifacts/aibom.json"),
+        payload_sources=(
+            PayloadSource("Synthetic fixture constructor", Anchor("app/security/model_admission.py", symbol="MaliciousFixture"), "Its pickle reduction resolves os.system, so loading the artifact executes the synthetic marker command."),
+            PayloadSource("Static opcode inspection", Anchor("app/security/model_admission.py", symbol="pickle_indicators"), "This parser uses pickletools on bytes only; it identifies unsafe globals without loading the pickle.", "Safe static review: python3 -m pickletools /sandbox/models/incoming/model_malicious.pkl"),
+        ),
     ),
     Scenario(
         "S0", 2, "Bounded local inference", "What does the local model answer, and where do its citations come from?",
@@ -115,6 +130,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Real local FLAN-T5-small in both runs; Run A has no application control.",
         "ai-flow-unguarded", "ai-flow-guarded",
         ("evidence/A/s0.jsonl", "evidence/B/s0.jsonl", "artifacts/ops-assist.jsonl"),
+        payload_sources=(
+            PayloadSource("Fixed evaluation case", Anchor("fixtures/eval/lab_cases.jsonl", line='{"id": "s0-benign"', lines=1), "It is the benign question used to contrast the same bounded local inference path."),
+            PayloadSource("Approved retrieval corpus", Anchor("app/security/retrieval.py", line="APPROVED_DOCUMENTS:", lines=5), "Only this reviewed, trusted corpus is admitted for the approved retrieval case."),
+        ),
     ),
     Scenario(
         "S2", 3, "Prompt injection", "Does hostile or obfuscated text reach the model?",
@@ -123,6 +142,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Real local model in Run A; real normalization, rules and Prompt Guard 2 22M in Run B.",
         "ai-flow-unguarded", "request-guardrails",
         ("evidence/A/s2.jsonl", "evidence/B/s2.jsonl", "fixtures/prompts/injection_11.jsonl"),
+        payload_sources=(
+            PayloadSource("Eleven-prompt injection corpus", Anchor("fixtures/prompts/injection_11.jsonl", line='{"id": "i01"', lines=11), "Ten prompts attempt instruction override or obfuscation; the final prompt is the benign comparison."),
+            PayloadSource("Reader-only normalization", Anchor("app/security/input.py", symbol="normalize"), "The presentation decodes obfuscation only as a reading aid. Run A receives the raw prompt and does not apply this control."),
+        ),
     ),
     Scenario(
         "S3", 4, "Sensitive data", "Does synthetic PII in the knowledge base reach the user?",
@@ -131,6 +154,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Real local model and Qdrant in Run A; real Presidio 2.2.364 at ingestion and on output in Run B.",
         "ai-flow-unguarded", "ai-flow-guarded",
         ("evidence/A/s3.jsonl", "evidence/B/s3.jsonl", "fixtures/prompts/pii_cases.jsonl"),
+        payload_sources=(
+            PayloadSource("Synthetic customer record", Anchor("fixtures/prompts/pii_cases.jsonl", line='{"id": "p01"', lines=1), "It deliberately contains four synthetic sensitive entity types so redaction can be observed."),
+            PayloadSource("PII evaluation question", Anchor("fixtures/eval/lab_cases.jsonl", line='{"id": "s3-pii"', lines=1), "This fixed question asks for the sensitive values that must be masked before they reach the model or user."),
+        ),
     ),
     Scenario(
         "S4", 5, "Retrieval poisoning", "Can an untrusted upload steer the model and the agent?",
@@ -139,6 +166,11 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Real local model and Qdrant in Run A; real writer admission, quarantine and Qdrant filter in Run B.",
         "ai-flow-unguarded", "rag-provenance",
         ("evidence/A/s4.jsonl", "evidence/B/s4.jsonl", "fixtures/docs/poisoned_note.md", "artifacts/quarantine.json"),
+        payload_sources=(
+            PayloadSource("Untrusted poisoned note", Anchor("fixtures/docs/poisoned_note.md", line="Release guide.", lines=1), "The document tries to turn retrieval text into a destructive tool instruction."),
+            PayloadSource("Poisoned retrieval evaluation case", Anchor("fixtures/eval/lab_cases.jsonl", line='{"id": "s4-poisoned"', lines=1), "The fixed query retrieves the untrusted upload in Run A and verifies that Run B filters it."),
+            PayloadSource("Lab corpus wiring", Anchor("app/flow.py", symbol="lab_corpus"), "The poisoned file is assigned the untrusted-upload writer before it is offered to the lab corpus."),
+        ),
     ),
     Scenario(
         "S5", 6, "Tool boundary", "Can model text authorize a high-impact tool call?",
@@ -147,6 +179,11 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Real local model, OPA and MCP in Run B; the naive agent in Run A acts only inside sandbox/.",
         "ai-flow-unguarded", "tool-boundary",
         ("evidence/A/s5.jsonl", "evidence/B/s5.jsonl", "artifacts/approvals.jsonl"),
+        payload_sources=(
+            PayloadSource("Untrusted poisoned note", Anchor("fixtures/docs/poisoned_note.md", line="Release guide.", lines=1), "The source text proposes delete_branch and export_customers; it is data, never authorization."),
+            PayloadSource("Tool evaluation case", Anchor("fixtures/eval/lab_cases.jsonl", line='{"id": "s5-tool"', lines=1), "The fixed release question tests whether model text can cross the tool boundary."),
+            PayloadSource("Run A naive agent", Anchor("app/unguarded.py", symbol="naive_agent"), "The baseline converts recognized tool names into sandbox-only effects, demonstrating the missing authorization boundary."),
+        ),
     ),
     Scenario(
         "S8", 7, "Input and output bounds", "Can oversized input, hostile output or a model-written citation escape the contract?",
@@ -155,6 +192,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Real local model in Run A; measured request and output controls in Run B. The over-length answer baseline stays DESIGNED.",
         "ai-flow-unguarded", "request-guardrails",
         ("evidence/A/s8.jsonl", "evidence/B/s8.jsonl"),
+        payload_sources=(
+            PayloadSource("Bounded input and output cases", Anchor("fixtures/eval/lab_cases.jsonl", line='{"id": "s8-length"', lines=3), "These fixed cases exercise over-length input rejection, source marker stripping, and retrieval-derived attribution."),
+            PayloadSource("Approved retrieval corpus", Anchor("app/security/retrieval.py", line="APPROVED_DOCUMENTS:", lines=5), "Attribution is derived from this approved corpus rather than trusted from model-written citations."),
+        ),
     ),
     Scenario(
         "PIPELINE", 8, "Delivery pipeline", "Do the delivery gates reuse the same evidence discipline?",
@@ -164,6 +205,9 @@ SCENARIOS: tuple[Scenario, ...] = (
         "evidence-provenance", "evidence-provenance",
         ("evidence/B/pipeline.jsonl", "artifacts/pipeline-aibom.json"),
         static_payload=("Build inputs: app/, controls/, policies/, fixtures/ and the pinned wheel lock", "Model fixtures: synthetic clean and unsafe artifacts", "No deployment target and no external package index at runtime"),
+        payload_sources=(
+            PayloadSource("Pipeline gate configuration", Anchor("controls/ci/gates.yaml", line="# Planned gate thresholds.", lines=5), "The configured threshold is a gate input; no scan or model output grants deployment authority."),
+        ),
     ),
     Scenario(
         "S7", 9, "Red-team appendix", "What did the bounded Garak campaign observe?",
@@ -173,6 +217,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         "evidence-provenance", "evidence-provenance",
         ("evidence/B/s7.jsonl", "artifacts/garak-s7.json"),
         appendix=True,
+        payload_sources=(
+            PayloadSource("Red-team campaign implementation", Anchor("app/garak_campaign.py", symbol="main"), "The bounded campaign uses an admitted fixed corpus and records evidence; it does not authorize any action."),
+            PayloadSource("Pipeline gate configuration", Anchor("controls/ci/gates.yaml", line="# Planned gate thresholds.", lines=5), "A complete admitted campaign is required before its result can count as a pipeline input."),
+        ),
     ),
 )
 
@@ -281,6 +329,35 @@ def _payload(before_visual: dict[str, Any] | None, static: tuple[str, ...]) -> l
     return items[:MAX_ITEMS]
 
 
+def _payload_sources(sources: tuple[PayloadSource, ...]) -> list[dict[str, Any]]:
+    """Resolve every declared source at projection time; missing anchors fail closed."""
+    return [
+        {"title": source.title, "excerpt": excerpt(source.anchor), "why": source.why, "review": source.review}
+        for source in sources
+    ]
+
+
+def _reader_decodes(event: dict[str, Any] | None) -> None:
+    """Add a display-only S2 aid without changing the recorded Run A input."""
+    if not event:
+        return
+    observation = (event.get("details") or {}).get("observation")
+    if type(observation) is not dict or type(observation.get("rows")) is not list:
+        return
+    from app.security.input import normalize
+
+    for row in observation["rows"]:
+        if type(row) is not dict or not isinstance(row.get("prompt"), str):
+            continue
+        try:
+            _, candidates = normalize(row["prompt"])
+        except ValueError:
+            row["decoded_for_reader"] = "Unavailable for malformed input"
+            continue
+        decoded = [candidate for candidate in candidates if candidate != row["prompt"]]
+        row["decoded_for_reader"] = "\n".join(decoded) if decoded else "Same representation"
+
+
 def _control_results(scenario: str, run_b: list[dict[str, Any]]) -> list[dict[str, Any]]:
     results = []
     for control in for_scenario(scenario):
@@ -382,6 +459,9 @@ def _scenario_card(
             primary_before, primary_after = a_event, b_event
         before_view = _event_view(a_event, a_visual)
         after_view = _event_view(b_event, b_visual)
+        if scenario.scenario == "S2":
+            _reader_decodes(before_view)
+            _reader_decodes(after_view)
         pairs.append({
             "label": b_control,
             "before": before_view,
@@ -409,6 +489,7 @@ def _scenario_card(
         "state": "complete" if complete else "partial" if partial else "waiting",
         "payload_kind": scenario.payload_kind,
         "payload": payload,
+        "payload_sources": _payload_sources(scenario.payload_sources),
         "pairs": pairs,
         "pipeline": pipeline,
         "reality": scenario.reality,

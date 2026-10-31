@@ -16,6 +16,32 @@ const el = (tag, className, value) => {
 };
 const add = (parent, ...children) => { children.forEach((child) => { if (child) parent.appendChild(child); }); return parent; };
 
+const hashForPresent = () => {
+  const card = state.projection && state.projection.scenarios[state.index];
+  return card ? `#${encodeURIComponent(card.scenario)}/${STEPS[state.step].toLowerCase()}` : "";
+};
+const syncHash = () => {
+  const hash = hashForPresent();
+  if (hash && window.location.hash !== hash) window.location.hash = hash;
+};
+const applyHash = () => {
+  const raw = window.location.hash.slice(1).split("/");
+  if (raw.length !== 2) return false;
+  let scenario;
+  try {
+    scenario = decodeURIComponent(raw[0]);
+  } catch (_) {
+    return false;
+  }
+  const index = state.projection.scenarios.findIndex((card) => card.scenario === scenario);
+  const step = STEPS.findIndex((name) => name.toLowerCase() === raw[1].toLowerCase());
+  if (index < 0 || step < 0) return false;
+  state.index = index;
+  state.step = step;
+  showView("present");
+  return true;
+};
+
 const valueText = (value) => {
   if (value === null || value === undefined) return "";
   if (typeof value === "object") return JSON.stringify(value, null, 2);
@@ -174,7 +200,10 @@ const detailPanel = (pair, side) => {
     add(panel, pre(observation.guarded_withheld_output));
   }
   if (Array.isArray(observation.rows) && observation.rows.length) {
-    section("Per-prompt results", detailTable(["Prompt", "Category", "Model output", "Outcome"], observation.rows.map((row) => [row.prompt || row.id, row.category || "", row.model_output || "", row.outcome || ""]), "prompt-table"));
+    const readerAid = observation.rows.some((row) => row.decoded_for_reader);
+    const headers = readerAid ? ["Prompt", "Category", "Decoded for the reader", "Model output", "Outcome"] : ["Prompt", "Category", "Model output", "Outcome"];
+    const rows = observation.rows.map((row) => readerAid ? [row.prompt || row.id, row.category || "", row.decoded_for_reader || "Same representation", row.model_output || "", row.outcome || ""] : [row.prompt || row.id, row.category || "", row.model_output || "", row.outcome || ""]);
+    section(readerAid ? "Per-prompt results (reader aid only; Run A received raw prompts)" : "Per-prompt results", detailTable(headers, rows, "prompt-table"));
   }
   const calls = Array.isArray(observation.tool_calls) ? observation.tool_calls : (Array.isArray(observation.guarded_tool_calls) ? observation.guarded_tool_calls : null);
   if (calls && calls.length) {
@@ -216,13 +245,28 @@ const renderPayload = (card) => {
   const list = el("dl", "kv payload-list");
   (card.payload || []).forEach((item) => {
     add(list, el("dt", "mono", item.key));
+    const value = el("dd", "");
     if (item.key === "fixture" && item.value && typeof item.value === "object") {
-      add(list, el("dd", "", fixtureView(item.value)));
+      add(value, fixtureView(item.value));
     } else {
-      add(list, el("dd", "", renderValue(item.value)));
+      add(value, renderValue(item.value));
     }
+    add(list, value);
   });
   add(wrap, list);
+  if (card.payload_sources && card.payload_sources.length) {
+    add(wrap, el("p", "eyebrow", "WHERE TO FIND IT"));
+    const sources = el("div", "source-list");
+    card.payload_sources.forEach((source) => {
+      const sourceBox = el("article", "source");
+      add(sourceBox, el("h4", "", source.title));
+      add(sourceBox, excerpt(source.excerpt));
+      add(sourceBox, el("p", "", `Why it is malicious: ${source.why}`));
+      if (source.review) add(sourceBox, el("p", "mono muted", source.review));
+      add(sources, sourceBox);
+    });
+    add(wrap, sources);
+  }
   add(wrap, el("p", "muted", `Reality: ${card.reality}`));
   if (card.appendix) add(wrap, el("p", "notice", "Appendix: only a complete admitted campaign counts. A reduced run stays PARTIAL."));
   if (card.pairs.length > 1) {
@@ -314,7 +358,7 @@ const checkPanel = (check) => {
   [["unguarded", "Run A transcript"], ["guarded", "Run B transcript"]].forEach(([side, label]) => {
     if (!inspect.view || !logs[side]) return;
     const link = el("a", "", label);
-    link.href = `${inspect.view}#/logs/${logs[side]}/samples/sample/${encodeURIComponent(check.id)}`;
+    link.href = `${inspect.view}#/logs/${logs[side]}/samples/sample/${encodeURIComponent(check.id)}/1`;
     link.target = "_blank";
     link.rel = "noopener";
     add(links, link);
@@ -398,6 +442,7 @@ const renderScenario = () => {
   $("next-step").disabled = state.step === STEPS.length - 1;
   $("prev-scenario").disabled = state.index === 0;
   $("next-scenario").disabled = state.index === state.projection.scenarios.length - 1;
+  syncHash();
 };
 
 const renderOverview = () => {
@@ -495,6 +540,7 @@ const bind = () => {
     if (event.key === "m" || event.key === "M") showView("map");
     if (event.key === "Escape") showView("present");
   });
+  window.addEventListener("hashchange", () => { applyHash(); });
 };
 
 const start = async () => {
@@ -512,7 +558,7 @@ const start = async () => {
   }
   renderHeader();
   bind();
-  showView("present");
+  if (!applyHash()) showView("present");
 };
 
 start();

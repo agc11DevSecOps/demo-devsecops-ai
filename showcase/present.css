@@ -288,3 +288,6 @@ pre.block {
 .outcome { margin-top: .5rem; font-size: .85rem; color: var(--text); }
 .payload-list dd { max-width: 100%; }
 .payload-list .block { max-height: 18rem; }
+.source-list { display: grid; gap: .7rem; margin-top: .45rem; }
+.source { border: 1px solid var(--line); border-radius: 8px; padding: .75rem; background: var(--panel-2); }
+.source h4 { margin: 0; font-size: .9rem; }

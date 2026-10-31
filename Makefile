@@ -30,7 +30,7 @@ PIPELINE_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1
 # for the final run. A reduced run is reported PARTIAL and never counts as PASS.
 GARAK_LIMIT ?= 5
 
-.PHONY: demo-record demo-record-appendix reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose test-gateway-unit prepare-writable-dirs provision env-check setup demo demo-ab demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present present-visual diagrams inspect-build inspect-eval fetch-inspect policy-template policy-template-test showcase-build showcase-serve showcase-live challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
+.PHONY: demo-record demo-record-appendix reset kill unkill run-a run-b scorecard aisvs-catalog test test-container test-policy test-gateway-compose test-gateway-unit prepare-writable-dirs provision env-check setup demo demo-ab demo-10m-preflight demo-10m demo-s0 demo-s1 demo-s2 demo-s3 demo-s4 demo-s5 demo-s6 demo-s7 demo-s8 versions fetch-tools fetch-models fetch-workload-model workload demo-request-benign demo-request-injection garak garak-build container-garak container-garak-exec container-build container-run-a container-run-a-exec container-run-b container-run-b-exec container-scenario-a container-scenario-b container-gateway compose-up compose-down s0-a s0-b s1-a s1-b s2-a s2-b s3-a s3-b s4-a s4-b s5-a s5-b s6-a s6-b s7-a s7-b s8-a s8-b pipeline container-pipeline present present-visual diagrams inspect-build inspect-eval fetch-inspect policy-template policy-template-test showcase-build showcase-serve showcase-live present-check challenge-create challenge-run challenge-replay stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11
 
 setup: provision
 
@@ -389,6 +389,10 @@ showcase-serve:
 
 showcase-live:
 	$(PYTHON) -m app.cli showcase-live
+
+present-check:
+	@test -n "$(SHOWCASE_RUN_ID)" || (printf '%s\n' 'Set SHOWCASE_RUN_ID to a generated complete showcase bundle.'; exit 2)
+	$(PYTHON) tools/present_check.py --showcase-run-id "$(SHOWCASE_RUN_ID)"
 
 challenge-create:
 	@test -n "$(SHOWCASE_RUN_ID)" || (printf '%s\n' 'Set SHOWCASE_RUN_ID to a generated showcase bundle.'; exit 2)
