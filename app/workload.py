@@ -22,7 +22,7 @@ from typing import Any
 
 from app.common import ARTIFACTS, SANDBOX, sha256
 from app.errors import WorkloadError
-from app.flow import STAGE_CONTROLS, FlowTrace
+from app.flow import STAGE_CONTROLS, FlowTrace, clip
 from app.llm import LOCAL_ADAPTER, SCRIPTED_ADAPTER
 from app.llm.runtime import (
     generate_local as _generate_local,

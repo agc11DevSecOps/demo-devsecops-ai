@@ -63,6 +63,9 @@ class LabTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             lab_corpus("../../etc")
 
+    def test_flow_trace_has_an_empty_context_before_retrieval(self) -> None:
+        self.assertEqual(FlowTrace("guarded").context, [])
+
 
 class PickleIndicatorTests(unittest.TestCase):
     def test_static_pickle_indicators_show_the_payload(self) -> None:
