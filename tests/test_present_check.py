@@ -20,6 +20,10 @@ class PresentationCheckTests(unittest.TestCase):
     def test_dom_accepts_expected_synthetic_payload(self) -> None:
         _assert_dom("<main>SYSTEM NOTE</main>", "SYSTEM NOTE")
 
+    def test_dom_requires_the_recorded_inspect_flow(self) -> None:
+        with self.assertRaisesRegex(PresentationCheckError, "presentation_expected_text_missing"):
+            _assert_dom("<main>Sample s0-benign</main>", "opsassist_flow")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -16,6 +16,10 @@ make demo-record-appendix   (optional, separate, ~15 min)
 
 make present-visual         (during the talk)
   -> verify manifest -> serve bundle on 127.0.0.1, read-only, no execution
+
+make present-check SHOWCASE_RUN_ID=<id>  (before the talk)
+  -> verify manifest -> local Chrome captures every route, SVG and Inspect event
+  -> retain a receipt and screenshots under artifacts/present-check/
 ```
 
 ## Trust Boundary
@@ -135,6 +139,10 @@ Content-Security-Policy shipped by the Inspect dist, validated before use, plus
 `frame-ancestors 'none'`. The server answers `HEAD` and single byte `Range`
 requests so the frozen Inspect View can read its `.eval` logs, and the
 normalized result records one log path per side for per-sample deep links.
+The visual check starts its own loopback server and accepts the Inspect capture
+only after the evaluator's bounded `opsassist_flow` event appears in the DOM.
+Chrome DevTools is loopback-only and exists solely to wait for the frozen
+viewer's asynchronous range reader; it does not execute a scenario.
 
 ## Failure Handling
 

@@ -70,6 +70,11 @@ resistance claim, or proof that the model authorizes or executes an action.
   refuses an incomplete or altered bundle. The viewer states the recording
   time.
 - `REQ-PRES-012`: the viewer text is in English.
+- `REQ-PRES-018`: `make present-check SHOWCASE_RUN_ID=<id>` verifies a complete
+  recorded bundle in the admitted local Chrome binary. It captures each
+  scenario step, diagram and one guarded Inspect transcript under
+  `artifacts/present-check/`; it waits for the transcript event emitted by the
+  fixed evaluator and never executes a scenario or exposes a browser port.
 
 ## Safety Requirements
 

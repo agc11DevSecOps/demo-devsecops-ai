@@ -392,7 +392,7 @@ showcase-live:
 
 present-check:
 	@test -n "$(SHOWCASE_RUN_ID)" || (printf '%s\n' 'Set SHOWCASE_RUN_ID to a generated complete showcase bundle.'; exit 2)
-	$(PYTHON) tools/present_check.py --showcase-run-id "$(SHOWCASE_RUN_ID)"
+	$(PYTHON) -m tools.present_check --showcase-run-id "$(SHOWCASE_RUN_ID)"
 
 challenge-create:
 	@test -n "$(SHOWCASE_RUN_ID)" || (printf '%s\n' 'Set SHOWCASE_RUN_ID to a generated showcase bundle.'; exit 2)

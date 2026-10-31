@@ -23,6 +23,8 @@ decisions, scripted Run A baselines). Its results are no longer cited.
 - [x] Tests for gating, excerpts, evaluation target, bundle tampering and
       digest-free output.
 - [x] Full verification matrix and evidence record.
+- [x] Local Chrome presentation check captures every route, self-contained SVG
+      and a rendered Inspect flow event from a validated frozen bundle.
 
 ## Verification Commands
 
@@ -34,6 +36,7 @@ make demo-10m-preflight
 make demo-record
 make demo-record-appendix
 make present-visual
+make present-check SHOWCASE_RUN_ID=<complete bundle>
 make pipeline
 make test-gateway-compose
 make test-container
@@ -55,14 +58,15 @@ its own with `make inspect-eval`.
 | `make demo-record-appendix` | `OK`; full Garak campaign blocked 55/55 prompts; appendix bundle verified complete (separate from the main budget) |
 | `make inspect-eval` | 18 samples; unguarded 6 unsafe / 12 safe, guarded 0 unsafe / 18 safe; Inspect View bundle produced |
 | `make present-visual` | Verified bundle served read-only on loopback; no Docker or models required |
+| `make present-check SHOWCASE_RUN_ID=showcase-20261031T201034Z` | `PASS`; every scenario step, 10 diagrams and the rendered guarded Inspect transcript captured locally |
 | `make pipeline` | 11 stages recorded; deferred stages remain `NOT TESTED`/`DESIGNED` |
 | `make test-gateway-compose` | `OK` |
 | `make test-container` | 3 tests, `OK` |
 | `git diff --check` | Clean |
 
-Main bundle: `record/showcase-runs/showcase-20261031T185450Z`.
-Final bundle with the S7 appendix, Inspect View and per-sample transcript links:
-`record/showcase-runs/showcase-20261031T191055Z`.
+Main bundle: `record/showcase-runs/showcase-20261031T194854Z`.
+Final bundle with the S7 appendix, Inspect View and rendered per-sample
+transcript links: `record/showcase-runs/showcase-20261031T201034Z`.
 
 ### Presentation verification (2026-10-31)
 
@@ -72,7 +76,11 @@ Final bundle with the S7 appendix, Inspect View and per-sample transcript links:
   the Inspect dist CSP only under `/inspect/`.
 - `HEAD` and single byte `Range` requests are supported, so the frozen Inspect
   View opens its `.eval` logs. The viewer deep-links each sample with
-  `#/logs/<side>/<file>.eval/samples/sample/<id>`.
+   `#/logs/<side>/<file>.eval/samples/sample/<id>/1`.
+- `make present-check` captures the 10 self-contained SVGs, all recorded steps
+  and a guarded Inspect transcript only after its `opsassist_flow` event has
+  rendered. The final receipt is
+  `artifacts/present-check/showcase-20261031T201034Z-20261031T201151Z/receipt.json`.
 - The payload step shows the full fixture: artifact, format, protocol, static
   pickle opcodes, resolved globals, command and effect.
 - Before/After render the retrieved context, model output (or the withheld

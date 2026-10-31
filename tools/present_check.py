@@ -9,10 +9,13 @@ It never executes a scenario, model, tool, or user-supplied browser command.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
+import os
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -54,11 +57,11 @@ def _wait_for_server(url: str) -> None:
     raise PresentationCheckError("showcase_server_unavailable")
 
 
-def _chrome(arguments: list[str]) -> subprocess.CompletedProcess[str]:
+def _chrome(arguments: list[str], *, virtual_time_ms: int = 3_000) -> subprocess.CompletedProcess[str]:
     if not CHROME.is_file():
         raise PresentationCheckError("chrome_headless_shell_unavailable")
     return subprocess.run(
-        [str(CHROME), "--headless", "--disable-gpu", "--hide-scrollbars", "--virtual-time-budget=3000", *arguments],
+        [str(CHROME), "--headless", "--disable-gpu", "--hide-scrollbars", f"--virtual-time-budget={virtual_time_ms}", *arguments],
         check=False,
         capture_output=True,
         text=True,
@@ -66,8 +69,8 @@ def _chrome(arguments: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _dom(url: str) -> str:
-    result = _chrome(["--dump-dom", url])
+def _dom(url: str, *, virtual_time_ms: int = 3_000) -> str:
+    result = _chrome(["--dump-dom", url], virtual_time_ms=virtual_time_ms)
     if result.returncode != 0:
         raise PresentationCheckError("chrome_dom_failed")
     return result.stdout
@@ -80,10 +83,148 @@ def _assert_dom(dom: str, expected: str = "") -> None:
         raise PresentationCheckError("presentation_expected_text_missing")
 
 
-def _capture(url: str, output: Path) -> None:
-    result = _chrome(["--window-size=1440,900", f"--screenshot={output}", url])
+def _capture(url: str, output: Path, *, virtual_time_ms: int = 3_000) -> None:
+    result = _chrome(["--window-size=1440,900", f"--screenshot={output}", url], virtual_time_ms=virtual_time_ms)
     if result.returncode != 0 or not output.is_file() or output.stat().st_size == 0:
         raise PresentationCheckError("chrome_screenshot_failed")
+
+
+class _DevTools:
+    """Tiny loopback-only Chrome DevTools client for the delayed Inspect reader."""
+
+    def __init__(self, websocket_url: str, debug_port: int) -> None:
+        from urllib.parse import urlsplit
+
+        target = urlsplit(websocket_url)
+        if target.scheme != "ws" or target.hostname != "127.0.0.1" or target.port != debug_port:
+            raise PresentationCheckError("chrome_debug_endpoint_invalid")
+        self.socket = socket.create_connection(("127.0.0.1", debug_port), timeout=5)
+        key = base64.b64encode(os.urandom(16)).decode("ascii")
+        request = (
+            f"GET {target.path} HTTP/1.1\r\n"
+            f"Host: 127.0.0.1:{debug_port}\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            f"Origin: http://127.0.0.1:{debug_port}\r\n"
+            f"Sec-WebSocket-Key: {key}\r\n"
+            "Sec-WebSocket-Version: 13\r\n\r\n"
+        )
+        self.socket.sendall(request.encode("ascii"))
+        self.reader = self.socket.makefile("rb")
+        status = self.reader.readline().decode("ascii", errors="replace")
+        while self.reader.readline() not in (b"\r\n", b""):
+            pass
+        if not status.startswith("HTTP/1.1 101"):
+            self.close()
+            raise PresentationCheckError("chrome_debug_handshake_failed")
+        self.next_id = 1
+
+    def close(self) -> None:
+        self.reader.close()
+        self.socket.close()
+
+    def call(self, method: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        request_id = self.next_id
+        self.next_id += 1
+        payload = json.dumps({"id": request_id, "method": method, "params": params or {}}, separators=(",", ":")).encode("utf-8")
+        mask = os.urandom(4)
+        if len(payload) < 126:
+            header = bytes((0x81, 0x80 | len(payload)))
+        elif len(payload) < 65_536:
+            header = bytes((0x81, 0x80 | 126)) + len(payload).to_bytes(2, "big")
+        else:
+            header = bytes((0x81, 0x80 | 127)) + len(payload).to_bytes(8, "big")
+        encoded = bytes(value ^ mask[index % 4] for index, value in enumerate(payload))
+        self.socket.sendall(header + mask + encoded)
+        while True:
+            response = json.loads(self._receive().decode("utf-8"))
+            if response.get("id") == request_id:
+                if "error" in response:
+                    raise PresentationCheckError("chrome_debug_command_failed")
+                result = response.get("result")
+                if not isinstance(result, dict):
+                    raise PresentationCheckError("chrome_debug_response_invalid")
+                return result
+
+    def _receive(self) -> bytes:
+        header = self.reader.read(2)
+        if len(header) != 2 or header[0] != 0x81:
+            raise PresentationCheckError("chrome_debug_frame_invalid")
+        length = header[1] & 0x7F
+        if length == 126:
+            length = int.from_bytes(self.reader.read(2), "big")
+        elif length == 127:
+            length = int.from_bytes(self.reader.read(8), "big")
+        payload = self.reader.read(length)
+        if len(payload) != length:
+            raise PresentationCheckError("chrome_debug_frame_incomplete")
+        return payload
+
+
+def _inspect_dom_and_capture(url: str, output: Path, expected: str) -> str:
+    """Wait for the Inspect range reader before checking and capturing its DOM."""
+    debug_port = _port()
+    with tempfile.TemporaryDirectory(prefix=".present-check-chrome-", dir=output.parent) as profile:
+        browser = subprocess.Popen(
+            [
+                str(CHROME),
+                "--headless",
+                "--disable-gpu",
+                "--hide-scrollbars",
+                "--window-size=1440,900",
+                "--remote-debugging-address=127.0.0.1",
+                f"--remote-debugging-port={debug_port}",
+                f"--remote-allow-origins=http://127.0.0.1:{debug_port}",
+                f"--user-data-dir={profile}",
+                url,
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        client: _DevTools | None = None
+        try:
+            deadline = time.monotonic() + 30
+            while time.monotonic() < deadline:
+                try:
+                    with urlopen(f"http://127.0.0.1:{debug_port}/json", timeout=1) as response:
+                        pages = json.load(response)
+                    endpoint = next(
+                        (page.get("webSocketDebuggerUrl") for page in pages if isinstance(page, dict) and page.get("type") == "page"),
+                        None,
+                    )
+                    if isinstance(endpoint, str):
+                        client = _DevTools(endpoint, debug_port)
+                        break
+                except (OSError, ValueError):
+                    time.sleep(0.1)
+            if client is None:
+                raise PresentationCheckError("chrome_debug_endpoint_unavailable")
+            dom = ""
+            while time.monotonic() < deadline:
+                result = client.call("Runtime.evaluate", {"expression": "document.documentElement.outerHTML", "returnByValue": True})
+                value = result.get("result", {}).get("value")
+                if isinstance(value, str):
+                    dom = value
+                    if expected in dom:
+                        screenshot = client.call("Page.captureScreenshot", {"format": "png"}).get("data")
+                        if not isinstance(screenshot, str):
+                            raise PresentationCheckError("chrome_screenshot_failed")
+                        output.write_bytes(base64.b64decode(screenshot, validate=True))
+                        return dom
+                time.sleep(0.25)
+            raise PresentationCheckError("inspect_view_load_timeout")
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            raise PresentationCheckError("chrome_debug_failed") from error
+        finally:
+            if client is not None:
+                client.close()
+            browser.terminate()
+            try:
+                browser.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                browser.kill()
+                browser.wait(timeout=5)
 
 
 def _safe_name(*parts: str) -> str:
@@ -139,8 +280,7 @@ def run(run_id: str) -> Path:
             if not isinstance(sample_id, str) or not sample_id:
                 raise PresentationCheckError("inspect_sample_invalid")
             inspect_url = f"{base}/{inspect['view']}#/logs/{logs['guarded']}/samples/sample/{sample_id}/1"
-            _assert_dom(_dom(inspect_url), sample_id)
-            _capture(inspect_url, output / "inspect-deep-link.png")
+            _assert_dom(_inspect_dom_and_capture(inspect_url, output / "inspect-deep-link.png", "opsassist_flow"), "opsassist_flow")
             checked.append(f"inspect/{sample_id}/1")
     finally:
         server.terminate()
