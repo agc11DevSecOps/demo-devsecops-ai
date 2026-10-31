@@ -22,9 +22,10 @@ from typing import Any
 import httpx
 from inspect_ai import Task, eval
 from inspect_ai.dataset import MemoryDataset, Sample
+from inspect_ai.log import transcript
 from inspect_ai.model import ModelAPI, ModelOutput, modelapi
 from inspect_ai.scorer import CORRECT, INCORRECT, Score, Scorer, Target, accuracy, scorer
-from inspect_ai.solver import TaskState, generate
+from inspect_ai.solver import TaskState, generate, solver
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DATASET = ROOT / "dataset.json"
@@ -181,6 +182,65 @@ def safe_observed(check: str, payload: dict[str, Any]) -> tuple[bool, str]:
     return False, "unknown check"
 
 
+def _bounded_text(value: Any, limit: int = 1_200) -> str:
+    return str(value)[:limit] if isinstance(value, str) else ""
+
+
+def _inspect_observation(payload: dict[str, Any]) -> dict[str, Any]:
+    """Project the fixed target response into transcript-safe display fields."""
+    context = []
+    for item in payload.get("context", []) if isinstance(payload.get("context"), list) else []:
+        if isinstance(item, dict):
+            context.append({
+                "source_id": _bounded_text(item.get("source_id"), 64),
+                "writer": _bounded_text(item.get("writer"), 64),
+                "text": _bounded_text(item.get("text"), 400),
+            })
+    stages = []
+    for item in payload.get("trace", []) if isinstance(payload.get("trace"), list) else []:
+        if isinstance(item, dict):
+            stages.append({
+                "stage": _bounded_text(item.get("stage"), 48),
+                "status": _bounded_text(item.get("status"), 32),
+                "control": _bounded_text(item.get("control"), 120),
+                "detail": _bounded_text(item.get("detail"), 400),
+            })
+    calls = []
+    for item in payload.get("tool_calls", []) if isinstance(payload.get("tool_calls"), list) else []:
+        if isinstance(item, dict):
+            calls.append({
+                "tool": _bounded_text(item.get("tool"), 64),
+                "parameters": item.get("parameters") if isinstance(item.get("parameters"), dict) else {},
+                "result": _bounded_text(item.get("result") or item.get("decision"), 200),
+            })
+    effects = [_bounded_text(item, 120) for item in payload.get("effects", []) if isinstance(item, str)][:16]
+    return {
+        "event": "opsassist_flow",
+        "side": _bounded_text(payload.get("side"), 16),
+        "sample_id": _bounded_text(payload.get("id"), 64),
+        "scenario": _bounded_text(payload.get("scenario"), 16),
+        "context": context[:8],
+        "stages": stages[:9],
+        "model_output": _bounded_text(payload.get("output")),
+        "withheld_output": _bounded_text(payload.get("withheld_output")),
+        "tool_calls": calls[:8],
+        "effects": effects,
+        "outcome": _bounded_text(payload.get("outcome"), 64),
+        "outcome_reason": _bounded_text(payload.get("outcome_reason"), 300),
+    }
+
+
+@solver
+def record_observation():
+    """Write the bounded flow evidence after generation for Inspect View."""
+    async def solve(state: TaskState, _generate: Any) -> TaskState:
+        payload = state.output.metadata if state.output and isinstance(state.output.metadata, dict) else {}
+        transcript().info(_inspect_observation(payload), source="opsassist")
+        return state
+
+    return solve
+
+
 @scorer(metrics=[accuracy()])
 def safe_behavior() -> Scorer:
     async def score(state: TaskState, target: Target) -> Score:
@@ -190,7 +250,12 @@ def safe_behavior() -> Scorer:
         if not payload:
             return Score(value=INCORRECT, answer="", explanation="the evaluation target returned no observation")
         safe, explanation = safe_observed(str(metadata.get("check", "")), payload)
-        return Score(value=CORRECT if safe else INCORRECT, answer=str(payload.get("output", ""))[:200], explanation=explanation)
+        return Score(
+            value=CORRECT if safe else INCORRECT,
+            answer=str(payload.get("output", ""))[:200],
+            explanation=explanation,
+            metadata={"flow": _inspect_observation(payload)},
+        )
 
     return score
 
@@ -205,7 +270,7 @@ def build_task(samples: list[dict[str, Any]]) -> Task:
         )
         for sample in samples
     ], name="opsassist-live")
-    return Task(dataset=dataset, solver=[generate()], scorer=safe_behavior())
+    return Task(dataset=dataset, solver=[generate(), record_observation()], scorer=safe_behavior())
 
 
 def _scan_logs(log_dir: Path) -> None:

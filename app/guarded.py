@@ -62,7 +62,7 @@ def run_guarded(question: str, *, corpus: str = "approved", requester: str = "la
             extra_documents=lab_corpus(corpus),
         )
     except WorkloadError as error:
-        result.update({"decision": "BLOCKED", "code": error.code, "output": "", "withheld_output": flow.withheld_output, "citations": [], "tool_calls": []})
+        result.update({"decision": "BLOCKED", "code": error.code, "output": "", "withheld_output": flow.withheld_output, "citations": [], "tool_calls": [], "context": flow.context})
         result["quarantined"] = list(flow.quarantined)
         result["stopped_at"] = flow.stopped_at() or "input"
         result["trace"] = flow.payload()
@@ -78,6 +78,7 @@ def run_guarded(question: str, *, corpus: str = "approved", requester: str = "la
         "pii_in_output": pii_found(response.answer),
         "marker_in_output": source_marker(response.answer) or template_echo(response.answer),
         "quarantined": list(flow.quarantined),
+        "context": flow.context,
         "stopped_at": None,
         "trace": flow.payload(),
     })

@@ -376,6 +376,7 @@ def assist(
         flow.quarantined = list(quarantined)
     sources = _retrieve(question, require_vector=selected_mode == "local", challenge=challenge, extra=extra)
     if flow is not None:
+        flow.context = [{"source_id": source_id, "writer": "trusted", "text": clip(text, 400)} for source_id, text in sources]
         flow.record(
             "retrieval",
             "filtered" if quarantined else "passed",

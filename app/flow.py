@@ -72,6 +72,7 @@ class FlowTrace:
     stages: list[dict[str, str]] = field(default_factory=list)
     withheld_output: str = ""
     quarantined: list[str] = field(default_factory=list)
+    context: list[dict[str, str]] = field(default_factory=list)
 
     def record(self, stage: str, status: str, control: str, detail: str = "") -> None:
         if stage not in STAGES or status not in STATUSES:

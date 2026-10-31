@@ -164,6 +164,19 @@ class EvalTargetTests(unittest.TestCase):
         for needle in ("input_sha256", "event_sha256", "descriptor_sha256", "parameters_sha256"):
             self.assertNotIn(needle, text)
 
+    def test_eval_target_returns_bounded_flow_details(self) -> None:
+        from app.eval_target import run_side
+
+        unguarded = {
+            "output": "synthetic output", "model_citations": [], "context": [{"source_id": "source", "writer": "trusted", "text": "synthetic context"}],
+            "tool_calls": [{"tool": "search_docs", "parameters": {}, "result": "read"}], "effects": [], "outcome": "NOT EXPLOITED BY THIS MODEL", "outcome_reason": "bounded", "trace": [],
+        }
+        guarded = {"decision": "BLOCKED", "code": "invalid_question", "output": "", "withheld_output": "", "citations": [], "context": [], "tool_calls": [], "quarantined": [], "trace": []}
+        case = {"id": "s0-benign", "scenario": "S0", "check": "benign", "question": "question", "corpus": "approved", "agent": False}
+        with mock.patch("app.unguarded.run_unguarded", return_value=unguarded), mock.patch("app.guarded.run_guarded", return_value=guarded), mock.patch("app.eval_target.side_enabled", return_value=True), mock.patch("app.eval_target._reset_sandbox"):
+            self.assertEqual(run_side("unguarded", case)["context"][0]["text"], "synthetic context")
+            self.assertEqual(run_side("guarded", case)["tool_calls"], [])
+
 
 if __name__ == "__main__":
     unittest.main()
