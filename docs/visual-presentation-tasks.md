@@ -80,7 +80,7 @@ links, scenario-specific Run A diagrams and the verified gate rehearsal: `record
 - `make present-check` captures the 15 self-contained SVGs, all recorded steps
   and a guarded Inspect transcript only after its `opsassist_flow` event has
   rendered. The final receipt is
-  `artifacts/present-check/showcase-20261031T233325Z-20261031T233328Z/receipt.json`.
+  `artifacts/present-check/showcase-20261031T233325Z-20261031T233755Z/receipt.json`.
 - The payload step shows the full fixture: artifact, format, protocol, static
   pickle opcodes, resolved globals, command and effect.
 - Before/After render the retrieved context, model output (or the withheld
