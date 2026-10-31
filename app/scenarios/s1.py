@@ -13,6 +13,7 @@ from app.security import model_admission as admission
 
 def scenario_s1(run: str, writer: EvidenceWriter) -> None:
     malicious, clean = admission.make_model_fixtures()
+    indicators = admission.pickle_indicators(malicious)
     marker = safe_path("PWNED_BY_MODEL")
     if run == "A":
         if os.environ.get("OPS_DEMO_IN_CONTAINER") != "1":
@@ -21,7 +22,7 @@ def scenario_s1(run: str, writer: EvidenceWriter) -> None:
 
         with malicious.open("rb") as handle:
             pickle.load(handle)  # noqa: S301 - deliberate, self-created demonstration fixture.
-        writer.emit(Event("A", "S1", "model load", "EXECUTED", "sandbox marker created", (), input_value=malicious.name, visual={"input": {"artifact": malicious.name, "format": "pickle"}, "control": {"deserialization": "unsafe baseline"}, "observation": {"marker": "PWNED_BY_MODEL"}, "state": {"marker_exists": marker.exists()}}))
+        writer.emit(Event("A", "S1", "model load", "EXECUTED", "sandbox marker created", (), input_value=malicious.name, visual={"input": {"artifact": malicious.name, "format": "pickle", "fixture": indicators}, "control": {"deserialization": "unsafe baseline"}, "observation": {"marker": "PWNED_BY_MODEL", "operator": indicators["globals"], "command": indicators["command"]}, "state": {"marker_exists": marker.exists()}}))
         return
 
     scanners_ran = 0
@@ -29,13 +30,13 @@ def scenario_s1(run: str, writer: EvidenceWriter) -> None:
         severity = admission.fickling_scan(malicious)
         if severity == "LIKELY_SAFE":
             raise AssertionError("malicious_fixture_not_detected")
-        writer.emit(Event("B", "S1", "Fickling static scan", "BLOCKED", f"Fickling 0.1.12 reported {severity}", ("v1.01-C6.1.1",), input_value=malicious.name, visual={"input": {"artifact": malicious.name}, "control": {"scanner": "Fickling 0.1.12"}, "observation": {"severity": severity, "report": "fickling-s1.json"}, "state": {"admitted": False}}))
+        writer.emit(Event("B", "S1", "Fickling static scan", "BLOCKED", f"Fickling 0.1.12 reported {severity}", ("v1.01-C6.1.1",), input_value=malicious.name, visual={"input": {"artifact": malicious.name, "fixture": indicators}, "control": {"scanner": "Fickling 0.1.12"}, "observation": {"severity": severity, "report": "fickling-s1.json", "operator": indicators["globals"], "command": indicators["command"]}, "state": {"admitted": False}}))
         scanners_ran += 1
     if os.environ.get("OPS_DEMO_MODELSCAN") == "1":
         findings = admission.modelscan_scan(malicious)
         if findings < 1:
             raise AssertionError("malicious_fixture_not_detected")
-        writer.emit(Event("B", "S1", "ModelScan static scan", "BLOCKED", f"ModelScan 0.8.8 reported {findings} issue(s)", ("v1.01-C6.1.1",), input_value=malicious.name, visual={"input": {"artifact": malicious.name}, "control": {"scanner": "ModelScan 0.8.8"}, "observation": {"findings": findings, "report": "modelscan-s1.json"}, "state": {"admitted": False}}))
+        writer.emit(Event("B", "S1", "ModelScan static scan", "BLOCKED", f"ModelScan 0.8.8 reported {findings} issue(s)", ("v1.01-C6.1.1",), input_value=malicious.name, visual={"input": {"artifact": malicious.name, "fixture": indicators}, "control": {"scanner": "ModelScan 0.8.8"}, "observation": {"findings": findings, "report": "modelscan-s1.json", "operator": indicators["globals"], "command": indicators["command"]}, "state": {"admitted": False}}))
         scanners_ran += 1
     if scanners_ran == 0:
         if admission.pickle_scan(malicious):

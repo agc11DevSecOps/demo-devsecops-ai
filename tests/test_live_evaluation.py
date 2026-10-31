@@ -5,6 +5,7 @@ from __future__ import annotations
 import http.client
 import json
 import os
+import pickle
 import re
 import tempfile
 import threading
@@ -19,6 +20,7 @@ from app.eval_target import _Handler, BY_QUESTION, CASES
 from app.flow import lab_cases, lab_corpus
 from app.unguarded import LabDisabled, lab_enabled, naive_agent, require_lab
 from app.flow import FlowTrace
+from app.security.model_admission import MaliciousFixture, pickle_indicators
 
 MAKEFILE = (ROOT / "Makefile").read_text(encoding="utf-8")
 
@@ -60,6 +62,19 @@ class LabTests(unittest.TestCase):
         self.assertIn("customer-record", lab_corpus("pii")[0][0])
         with self.assertRaises(ValueError):
             lab_corpus("../../etc")
+
+
+class PickleIndicatorTests(unittest.TestCase):
+    def test_static_pickle_indicators_show_the_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "model_malicious.pkl"
+            path.write_bytes(pickle.dumps(MaliciousFixture(), protocol=4))
+            info = pickle_indicators(path)
+        self.assertEqual(info["protocol"], 4)
+        self.assertTrue(any("system" in item for item in info["globals"]))
+        self.assertIn("PWNED_BY_MODEL", info["command"])
+        self.assertIn("resolves posix.system", info["indicators"])
+        self.assertIn("executes on pickle.load()", info["indicators"])
 
 
 class ControlCatalogTests(unittest.TestCase):

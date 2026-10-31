@@ -45,8 +45,42 @@ PAYLOAD_KEYS = frozenset({
     "question", "prompts", "attack_prompts", "benign_prompt", "document", "query", "writer",
     "corpus", "input_chars", "model_output", "parameters", "tool_output", "artifact", "format",
     "scopes", "requester", "recorded_model_output", "output_length", "limit", "question_length",
-    "expected_source", "evidence_package",
+    "expected_source", "evidence_package", "fixture",
 })
+LOG_PATH = re.compile(r"^(unguarded|guarded)/[A-Za-z0-9._-]+\.eval$")
+SENSITIVE = (
+    ("IBAN_CODE", re.compile(r"\bES\d{2}(?:\s?\d{4}){5}\b")),
+    ("EMAIL_ADDRESS", re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")),
+    ("PHONE_NUMBER", re.compile(r"\+?\d{2,3}[ -]?\d{3}[ -]?\d{3}[ -]?\d{3}\b")),
+    ("API_KEY", re.compile(r"\bsk-demo-CANARY-\d{4}\b")),
+)
+
+
+def _strings(value: Any, *, depth: int = 0) -> list[str]:
+    if depth > 5:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if type(value) is list:
+        return [item for entry in value[:32] for item in _strings(entry, depth=depth + 1)]
+    if type(value) is dict:
+        return [item for entry in value.values() for item in _strings(entry, depth=depth + 1)]
+    return []
+
+
+def _sensitive_rows(before: dict[str, Any] | None, after: dict[str, Any] | None) -> list[dict[str, str]]:
+    """Labelled synthetic values: raw in Run A, masked placeholders in Run B."""
+    before_details = (before or {}).get("details") or {}
+    after_details = (after or {}).get("details") or {}
+    raw_text = "\n".join(_strings(before_details.get("observation")) + _strings((before_details.get("input") or {}).get("document")))
+    masked_text = "\n".join(_strings(after_details.get("observation")) + _strings(after_details.get("state")))
+    rows = []
+    for label, pattern in SENSITIVE:
+        match = pattern.search(raw_text)
+        masked = re.search(rf"<{label}>", masked_text)
+        if match or masked:
+            rows.append({"label": label, "raw": match.group(0) if match else "", "masked": f"<{label}>" if (masked or match) else ""})
+    return rows
 
 
 @dataclass(frozen=True)
@@ -302,6 +336,13 @@ def _read_inspect() -> dict[str, Any]:
         "scope": _safe_text(payload.get("scope", "live local evaluation; synthetic fixtures"), limit=300),
         "summary": {key: value for key, value in summary.items() if type(value) in {int, str} and key in {"total", "unguarded_safe", "unguarded_unsafe", "guarded_safe", "guarded_unsafe"}},
         "samples": samples,
+        "logs": {
+            side: value
+            for side in ("unguarded", "guarded")
+            if isinstance((payload.get("logs") or {}).get(side), str)
+            and LOG_PATH.fullmatch((payload.get("logs") or {}).get(side, ""))
+            for value in [(payload.get("logs") or {})[side]]
+        },
         "view": "inspect/index.html" if (INSPECT_VIEW_DIR / "index.html").is_file() and payload.get("view_available") is True else "",
     }
 
@@ -339,12 +380,15 @@ def _scenario_card(
         b_visual = visual_for(bound_b, b_event)
         if index == 0:
             primary_before, primary_after = a_event, b_event
+        before_view = _event_view(a_event, a_visual)
+        after_view = _event_view(b_event, b_visual)
         pairs.append({
             "label": b_control,
-            "before": _event_view(a_event, a_visual),
-            "after": _event_view(b_event, b_visual),
+            "before": before_view,
+            "after": after_view,
             "flow": _flow(_trace_of(a_visual), _trace_of(b_visual)),
             "payload": _payload(a_visual, scenario.static_payload),
+            "sensitive": _sensitive_rows(before_view, after_view),
         })
     pipeline = []
     if scenario.scenario == "PIPELINE":

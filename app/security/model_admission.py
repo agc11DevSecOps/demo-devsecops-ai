@@ -54,6 +54,43 @@ def make_model_fixtures() -> tuple[Path, Path]:
 _UNSAFE_PICKLE_MODULES = frozenset({"os", "posix", "nt", "subprocess", "sys", "shutil", "builtins", "runpy", "importlib"})
 
 
+def pickle_indicators(path: Path) -> dict[str, Any]:
+    """Describe a pickle statically: no globals are resolved and nothing executes."""
+    protocol: int | None = None
+    opcodes: list[dict[str, str]] = []
+    globals_: list[str] = []
+    strings: list[str] = []
+    pending: list[str] = []
+    for opcode, argument, _ in pickletools.genops(path.read_bytes()):
+        value = "" if argument is None else str(argument)
+        opcodes.append({"op": opcode.name, "arg": value[:160]})
+        if opcode.name == "PROTO" and protocol is None:
+            protocol = int(argument)
+        elif opcode.name == "GLOBAL":
+            globals_.append(value)
+        elif opcode.name in {"SHORT_BINUNICODE", "BINUNICODE", "UNICODE", "STRING"}:
+            strings.append(value)
+            pending = (pending + [value])[-2:]
+        elif opcode.name == "STACK_GLOBAL" and len(pending) == 2:
+            globals_.append(f"{pending[0]} {pending[1]}")
+    command = next((item for item in strings if "printf" in item), "")
+    indicators = []
+    if any("system" in item for item in globals_):
+        indicators.append("resolves posix.system")
+    indicators.append("executes on pickle.load()")
+    if "PWNED_BY_MODEL" in command:
+        indicators.append("writes sandbox/PWNED_BY_MODEL")
+    indicators.append("no tensor weights")
+    return {
+        "protocol": protocol,
+        "opcodes": opcodes[:16],
+        "globals": globals_,
+        "command": command,
+        "indicators": indicators,
+        "effect": "sandbox/PWNED_BY_MODEL created" if "PWNED_BY_MODEL" in command else "unknown",
+    }
+
+
 def pickle_scan(path: Path) -> bool:
     """Narrow stdlib fallback: inspect opcodes only, never load the pickle."""
     pending: list[str] = []

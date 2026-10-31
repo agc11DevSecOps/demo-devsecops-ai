@@ -101,7 +101,7 @@ _VISUAL_KEY = re.compile(r"^[a-z][a-z0-9_]{0,47}$")
 
 def visual_value(value: Any, *, depth: int = 0) -> Any:
     """Accept JSON display values with strict type, size, and depth limits."""
-    if depth > 4:
+    if depth > 5:
         raise ValueError("visual_depth")
     if value is None or type(value) in {bool, int}:
         return value

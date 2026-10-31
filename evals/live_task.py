@@ -277,11 +277,17 @@ def run(dataset_path: Path, output_path: Path) -> dict[str, Any]:
         "guarded_unsafe": sum(item["guarded"]["status"] == "unsafe" for item in payload_samples),
     }
     view_available = _bundle(LOG_ROOT)
+    logs: dict[str, str] = {}
+    for side in SIDES:
+        candidates = sorted((LOG_ROOT / side).rglob("*.eval"))
+        if candidates:
+            logs[side] = f"{side}/{candidates[-1].name}"
     payload = {
         "format_version": 1,
         "scope": "live local evaluation; synthetic fixtures; deterministic scoring",
         "summary": summary,
         "view_available": view_available,
+        "logs": logs,
         "samples": payload_samples,
     }
     output_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

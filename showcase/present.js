@@ -54,6 +54,9 @@ const diagram = (name, caption) => {
   const img = el("img", "");
   img.loading = "lazy";
   img.alt = caption;
+  img.addEventListener("error", () => {
+    figure.replaceChildren(el("p", "muted", "Diagram could not be loaded. The recorded evidence is still available below."));
+  });
   img.src = `diagram-${name}.svg`;
   add(figure, img, el("figcaption", "", caption));
   return figure;
@@ -77,6 +80,109 @@ const flowRows = (pairs, side) => {
     });
   });
   return container.children.length > 1 ? container : null;
+};
+
+const pre = (value) => el("pre", "block mono", valueText(value));
+const listOf = (items) => {
+  const list = el("ul", "value-list");
+  items.forEach((item) => add(list, el("li", "", valueText(item))));
+  return list;
+};
+const renderValue = (value) => {
+  if (Array.isArray(value)) return listOf(value);
+  if (value && typeof value === "object") return pre(value);
+  const text = String(value ?? "");
+  return text.length > 300 ? pre(text) : el("span", "mono", text);
+};
+const fixtureView = (fixture) => {
+  const box = el("div", "fixture");
+  if (Array.isArray(fixture.opcodes) && fixture.opcodes.length) {
+    add(box, el("p", "excerpt-label", "Static pickle opcodes (no execution)"));
+    add(box, pre(fixture.opcodes.map((op) => `${op.op}${op.arg ? ` ${op.arg}` : ""}`).join("\n")));
+  }
+  if (Array.isArray(fixture.indicators) && fixture.indicators.length) {
+    add(box, el("p", "excerpt-label", "Malicious indicators"));
+    add(box, listOf(fixture.indicators));
+  }
+  if (fixture.command) {
+    add(box, el("p", "excerpt-label", "Command executed on deserialization"));
+    add(box, pre(fixture.command));
+  }
+  if (fixture.effect) add(box, el("p", "", `Effect: ${fixture.effect}`));
+  return box;
+};
+const detailTable = (headers, rows, className) => {
+  const table = el("table", `table ${className || ""}`.trim());
+  const head = el("tr");
+  headers.forEach((name) => add(head, el("th", "", name)));
+  const thead = el("thead");
+  add(thead, head);
+  add(table, thead);
+  const body = el("tbody");
+  rows.forEach((row) => {
+    const tr = el("tr");
+    row.forEach((cell) => add(tr, el("td", "", cell)));
+    add(body, tr);
+  });
+  add(table, body);
+  return table;
+};
+
+const detailPanel = (pair, side) => {
+  const event = pair[side];
+  const details = (event && event.details) || null;
+  if (!details) return null;
+  const observation = details.observation || {};
+  const panel = el("section", "detail-block");
+  const section = (title, node) => {
+    if (!node) return;
+    add(panel, el("p", "excerpt-label", title));
+    add(panel, node);
+  };
+  if (Array.isArray(pair.sensitive) && pair.sensitive.length) {
+    const rows = pair.sensitive.map((row) => [row.label, side === "before" ? (row.raw || "—") : (row.masked || "—")]);
+    section(side === "before" ? "Sensitive data observed (Run A, raw)" : "Sensitive data as the model reads it (Run B)", detailTable(["Label", side === "before" ? "Run A value" : "Run B placeholder"], rows, "sensitive-table"));
+    if (side === "after") add(panel, el("p", "muted", "Run B: Presidio replaces each value with its label before the model sees it."));
+  }
+  const command = observation.command || (details.fixture && details.fixture.command);
+  if (command) section("Command on deserialization", pre(command));
+  const operator = observation.operator;
+  if (Array.isArray(operator) && operator.length) section("Resolved pickle globals", listOf(operator));
+  const severity = observation.severity;
+  const findings = observation.findings;
+  if (severity || findings !== undefined) {
+    const line = el("p", "");
+    add(line, el("strong", "", "Scanner findings: "), el("span", "", [severity, findings !== undefined ? `${findings} issue(s)` : ""].filter(Boolean).join(" · ")));
+    add(panel, line);
+  }
+  const context = Array.isArray(observation.context) ? observation.context : (Array.isArray(observation.guarded_context) ? observation.guarded_context : null);
+  if (context && context.length) {
+    const list = el("ul", "context-list");
+    context.forEach((item) => {
+      const entry = el("li", "");
+      add(entry, el("strong", "mono", `${item.source_id || item.source || "source"} (${item.writer || "trusted"})`), pre(item.text || ""));
+      add(list, entry);
+    });
+    section(side === "before" ? "Retrieved context (raw)" : "Retrieved context after controls", list);
+  }
+  const maskedDocument = observation.index_value || (details.state && details.state.index_value);
+  if (side === "after" && maskedDocument) section("Document the model reads", pre(maskedDocument));
+  const output = observation.model_output ?? observation.guarded_answer ?? observation.masked_answer;
+  if (output) section("Model output", pre(output));
+  if (observation.guarded_withheld_output) {
+    add(panel, el("p", "excerpt-label", "Output withheld by validation"));
+    add(panel, pre(observation.guarded_withheld_output));
+  }
+  if (Array.isArray(observation.rows) && observation.rows.length) {
+    section("Per-prompt results", detailTable(["Prompt", "Category", "Model output", "Outcome"], observation.rows.map((row) => [row.prompt || row.id, row.category || "", row.model_output || "", row.outcome || ""]), "prompt-table"));
+  }
+  const calls = Array.isArray(observation.tool_calls) ? observation.tool_calls : (Array.isArray(observation.guarded_tool_calls) ? observation.guarded_tool_calls : null);
+  if (calls && calls.length) {
+    section("Tool proposals", detailTable(["Tool", "Parameters", "Result"], calls.map((call) => [call.tool || "", call.parameters || "", call.result || call.decision || ""]), "tool-table"));
+  }
+  if (Array.isArray(observation.effects) && observation.effects.length) section("Sandbox effects", listOf(observation.effects));
+  if (observation.outcome) add(panel, el("p", "outcome", `Outcome: ${observation.outcome}${observation.outcome_reason ? ` — ${observation.outcome_reason}` : ""}`));
+  return panel.childElementCount ? panel : null;
 };
 
 const eventPanel = (event, kind) => {
@@ -107,9 +213,14 @@ const pipelineTable = (rows) => {
 const renderPayload = (card) => {
   const wrap = el("div", "");
   add(wrap, el("p", "eyebrow", "SAFE SYNTHETIC PAYLOAD"), el("h3", "", card.payload_kind));
-  const list = el("dl", "kv");
+  const list = el("dl", "kv payload-list");
   (card.payload || []).forEach((item) => {
-    add(list, el("dt", "mono", item.key), el("dd", "mono", valueText(item.value)));
+    add(list, el("dt", "mono", item.key));
+    if (item.key === "fixture" && item.value && typeof item.value === "object") {
+      add(list, el("dd", "", fixtureView(item.value)));
+    } else {
+      add(list, el("dd", "", renderValue(item.value)));
+    }
   });
   add(wrap, list);
   add(wrap, el("p", "muted", `Reality: ${card.reality}`));
@@ -129,6 +240,8 @@ const renderBefore = (card) => {
     add(block, eventPanel(pair.before, "before"));
     const rows = flowRows([pair], "before");
     if (rows) add(block, rows);
+    const details = detailPanel(pair, "before");
+    if (details) add(block, details);
     add(grid, block);
   });
   add(wrap, grid);
@@ -179,6 +292,8 @@ const renderAfter = (card) => {
     add(block, eventPanel(pair.after, "after"));
     const rows = flowRows([pair], "after");
     if (rows) add(block, rows);
+    const details = detailPanel(pair, "after");
+    if (details) add(block, details);
     add(grid, block);
   });
   if (card.pairs.length) add(wrap, grid);
@@ -193,6 +308,18 @@ const checkPanel = (check) => {
   add(box, head);
   if (check.unguarded.explanation) add(box, el("p", "", `Run A: ${check.unguarded.explanation}`));
   if (check.guarded.explanation) add(box, el("p", "", `Run B: ${check.guarded.explanation}`));
+  const inspect = state.projection.inspect || {};
+  const logs = inspect.logs || {};
+  const links = el("p", "check-links");
+  [["unguarded", "Run A transcript"], ["guarded", "Run B transcript"]].forEach(([side, label]) => {
+    if (!inspect.view || !logs[side]) return;
+    const link = el("a", "", label);
+    link.href = `${inspect.view}#/logs/${logs[side]}/samples/sample/${encodeURIComponent(check.id)}`;
+    link.target = "_blank";
+    link.rel = "noopener";
+    add(links, link);
+  });
+  if (links.childElementCount) add(box, links);
   return box;
 };
 
@@ -226,7 +353,7 @@ const renderResult = (card) => {
     add(wrap, list);
     const inspect = state.projection.inspect || {};
     if (inspect.view) {
-      const link = el("a", "", "Open the recorded Inspect transcripts");
+      const link = el("a", "", "Open Inspect View (all samples, both runs)");
       link.href = inspect.view;
       link.target = "_blank";
       link.rel = "noopener";

@@ -20,12 +20,12 @@ HEX = re.compile(r"\b[0-9a-f]{64}\b")
 FORBIDDEN_VALUES = {"sha256", "event_sha256", "input_sha256", "descriptor_sha256", "token", "signature"}
 
 
-def _event(run: str, scenario: str, control: str, decision: str, *, observation: dict | None = None, input_value: str = "synthetic input", label: str = "MEASURED", trace: list | None = None) -> Event:
+def _event(run: str, scenario: str, control: str, decision: str, *, observation: dict | None = None, input_value: str = "synthetic input", label: str = "MEASURED", trace: list | None = None, state: dict | None = None, input_extra: dict | None = None) -> Event:
     details: dict[str, object] = {
-        "input": {"question": "What is the rollback procedure?", "document": "synthetic document", "secret": "drop-me"},
+        "input": {"question": "What is the rollback procedure?", "document": "synthetic document", "secret": "drop-me", **(input_extra or {})},
         "control": {"name": control},
         "observation": observation or {"answer": "synthetic answer"},
-        "state": {"decision": decision},
+        "state": state or {"decision": decision},
     }
     if trace is not None:
         details["trace"] = trace
@@ -172,6 +172,49 @@ class PresentationTests(unittest.TestCase):
         self.assertEqual(card["checks"][0]["guarded"]["status"], "safe")
         self.assertEqual(projection["inspect"]["status"], "available")
 
+    def test_sensitive_values_are_labelled_not_plain_in_the_projection(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, self._roots(Path(directory)):
+            self._write([
+                _event("A", "S3", "PII in answer", "ALLOWED", observation={"model_output": "IBAN ES91 2100 0418 4502 0005 1332 email demo@example.test phone +34 600 000 000"}),
+                _event("B", "S3", "PII in answer", "BLOCKED", observation={"masked_answer": "IBAN <IBAN_CODE> email <EMAIL_ADDRESS> phone <PHONE_NUMBER>"}, state={"index_value": "IBAN <IBAN_CODE> email <EMAIL_ADDRESS> phone <PHONE_NUMBER>"}),
+            ])
+            projection = build_projection()
+        card = next(item for item in projection["scenarios"] if item["scenario"] == "S3")
+        rows = {row["label"]: row for row in card["pairs"][0]["sensitive"]}
+        self.assertIn("IBAN_CODE", rows)
+        self.assertIn("ES91", rows["IBAN_CODE"]["raw"])
+        self.assertEqual(rows["IBAN_CODE"]["masked"], "<IBAN_CODE>")
+        self.assertEqual(rows["EMAIL_ADDRESS"]["masked"], "<EMAIL_ADDRESS>")
+
+    def test_fixture_payload_is_projected(self) -> None:
+        fixture = {"protocol": 4, "opcodes": [{"op": "GLOBAL", "arg": "posix system"}], "command": "printf x > sandbox/PWNED_BY_MODEL", "indicators": ["resolves posix.system"], "effect": "sandbox/PWNED_BY_MODEL created"}
+        with tempfile.TemporaryDirectory() as directory, self._roots(Path(directory)):
+            self._write([
+                _event("A", "S1", "model load", "EXECUTED", observation={"marker": "PWNED_BY_MODEL"}, input_extra={"artifact": "model_malicious.pkl", "format": "pickle", "fixture": fixture}),
+                _event("B", "S1", "Fickling static scan", "BLOCKED", observation={"severity": "LIKELY_OVERTLY_MALICIOUS"}),
+            ])
+            projection = build_projection()
+        card = next(item for item in projection["scenarios"] if item["scenario"] == "S1")
+        payload = {item["key"]: item["value"] for item in card["payload"]}
+        self.assertEqual(payload["fixture"]["protocol"], 4)
+        self.assertEqual(payload["artifact"], "model_malicious.pkl")
+
+    def test_inspect_log_paths_are_validated(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self._roots(root):
+                payload = {
+                    "format_version": 1,
+                    "scope": "live",
+                    "summary": {"total": 1},
+                    "view_available": False,
+                    "logs": {"unguarded": "unguarded/a.eval", "guarded": "../../etc/passwd"},
+                    "samples": [],
+                }
+                (root / "artifacts" / "inspect-live.json").write_text(json.dumps(payload), encoding="utf-8")
+                projection = build_projection()
+        self.assertEqual(projection["inspect"]["logs"], {"unguarded": "unguarded/a.eval"})
+
     def test_diagram_path_is_allowlisted(self) -> None:
         self.assertIsNone(diagram_path("../../etc/passwd"))
         self.assertIsNone(diagram_path("not-in-catalog"))
@@ -183,6 +226,7 @@ class PresentationTests(unittest.TestCase):
             self.assertIsNotNone(path, name)
             text = path.read_text(encoding="utf-8")
             self.assertIn("<svg", text)
+            self.assertIn('xmlns="http://www.w3.org/2000/svg"', text)
             self.assertIn("viewBox=", text)
             self.assertNotRegex(text, r"(?i)<script\b|<foreignObject\b|<iframe\b|\son[a-z]+\s*=|javascript\s*:")
             self.assertNotRegex(text, r"(?i)(href|src)\s*=\s*[\"']https?:")
