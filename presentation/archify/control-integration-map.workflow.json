@@ -8,10 +8,6 @@
   },
   "lanes": [
     {
-      "id": "request",
-      "label": "Request"
-    },
-    {
       "id": "runtime",
       "label": "Runtime controls"
     },
