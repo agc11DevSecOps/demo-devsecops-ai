@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from app.approvals import issue, verify
+from app.approvals import consume, issue, reset_usage, verify
 from app.sandbox import reset
 from app.security.tool_boundary import ToolBoundary
 
@@ -10,6 +10,7 @@ from app.security.tool_boundary import ToolBoundary
 class ApprovalTests(unittest.TestCase):
     def setUp(self) -> None:
         reset()
+        reset_usage()
         self.boundary = ToolBoundary()
         self.parameters = {"repo": "demo-app", "branch": "release/2.4"}
         self.descriptor = self.boundary.pins["delete_branch"]
@@ -35,6 +36,12 @@ class ApprovalTests(unittest.TestCase):
     def test_expired_token_is_rejected(self) -> None:
         token = self._issue(ttl_seconds=-1)
         self.assertFalse(verify(token, tool="delete_branch", parameters=self.parameters, requester="presenter", descriptor_sha256=self.descriptor))
+
+    def test_token_is_single_use(self) -> None:
+        token = self._issue()
+        arguments = {"tool": "delete_branch", "parameters": self.parameters, "requester": "presenter", "descriptor_sha256": self.descriptor}
+        self.assertTrue(consume(token, **arguments))
+        self.assertFalse(consume(token, **arguments))
 
 
 if __name__ == "__main__":

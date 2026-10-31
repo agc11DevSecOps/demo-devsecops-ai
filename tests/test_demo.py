@@ -68,7 +68,7 @@ class DemoTests(unittest.TestCase):
         self.assertEqual(load_summary(), summary)
         run("B", scenarios=("S7",))
         records = [json.loads(line) for line in (EVIDENCE / "B" / "s7.jsonl").read_text(encoding="utf-8").splitlines()]
-        self.assertEqual([record["decision"] for record in records], ["BLOCKED", "BLOCKED", "ALLOWED", "ALLOWED", "BLOCKED"])
+        self.assertEqual([record["decision"] for record in records], ["REVIEW", "BLOCKED", "ALLOWED", "ALLOWED", "BLOCKED"])
         self._write_summary(total=54)
         self.assertIsNone(load_summary())
 
@@ -78,7 +78,7 @@ class DemoTests(unittest.TestCase):
         run("B", scenarios=("S7",))
         records = [json.loads(line) for line in (EVIDENCE / "B" / "s7.jsonl").read_text(encoding="utf-8").splitlines()]
         self.assertEqual(records[0]["decision"], "FAIL")
-        self.assertIn("breached 2/55", records[0]["reason"])
+        self.assertIn("detector hit in 2/55", records[0]["reason"])
 
     def test_s7_partial_campaign_never_counts_as_pass(self) -> None:
         summary = self._write_summary(prompts=5, full=False, passed=5, total=5)
@@ -145,10 +145,14 @@ class DemoTests(unittest.TestCase):
         self.assertFalse(_cosign_verify(SANDBOX / "missing.model", SANDBOX / "missing.bundle"))
 
     def test_s1_b_uses_opa_admission_when_enabled(self) -> None:
+        def policy(safe_format: bool, signature_ok: bool, aibom_complete: bool) -> bool:
+            return safe_format and signature_ok and aibom_complete
+
         with mock.patch.dict(os.environ, {"OPS_DEMO_OPA": "1"}):
-            with mock.patch("app.security.model_admission.opa_admit", return_value=True) as admit:
+            with mock.patch("app.security.model_admission.opa_admit", side_effect=policy) as admit:
                 scenario_s1("B", self.writer)
-        admit.assert_called_once_with(True, True, True)
+        admit.assert_any_call(True, True, True)
+        admit.assert_any_call(True, True, False)
         self.assertIn("OPA admission policy", (EVIDENCE / "B" / "s1.jsonl").read_text(encoding="utf-8"))
 
     def test_s1_b_rejects_opa_admission_denial(self) -> None:

@@ -21,10 +21,11 @@
   prevents the claimed level.
 - A standard-library fallback is not a substitute for a named scanner, signer,
   classifier, vector database or policy engine.
-- The offline 11-stage pipeline reports `NOT TESTED`/`DESIGNED` for stages whose
-  external tool is unadmitted (AI triage, dependency advisory lookup,
-  deployment, recorded S6 evidence, and the red team stage without a campaign);
-  none of these is presented as a positive result.
+- The offline 11-stage pipeline is a local gate rehearsal, not a CI/CD build or
+  deployment pipeline. It does not build the application image, publish an
+  artifact, promote a release or deploy. CI runs tests and the demo, not
+  `make pipeline`. Stages whose external tool is unadmitted report
+  `NOT TESTED`/`DESIGNED`; none is presented as a positive result.
 - The presentation gateway and `docker-compose.yml` are a demo surface over the
   loopback workload, not an internet-facing service; they use a demo-only token
   and no TLS.
@@ -37,8 +38,9 @@
   only and is never presented as live inference.
 - A fast Garak run covers 5/55 prompts and is labelled `PARTIAL`; only the full
   55-prompt campaign can produce a `BLOCKED` S7 event.
-- Garak currently exercises the loopback endpoint's pre-inference guards through
-  the scripted adapter. It is not evidence of FLAN-T5 jailbreak resistance.
+- Garak currently exercises the loopback endpoint through the scripted adapter.
+  Its aggregate is a detector result count, not a count of application blocks,
+  and it is not evidence of FLAN-T5 jailbreak resistance.
 - The standards references (AISVS, OWASP LLM Top 10, OWASP ASVS, NIST AI RMF and
   NIST SSDF) are design references recorded with provenance. They are not
   compliance, certification, coverage or audit results, and they never

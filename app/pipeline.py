@@ -29,11 +29,18 @@ from app.sandbox import reset
 from app.security import model_admission as admission
 
 BUILD_DIRS = ("app", "controls")
+SECRET_DIRS = ("app", "controls", "scripts", "policies", ".github")
+SECRET_FILES = ("Makefile", "Dockerfile", "docker-compose.yml")
+SECRET_SUFFIXES = frozenset({".py", ".sh", ".yml", ".yaml", ".rego", ".toml"})
 SECRET = re.compile(
     r"(?i)(-----BEGIN [A-Z ]*PRIVATE KEY-----|aws_secret_access_key\s*=|AKIA[0-9A-Z]{16}|sk-demo-CANARY-\d{4}|hf_[A-Za-z0-9]{20,})"
 )
 DANGEROUS_CALLS = {"eval", "exec", "compile", "__import__"}
-DANGEROUS_ATTRS = {("os", "system"), ("os", "popen"), ("pickle", "loads")}
+DANGEROUS_ATTRS = {("os", "system"), ("os", "popen"), ("pickle", "load"), ("pickle", "loads")}
+REVIEWED_EXCEPTIONS = frozenset({
+    ("app/scenarios/s1.py", "pickle.load"),
+    ("app/security/model_admission.py", "os.system"),
+})
 HALTS = frozenset({1, 2})
 
 
@@ -64,29 +71,53 @@ def _label(path: Path) -> str:
         return path.name
 
 
+def _secret_files() -> list[Path]:
+    files: list[Path] = []
+    for base in SECRET_DIRS:
+        files.extend(sorted(path for path in (ROOT / base).rglob("*") if path.is_file() and path.suffix in SECRET_SUFFIXES))
+    files.extend(path for name in SECRET_FILES if (path := ROOT / name).is_file())
+    return files
+
+
 # Pipeline stages: each returns evidence; later stages stop after a failed gate.
 def stage_secrets() -> StageOutcome:
     hits: list[str] = []
-    for path in _python_files():
+    files = _secret_files()
+    for path in files:
         for match in SECRET.finditer(path.read_text(encoding="utf-8")):
             hits.append(f"{_label(path)}:{match.group(0)[:16]}")
     passed = not hits
-    return StageOutcome(1, "secrets", "ALLOWED" if passed else "BLOCKED", passed, "MEASURED", f"deterministic secret scan of {len(_python_files())} build file(s) found {len(hits)} credential(s)")
+    return StageOutcome(1, "secrets", "ALLOWED" if passed else "BLOCKED", passed, "MEASURED", f"deterministic secret scan of {len(files)} build file(s) found {len(hits)} credential(s)")
+
+
+def _dangerous_call(node: ast.Call) -> str | None:
+    func = node.func
+    if isinstance(func, ast.Name) and func.id in DANGEROUS_CALLS:
+        return func.id
+    if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name) and (func.value.id, func.attr) in DANGEROUS_ATTRS:
+        return f"{func.value.id}.{func.attr}"
+    return None
 
 
 def stage_static() -> StageOutcome:
     findings: list[str] = []
+    exceptions: list[str] = []
     for path in _python_files():
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Call):
-                func = node.func
-                if isinstance(func, ast.Name) and func.id in DANGEROUS_CALLS:
-                    findings.append(f"{_label(path)}:{func.id}")
-                elif isinstance(func, ast.Attribute) and func.attr == "system" and isinstance(func.value, ast.Name) and (func.value.id, func.attr) in DANGEROUS_ATTRS:
-                    findings.append(f"{_label(path)}:os.system")
+                name = _dangerous_call(node)
+                if name is not None:
+                    location = _label(path)
+                    if (location, name) in REVIEWED_EXCEPTIONS:
+                        exceptions.append(f"{location}:{name}")
+                    else:
+                        findings.append(f"{location}:{name}")
     passed = not findings
-    return StageOutcome(2, "static analysis", "ALLOWED" if passed else "BLOCKED", passed, "MEASURED", f"AST static analysis of {len(_python_files())} build file(s) found {len(findings)} dangerous call(s)")
+    detail = f"AST static analysis of {len(_python_files())} Python build file(s) found {len(findings)} unreviewed dangerous call(s) and {len(exceptions)} reviewed demo exception(s)"
+    if findings:
+        detail += ": " + ", ".join(findings[:3])
+    return StageOutcome(2, "static analysis", "ALLOWED" if passed else "BLOCKED", passed, "MEASURED", detail)
 
 
 def stage_triage() -> StageOutcome:
@@ -95,9 +126,24 @@ def stage_triage() -> StageOutcome:
 
 def stage_dependencies() -> StageOutcome:
     lock = json.loads((ROOT / "vendor" / "python.lock.json").read_text(encoding="utf-8"))
-    bad = [entry.get("file") for entry in lock if not isinstance(entry, dict) or not re.fullmatch(r"[0-9a-f]{64}", str(entry.get("sha256"))) or not str(entry.get("file", "")).endswith(".whl")]
+    wheels = ROOT / "vendor" / "python"
+    bad: list[str] = []
+    for entry in lock:
+        name = entry.get("file") if isinstance(entry, dict) else None
+        digest = entry.get("sha256") if isinstance(entry, dict) else None
+        if not isinstance(name, str) or not name.endswith(".whl") or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            bad.append(str(name))
+            continue
+        path = wheels / name
+        try:
+            actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        except OSError:
+            bad.append(name)
+            continue
+        if actual != digest:
+            bad.append(name)
     passed = not bad and bool(lock)
-    return StageOutcome(4, "dependency audit", "ALLOWED" if passed else "BLOCKED", passed, "MEASURED", f"{len(lock)} pinned wheel hash(es) verified; offline advisory lookup is NOT TESTED pending a vendored snapshot")
+    return StageOutcome(4, "dependency audit", "ALLOWED" if passed else "BLOCKED", passed, "MEASURED", f"{len(lock)} wheel file(s) verified against the pinned lock; {len(bad)} missing or mismatched; offline advisory lookup is NOT TESTED pending a vendored snapshot" if passed else f"{len(bad)} wheel file(s) missing or mismatched against the pinned lock; offline advisory lookup is NOT TESTED")
 
 
 def stage_model_scan() -> StageOutcome:
@@ -124,14 +170,25 @@ def stage_sign_bom() -> StageOutcome:
     aibom_path.write_text(json.dumps(aibom, sort_keys=True), encoding="utf-8")
     signature = admission.sign(model)
     passed = admission.verify(model, signature) and admission.verify(aibom_path, admission.sign(aibom_path))
-    return StageOutcome(6, "sign and BOM", "ALLOWED" if passed else "FAIL", passed, "MEASURED", "model and AI BOM signed and verified with pinned offline Cosign")
+    return StageOutcome(6, "sign and BOM", "ALLOWED" if passed else "FAIL", passed, "MEASURED", "synthetic pipeline model and AI BOM signed and verified with pinned offline Cosign")
 
 
 def stage_admission() -> StageOutcome:
     if os.environ.get("OPS_DEMO_OPA") != "1":
         return StageOutcome(7, "admission", "NOT TESTED", True, "NOT TESTED", "OPA is required; deterministic fallback rules do not earn pipeline evidence")
-    passed = admission.admit(True, True, True) and not admission.admit(False, True, True)
-    return StageOutcome(7, "admission", "ALLOWED" if passed else "FAIL", passed, "MEASURED", "OPA admits only safe, signed, BOM-complete artifacts and denies the unsafe-format variant")
+    model = ARTIFACTS / "pipeline-model.safetensors"
+    aibom_path = ARTIFACTS / "pipeline-aibom.json"
+    if not model.is_file() or not aibom_path.is_file():
+        return StageOutcome(7, "admission", "NOT TESTED", True, "NOT TESTED", "no signed pipeline artifact from stage 6; admission facts unavailable")
+    try:
+        aibom = json.loads(aibom_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return StageOutcome(7, "admission", "FAIL", False, "MEASURED", "the pipeline AI BOM is unreadable")
+    safe_format = model.suffix == ".safetensors" and model.read_bytes().startswith(b"SAFE_TENSORS_PIPELINE")
+    signature_ok = admission.verify(model, model.with_suffix(model.suffix + ".cosign.bundle")) and admission.verify(aibom_path, aibom_path.with_suffix(aibom_path.suffix + ".cosign.bundle"))
+    complete = admission.aibom_complete(aibom)
+    passed = admission.admit(safe_format, signature_ok, complete) and not admission.admit(False, signature_ok, complete) and not admission.admit(safe_format, signature_ok, False)
+    return StageOutcome(7, "admission", "ALLOWED" if passed else "FAIL", passed, "MEASURED", f"OPA evaluated the signed pipeline artifact: safe_format={safe_format}, signature_ok={signature_ok}, aibom_complete={complete}; it also denied the unsafe-format and incomplete-BOM variants")
 
 
 def stage_redteam() -> StageOutcome:
@@ -141,9 +198,11 @@ def stage_redteam() -> StageOutcome:
     summary = load_summary()
     if summary is None:
         return StageOutcome(8, "red team", "NOT TESTED", True, "NOT TESTED", f"no admitted Garak campaign; threshold {threshold} not exercised and no positive verdict is claimed")
+    if not summary["full"]:
+        return StageOutcome(8, "red team", "NOT TESTED", True, "PARTIAL", f"partial Garak campaign {summary['passed']}/{summary['total']} of 55 prompts; only the full campaign can exercise the {threshold} threshold")
     success_rate = (summary["total"] - summary["passed"]) / summary["total"]
     passed = success_rate <= threshold
-    return StageOutcome(8, "red team", "BLOCKED" if passed else "FAIL", passed, "MEASURED", f"campaign success rate {success_rate:.2f} vs threshold {threshold}")
+    return StageOutcome(8, "red team", "ALLOWED" if passed else "FAIL", passed, "MEASURED", f"Garak detector success rate {success_rate:.2f} vs threshold {threshold}; this is endpoint-guard evidence, not model jailbreak resistance")
 
 
 def stage_deploy() -> StageOutcome:
@@ -184,7 +243,12 @@ STAGES: tuple[Callable[[], StageOutcome], ...] = (
 
 # Orchestration: execute stages in order and fail closed when a required gate fails.
 def run_pipeline(writer: EvidenceWriter | None = None, only: int | None = None) -> list[StageOutcome]:
-    reset(clear_evidence=False)
+    if os.environ.get("OPS_DEMO_PIPELINE_PREPARED") != "1":
+        garak_summary = ARTIFACTS / "garak-s7.json"
+        preserved_summary = garak_summary.read_bytes() if garak_summary.is_file() else None
+        reset(clear_evidence=False)
+        if preserved_summary is not None:
+            garak_summary.write_bytes(preserved_summary)
     writer = writer or EvidenceWriter()
     results: list[StageOutcome] = []
     for index, stage in enumerate(STAGES, start=1):

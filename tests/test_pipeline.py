@@ -59,6 +59,30 @@ class PipelineTests(unittest.TestCase):
         self.assertFalse(outcome.passed)
         self.assertEqual(outcome.decision, "BLOCKED")
 
+    def test_static_stage_flags_pickle_loads(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sample.py"
+            path.write_text("import pickle\npickle.loads(b'x')\n", encoding="utf-8")
+            with mock.patch("app.pipeline._python_files", return_value=[path]):
+                outcome = stage_static()
+        self.assertFalse(outcome.passed)
+        self.assertIn("pickle.loads", outcome.reason)
+
+    def test_dependency_stage_verifies_actual_wheel_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wheels = root / "vendor" / "python"
+            wheels.mkdir(parents=True)
+            wheel = wheels / "demo-1.0-py3-none-any.whl"
+            wheel.write_bytes(b"demo")
+            digest = __import__("hashlib").sha256(b"demo").hexdigest()
+            (root / "vendor" / "python.lock.json").write_text(json.dumps([{"file": wheel.name, "sha256": digest}]), encoding="utf-8")
+            with mock.patch("app.pipeline.ROOT", root):
+                self.assertTrue(__import__("app.pipeline", fromlist=["stage_dependencies"]).stage_dependencies().passed)
+            wheel.write_bytes(b"tampered")
+            with mock.patch("app.pipeline.ROOT", root):
+                self.assertFalse(__import__("app.pipeline", fromlist=["stage_dependencies"]).stage_dependencies().passed)
+
     def test_redteam_stage_is_not_tested_without_a_campaign(self) -> None:
         outcome = stage_redteam()
         self.assertEqual(outcome.decision, "NOT TESTED")

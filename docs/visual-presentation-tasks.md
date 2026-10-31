@@ -50,23 +50,23 @@ its own with `make inspect-eval`.
 
 | Command | Result |
 | --- | --- |
-| `make test` | 213 tests, `OK` (5 skipped) |
+| `make test` | 227 tests, `OK` (5 skipped) |
 | `make test-policy` | OPA 14/14 |
 | `make policy-template-test` | 34 tests, `OK` |
 | `make demo-10m-preflight` | `OK` |
-| `make demo-record` | `OK`; 192 s of a 900 s budget; preflight 2 s, scenarios 140 s, inspect 50 s; bundle verified complete |
-| `make demo-record-appendix` | `OK`; full Garak campaign blocked 55/55 prompts; appendix bundle verified complete (separate from the main budget) |
+| `make demo-record` | `OK`; 186 s of a 900 s budget; preflight 1 s, scenarios 134 s, inspect 51 s; bundle verified complete |
+| `make demo-record-appendix` | `OK`; full Garak campaign reported 55/55 detector results with no successful extraction; appendix bundle verified complete (separate from the main budget) |
 | `make inspect-eval` | 18 samples; unguarded 6 unsafe / 12 safe, guarded 0 unsafe / 18 safe; Inspect View bundle produced |
 | `make present-visual` | Verified bundle served read-only on loopback; no Docker or models required |
-| `make present-check SHOWCASE_RUN_ID=showcase-20261031T222053Z` | `PASS`; every scenario step, 15 diagrams and the rendered guarded Inspect transcript captured locally |
-| `make pipeline` | 11 stages recorded; deferred stages remain `NOT TESTED`/`DESIGNED` |
+| `make present-check SHOWCASE_RUN_ID=showcase-20261031T233325Z` | `PASS`; every scenario step, 15 diagrams and the rendered guarded Inspect transcript captured locally |
+| `make pipeline` | 11 stages recorded; 95 wheels verified against the lock; the signed pipeline artifact was admitted; S7 stage measured after the appendix; deploy and S6 remain `NOT TESTED`/`DESIGNED` |
 | `make test-gateway-compose` | `OK` |
 | `make test-container` | 3 tests, `OK` |
 | `git diff --check` | Clean |
 
-Main bundle: `record/showcase-runs/showcase-20261031T194854Z`.
+Main bundle: `record/showcase-runs/showcase-20261031T231500Z`.
 Final bundle with the S7 appendix, Inspect View, rendered per-sample transcript
-links and scenario-specific Run A diagrams: `record/showcase-runs/showcase-20261031T222053Z`.
+links, scenario-specific Run A diagrams and the verified gate rehearsal: `record/showcase-runs/showcase-20261031T233325Z`.
 
 ### Presentation verification (2026-10-31)
 
@@ -80,7 +80,7 @@ links and scenario-specific Run A diagrams: `record/showcase-runs/showcase-20261
 - `make present-check` captures the 15 self-contained SVGs, all recorded steps
   and a guarded Inspect transcript only after its `opsassist_flow` event has
   rendered. The final receipt is
-  `artifacts/present-check/showcase-20261031T222053Z-20261031T222056Z/receipt.json`.
+  `artifacts/present-check/showcase-20261031T233325Z-20261031T233328Z/receipt.json`.
 - The payload step shows the full fixture: artifact, format, protocol, static
   pickle opcodes, resolved globals, command and effect.
 - Before/After render the retrieved context, model output (or the withheld

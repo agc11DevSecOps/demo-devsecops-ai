@@ -51,7 +51,7 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `app/garak_worker.py` | Fixed Garak invocation inside the dedicated image. | Spawned only by `app/garak_campaign.py`. |
 | `app/gateway.py` | Optional bounded FastAPI transport over the read-only workload. | Gateway targets and tests. |
 | `app/mcp_server.py` | Local stdio MCP server for S5's read-only `search_docs` proof. | Spawned by S5 when MCP is admitted. |
-| `app/pipeline.py` | Offline 11-stage delivery pipeline; its events never affect AISVS scoring. | `make pipeline`, stage targets, tests. |
+| `app/pipeline.py` | Offline 11-stage local delivery-gate rehearsal; it builds and deploys nothing, and its events never affect AISVS scoring. | `make pipeline`, stage targets, tests. |
 | `app/scorecard.py` | Derives scorecard views from AISVS JSONL and applicability. | `make scorecard`, `make demo`. |
 | `app/showcase.py` | Validates and serves immutable bundles and the loopback live evidence view. | Showcase and challenge targets. |
 | `app/present.py` | Optional ANSI colour and pacing filter; never changes a verdict. | `scripts/present.sh`, presentation tests. |

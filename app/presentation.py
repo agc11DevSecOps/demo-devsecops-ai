@@ -198,7 +198,7 @@ SCENARIOS: tuple[Scenario, ...] = (
         ),
     ),
     Scenario(
-        "PIPELINE", 8, "Delivery pipeline", "Do the delivery gates reuse the same evidence discipline?",
+        "PIPELINE", 8, "Local delivery-gate rehearsal", "Do the local delivery gates reuse the same evidence discipline?",
         "Local repository build inputs and synthetic model artifacts",
         (),
         "Local pipeline; unexecuted stages remain NOT TESTED.",
@@ -213,7 +213,7 @@ SCENARIOS: tuple[Scenario, ...] = (
         "S7", 9, "Red-team appendix", "What did the bounded Garak campaign observe?",
         "Bounded loopback Garak campaign with 55 admitted prompts",
         (("visibility", "Garak campaign"),),
-        "Real local campaign when the full 55-prompt run is admitted; otherwise not tested or partial.",
+        "Garak runs against the scripted endpoint; a full campaign is detector evidence, not FLAN resistance. Otherwise not tested or partial.",
         "evidence-provenance", "evidence-provenance",
         ("evidence/B/s7.jsonl", "artifacts/garak-s7.json"),
         appendix=True,
@@ -472,9 +472,12 @@ def _scenario_card(
         })
     pipeline = []
     if scenario.scenario == "PIPELINE":
+        events = [event for event in run_b if event.get("scenario") == "PIPELINE"]
+        starts = [index for index, event in enumerate(events) if event.get("control") == "stage 1 secrets"]
+        latest = events[starts[-1]:] if starts else events
         pipeline = [
             {"control": event.get("control", ""), "decision": event.get("decision", ""), "label": event.get("label", ""), "reason": _safe_text(event.get("reason", ""), limit=300)}
-            for event in run_b if event.get("scenario") == "PIPELINE"
+            for event in latest
         ][:MAX_ITEMS]
     complete = bool(pipeline) if scenario.scenario == "PIPELINE" else bool(primary_before and primary_after)
     partial = any(pair["before"] or pair["after"] for pair in pairs) or bool(pipeline)

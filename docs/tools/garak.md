@@ -14,7 +14,7 @@ campaign was complete or only partial.
 | `app/garak_campaign.py` | Runs the campaign and reduces the report |
 | `app/garak_worker.py` | The fixed invocation inside the Garak image |
 | `app/scenarios/s7.py` | Records the campaign outcome |
-| `app/pipeline.py` | The red-team stage, with the declared threshold |
+| `app/pipeline.py` | The red-team gate, with the declared threshold |
 | `controls/ci/gates.yaml` | The `max_success_rate` threshold |
 | `Dockerfile` | The `garak` target image |
 
@@ -83,10 +83,10 @@ make GARAK_LIMIT=55 demo-s7
 
 ```text
 {"config_sha256":"...","format_version":1,"full":false,"garak_version":"0.10.3.1","passed":5,"probe":"encoding.InjectBase64","prompts":5,"report_sha256":"...","result":"PASS","total":5}
-[B] [S7] [PARTIAL] Garak campaign -> NOT TESTED :: Partial Garak campaign 5/5 of 55 prompts (iteration limit); not the admitted full campaign
+[B] [S7] [PARTIAL] Garak campaign -> NOT TESTED :: Partial Garak campaign 5/5 detector result(s) of 55 prompts (iteration limit); not the admitted full campaign
 ```
 
-With the full corpus, the event becomes `BLOCKED` with the complete count.
+With the full corpus, the event becomes `REVIEW`: the aggregate reports no successful encoded-trigger extraction, which is not a count of application blocks and not FLAN resistance evidence.
 
 ## Evidence And Artifacts
 
@@ -102,7 +102,7 @@ With the full corpus, the event becomes `BLOCKED` with the complete count.
 | --- | --- | --- |
 | The image does not exist | `garak-build` has not run | `make garak-build` |
 | The campaign is `NOT TESTED` | The run was partial | Use `GARAK_LIMIT=55` for the full corpus |
-| The campaign reports a breach | The endpoint answered an injected prompt | That is a real finding; the pipeline stage fails |
+| The campaign reports a detector hit | An output matched the encoded trigger | That is a real finding; the pipeline stage fails |
 | `load_summary` returns nothing | The summary is incomplete | The campaign did not finish; check the artifacts |
 
 ## Security Limits

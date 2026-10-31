@@ -38,7 +38,7 @@ A observation honestly.
 `app/security/model_admission.py` constructs the safe S1 fixture, calls Fickling
 and ModelScan, signs with Cosign, and sends boolean integrity facts to OPA. The
 local FLAN runtime separately verifies each pinned model file in
-`app/llm/runtime.py`. `app/pipeline.py` is the offline delivery sequence; its
+`app/llm/runtime.py`. `app/pipeline.py` is the local delivery-gate rehearsal; its
 named-tool stages are `NOT TESTED` unless their environment is explicitly enabled.
 
 ## 6. Optional Actions And Evidence

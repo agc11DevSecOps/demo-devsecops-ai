@@ -6,7 +6,7 @@
 make demo-record            (unattended, <= 15 min, one hour before the talk)
   preflight
   -> reset -> Run A -> reset -> Run B   for S1, S0, S2, S3, S4, S5, S8
-  -> delivery pipeline
+  -> local delivery-gate rehearsal
   -> Inspect AI live evaluation (internal Docker network)
   -> Inspect View bundle (scanned)
   -> frozen bundle record/showcase-runs/<id>/ + manifest of SHA-256 digests

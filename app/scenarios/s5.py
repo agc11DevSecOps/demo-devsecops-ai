@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 import os
 
-from app.common import canonical, sha256
+from app.common import canonical
 from app.evidence import Event, EvidenceWriter
 from app.flow import FlowTrace, guarded_ready, guarded_visual, lab_cases, lab_ready, lab_visual, recorded_run_a
 from app.scenarios.helpers import branches, execute_a_tool, mcp_available, mcp_call, safe_path
-from app.security.tool_boundary import Grant, ToolBoundary, ToolQuota
+from app.security.tool_boundary import ToolBoundary, ToolQuota
 
 PROPOSAL = "model-proposed tool call"
 
@@ -75,15 +75,19 @@ def scenario_s5(run: str, writer: EvidenceWriter) -> None:
     engine = "OPA policy" if os.environ.get("OPS_DEMO_OPA") == "1" else "fallback rules"
     writer.emit(Event("B", "S5", "delete_branch", boundary.decide("delete_branch", delete, "presenter"), f"{engine} denied: action not authorized", ("v1.01-C9.5.1", "v1.01-C9.5.3", "v1.01-C10.4.3", "v1.01-C10.4.8"), input_value=canonical(delete).decode("ascii"), visual={"input": {"parameters": delete}, "control": {"engine": engine, "required_scope": "repo:write"}, "observation": {"policy_decision": "DENIED"}, "state": {"release_branch_present": "release/2.4" in branches()}}))
     writer.emit(Event("B", "S5", "export_customers", boundary.decide("export_customers", export, "presenter"), f"{engine} denied: action not authorized", ("v1.01-C9.5.3", "v1.01-C10.2.5"), input_value=canonical(export).decode("ascii")))
-    grant = Grant("delete_branch", sha256(canonical(delete)), boundary.pins["delete_branch"], "presenter")
-    writer.emit(Event("B", "S5", "delete_branch granted", boundary.decide("delete_branch", delete, "presenter", grant), f"{engine} authorized: waiting for human approval", ("v1.01-C9.2.1", "v1.01-C9.2.2", "v1.01-C9.2.3", "v1.01-C9.2.4", "v1.01-C9.6.2"), input_value=canonical(delete).decode("ascii")))
-    from app.approvals import issue as issue_approval, record_decision, verify as verify_approval
+    from app.approvals import issue as issue_approval, record_decision, reset_usage
 
+    reset_usage()
     approval = issue_approval("delete_branch", delete, "presenter", boundary.pins["delete_branch"])
-    if not verify_approval(approval, tool="delete_branch", parameters=delete, requester="presenter", descriptor_sha256=boundary.pins["delete_branch"]):
+    granted = boundary.decide("delete_branch", delete, "presenter", approval_token=approval)
+    if granted != "REVIEW":
         raise AssertionError("approval_binding_failed")
-    record_decision("presenter", "delete_branch", delete, boundary.pins["delete_branch"], "approved")
-    writer.emit(Event("B", "S5", "authorization binding", "REVIEW", "approval is cryptographically bound to the tool, canonical parameters, requester and pinned descriptor, and the approval action is written to a hash-only audit log", ("v1.01-C9.2.8", "v1.01-C9.2.9", "v1.01-C12.4.2"), input_value=canonical(delete).decode("ascii"), visual={"input": {"parameters": delete, "requester": "presenter"}, "control": {"binding": "tool, parameters, requester, descriptor"}, "observation": {"bound_fields": ["tool", "canonical parameters", "requester", "descriptor digest", "expiry", "single use"]}, "state": {"approval_verified": True}}))
+    replay = boundary.decide("delete_branch", delete, "presenter", approval_token=approval)
+    if replay != "DENIED":
+        raise AssertionError("approval_replay_accepted")
+    writer.emit(Event("B", "S5", "delete_branch granted", granted, f"{engine} authorized the approved call; the one-use token is consumed and the action remains REVIEW, nothing executed", ("v1.01-C9.2.1", "v1.01-C9.2.2", "v1.01-C9.2.3", "v1.01-C9.2.4", "v1.01-C9.6.2"), input_value=canonical(delete).decode("ascii")))
+    record_decision("synthetic-presenter", "delete_branch", delete, boundary.pins["delete_branch"], "approved")
+    writer.emit(Event("B", "S5", "authorization binding", "REVIEW", "the approval token is cryptographically bound to the tool, canonical parameters, requester and pinned descriptor, is single use, and the decision is written to a hash-only audit log", ("v1.01-C9.2.8", "v1.01-C9.2.9", "v1.01-C12.4.2"), input_value=canonical(delete).decode("ascii"), visual={"input": {"parameters": delete, "requester": "presenter"}, "control": {"binding": "tool, parameters, requester, descriptor"}, "observation": {"bound_fields": ["tool", "canonical parameters", "requester", "descriptor digest", "expiry", "single use"], "replay_decision": replay}, "state": {"approval_verified": True, "approval_consumed": True, "replay_denied": True}}))
     if os.environ.get("OPS_DEMO_MCP") == "1" and mcp_available():
         read_only = {"query": "rollback procedure"}
         if boundary.decide("search_docs", read_only, "presenter") != "ALLOWED":

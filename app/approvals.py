@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import json
 import os
+import threading
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -20,6 +21,8 @@ from app.common import ARTIFACTS, canonical, safe_sandbox_path, sha256
 
 DEFAULT_TTL_SECONDS = 300
 FIELDS = ("tool", "parameters", "requester", "descriptor_sha256", "expires_at")
+_USED_TOKENS: set[str] = set()
+_USED_LOCK = threading.Lock()
 
 
 def _key() -> bytes:
@@ -67,6 +70,23 @@ def verify(token: str, *, tool: str, parameters: dict[str, Any], requester: str,
         and payload["requester"] == requester
         and payload["descriptor_sha256"] == descriptor_sha256
     )
+
+
+def consume(token: str, *, tool: str, parameters: dict[str, Any], requester: str, descriptor_sha256: str) -> bool:
+    """Verify and atomically mark a token used; a replay returns False."""
+    with _USED_LOCK:
+        if token in _USED_TOKENS:
+            return False
+        if not verify(token, tool=tool, parameters=parameters, requester=requester, descriptor_sha256=descriptor_sha256):
+            return False
+        _USED_TOKENS.add(token)
+        return True
+
+
+def reset_usage() -> None:
+    """Clear the process-local one-use registry (tests and isolated runs only)."""
+    with _USED_LOCK:
+        _USED_TOKENS.clear()
 
 
 # Audit boundary: persist only a hash of the requested parameters.

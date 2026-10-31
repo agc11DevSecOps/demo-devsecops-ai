@@ -50,7 +50,7 @@ resistance claim, or proof that the model authorizes or executes an action.
   validation, tool gate, effect). In Run A every application control appears as
   `absent`; lab containment is shown separately and never as a control.
 - `REQ-PRES-007`: the main recording covers S1, S0, S2, S3, S4, S5, S8 and the
-  delivery pipeline. S7 is a separate appendix recording
+  local delivery-gate rehearsal. S7 is a separate appendix recording
   (`make demo-record-appendix`) and is only complete with the full 55-prompt
   Garak campaign; a reduced run stays `PARTIAL`. S6 is excluded because it is
   `NOT TESTED`.

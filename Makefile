@@ -25,7 +25,7 @@ RUNA_LAB_READY := $(wildcard $(WORKLOAD_MODEL))
 RUNA_PROFILE := $(if $(RUNA_LAB_READY),--memory 2g --cpus 0.5 --pids-limit 64 --env OPS_DEMO_UNGUARDED_LAB=1 --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1 --env TOKENIZERS_PARALLELISM=false --volume "$(CURDIR)/vendor/models:/models:ro",--memory 128m --cpus 0.5 --pids-limit 32)
 RUNB_WORKLOAD := $(if $(RUNB_WORKLOAD_READY),--env OPS_DEMO_WORKLOAD=1 --env OPS_DEMO_WORKLOAD_MODE=local --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env TOKENIZERS_PARALLELISM=false,)
 LOCAL_WORKLOAD_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 2g --cpus 0.5 --pids-limit 64 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_PROMPT_GUARD=1 --env OPS_DEMO_PROMPT_GUARD_MODEL=/models/prompt-guard-2-22m --env OPS_DEMO_PRESIDIO=1 --env OPS_DEMO_VECTOR=1 --env OPS_DEMO_WORKLOAD_MODE=local --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1 --env TOKENIZERS_PARALLELISM=false --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/vendor/models:/models:ro" --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local
-PIPELINE_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 2g --cpus 0.5 --pids-limit 64 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_FICKLING=1 --env OPS_DEMO_MODELSCAN=1 --env OPS_DEMO_COSIGN=1 --env OPS_DEMO_OPA=1 --env OPS_DEMO_PROMPT_GUARD=1 --env OPS_DEMO_PROMPT_GUARD_MODEL=/models/prompt-guard-2-22m --env OPS_DEMO_PRESIDIO=1 --env OPS_DEMO_VECTOR=1 --env OPS_DEMO_WORKLOAD_MODE=local --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1 --env TOKENIZERS_PARALLELISM=false --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/vendor/models:/models:ro" --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local
+PIPELINE_RUN = docker run --rm --network none --read-only --tmpfs /tmp:rw,size=1m --memory 2g --cpus 0.5 --pids-limit 64 --cap-drop ALL --security-opt no-new-privileges --user "$$(id -u):$$(id -g)" --env OPS_DEMO_FICKLING=1 --env OPS_DEMO_MODELSCAN=1 --env OPS_DEMO_COSIGN=1 --env OPS_DEMO_OPA=1 --env OPS_DEMO_PIPELINE_PREPARED=1 --env OPS_DEMO_PROMPT_GUARD=1 --env OPS_DEMO_PROMPT_GUARD_MODEL=/models/prompt-guard-2-22m --env OPS_DEMO_PRESIDIO=1 --env OPS_DEMO_VECTOR=1 --env OPS_DEMO_WORKLOAD_MODE=local --env OPS_DEMO_WORKLOAD_MODEL=/models/flan-t5-small --env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env OMP_NUM_THREADS=1 --env TOKENIZERS_PARALLELISM=false --env OPS_DEMO_SANDBOX=/sandbox --env OPS_DEMO_EVIDENCE=/sandbox/evidence --env OPS_DEMO_ARTIFACTS=/sandbox/artifacts --volume "$(CURDIR)/vendor/models:/models:ro" --volume "$(CURDIR)/vendor/python:/app/vendor/python:ro" --volume "$(CURDIR)/sandbox:/sandbox:rw" --volume "$(CURDIR)/evidence:/sandbox/evidence:rw" --volume "$(CURDIR)/artifacts:/sandbox/artifacts:rw" demo-devsecops-ai:local
 # Iteration aid: 5 keeps the full demo fast; set to 55 (the full admitted corpus)
 # for the final run. A reduced run is reported PARTIAL and never counts as PASS.
 GARAK_LIMIT ?= 5
@@ -354,6 +354,7 @@ pipeline: container-pipeline
 # The delivery profile uses the named scanners, Cosign, and OPA. The Python
 # fallback stages remain available for unit tests but are labelled NOT TESTED.
 container-pipeline: demo-10m-preflight
+	$(PYTHON) -m app.cli reset --preserve-evidence
 	$(PIPELINE_RUN) pipeline
 
 present:
@@ -414,4 +415,5 @@ challenge-replay:
 
 stage-1 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 stage-10 stage-11: stage-%:
 	$(MAKE) demo-10m-preflight
+	$(PYTHON) -m app.cli reset --preserve-evidence
 	$(PIPELINE_RUN) pipeline --stage $*

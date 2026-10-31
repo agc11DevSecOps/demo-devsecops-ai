@@ -52,6 +52,12 @@ def make_model_fixtures() -> tuple[Path, Path]:
 
 
 _UNSAFE_PICKLE_MODULES = frozenset({"os", "posix", "nt", "subprocess", "sys", "shutil", "builtins", "runpy", "importlib"})
+AI_BOM_REQUIRED = frozenset({"model", "sha256", "base_model", "license", "dataset_origin"})
+
+
+def aibom_complete(payload: Any) -> bool:
+    """True only when the BOM carries every required, non-empty field."""
+    return type(payload) is dict and AI_BOM_REQUIRED <= {key for key, value in payload.items() if value}
 
 
 def pickle_indicators(path: Path) -> dict[str, Any]:

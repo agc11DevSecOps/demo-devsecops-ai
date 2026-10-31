@@ -144,7 +144,7 @@ make test-policy           # OPA Rego tests
 make policy-template-test  # policy catalogue, generator and standards checks
 make inspect-eval          # live Inspect check on the internal network
 make diagrams              # re-extract the sanitized Archify SVGs
-make pipeline              # named local scanners, Cosign, and OPA in Docker
+make pipeline              # local gate rehearsal: scanners, Cosign and OPA in Docker
 make GARAK_LIMIT=5 demo    # full scenario catalogue; S7 stays PARTIAL
 ```
 

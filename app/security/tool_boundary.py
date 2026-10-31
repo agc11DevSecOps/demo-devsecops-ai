@@ -134,12 +134,19 @@ class ToolBoundary:
             raise ValueError("tool_output_injection")
         return output
 
-    def decide(self, tool: str, parameters: dict[str, Any], requester: str, grant: Grant | None = None) -> str:
+    def decide(self, tool: str, parameters: dict[str, Any], requester: str, grant: Grant | None = None, approval_token: str | None = None) -> str:
         self.validate(tool, parameters)
         if not self.policy_available:
             return "DENIED"
         descriptor_ok = descriptor_digest(tool, self.descriptions[tool]) == self.pins[tool]
-        if grant is not None:
+        grant_valid = False
+        if approval_token is not None:
+            from app.approvals import consume
+
+            if not consume(approval_token, tool=tool, parameters=parameters, requester=requester, descriptor_sha256=self.pins[tool]):
+                return "DENIED"
+            grant_valid = True
+        elif grant is not None:
             valid = (
                 grant.tool == tool and grant.requester == requester and not grant.used
                 and grant.parameters_sha256 == sha256(canonical(parameters))
@@ -147,14 +154,14 @@ class ToolBoundary:
             )
             if not valid:
                 return "DENIED"
-        grant_valid = grant is not None
+            grant.used = True
+            grant_valid = True
         if os.environ.get("OPS_DEMO_OPA") == "1":
             authorized = opa_authorize(tool, descriptor_ok, grant_valid)
         else:
             authorized = fallback_authorize(tool, descriptor_ok, grant_valid)
         if not authorized:
             return "DENIED"
-        if grant is not None:
-            grant.used = True
+        if grant_valid:
             return "REVIEW" if tool == "delete_branch" else "DENIED"
         return "ALLOWED"

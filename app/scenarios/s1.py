@@ -55,24 +55,24 @@ def scenario_s1(run: str, writer: EvidenceWriter) -> None:
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     aibom_path = ARTIFACTS / "aibom.json"
     aibom_path.write_text(json.dumps(aibom, sort_keys=True), encoding="utf-8")
-    writer.emit(Event("B", "S1", "AI BOM published", "ALLOWED", "machine-readable AI BOM records the model, digest, base model, license and dataset origin in version control", ("v1.01-C6.2.1",), input_value="aibom.json"))
+    writer.emit(Event("B", "S1", "AI BOM published", "ALLOWED", "machine-readable AI BOM records the model, digest, base model, license and dataset origin as a signed artifact", ("v1.01-C6.2.1",), input_value="aibom.json"))
     aibom_bundle = admission.sign(aibom_path)
     if not admission.verify(aibom_path, aibom_bundle):
         raise AssertionError("aibom_signature_failed")
-    writer.emit(Event("B", "S1", "AI BOM signature", "ALLOWED", f"AI BOM signed with {integrity} and verified before deployment", ("v1.01-C6.2.2",), input_value="aibom.json"))
-    required = {"model", "sha256", "base_model", "license", "dataset_origin"}
-    if not required <= {key for key, value in aibom.items() if value}:
+    writer.emit(Event("B", "S1", "AI BOM signature", "ALLOWED", f"AI BOM signed with {integrity} and verified before admission", ("v1.01-C6.2.2",), input_value="aibom.json"))
+    complete = admission.aibom_complete(aibom)
+    if not complete:
         raise AssertionError("aibom_complete_metadata_missing")
     incomplete = {key: value for key, value in aibom.items() if key != "license"}
-    if required <= {key for key, value in incomplete.items() if value}:
-        raise AssertionError("aibom_gate_failed")
-    writer.emit(Event("B", "S1", "AI BOM completeness gate", "BLOCKED", "completeness check rejects a BOM missing component metadata, failing the admission build", ("v1.01-C6.2.3",), input_value="aibom-incomplete.json"))
     signature = admission.sign(clean)
     signature_ok = admission.verify(clean, signature)
     if not signature_ok:
         raise AssertionError("signature_failed")
+    if admission.admit(safe_format, signature_ok, admission.aibom_complete(incomplete)):
+        raise AssertionError("aibom_gate_failed")
+    writer.emit(Event("B", "S1", "AI BOM completeness gate", "BLOCKED", "the same admission engine denies a BOM missing component metadata", ("v1.01-C6.2.3",), input_value="aibom-incomplete.json", visual={"input": {"bom_fields": sorted(aibom)}, "control": {"required_fields": sorted(admission.AI_BOM_REQUIRED)}, "observation": {"incomplete_bom_admitted": False}, "state": {"complete_bom": True, "incomplete_bom": False}}))
     writer.emit(Event("B", "S1", f"{integrity} integrity admission", "ALLOWED", f"safe format, digest and {integrity} signature verified", ("v1.01-C3.1.1", "v1.01-C3.1.2", "v1.01-C4.1.2", "v1.01-C6.1.2", "v1.01-C6.1.3", "v1.01-C6.2.1"), input_value=clean.name))
-    if not admission.admit(safe_format, signature_ok, True):
+    if not admission.admit(safe_format, signature_ok, complete):
         raise AssertionError("admission_denied")
     engine = "OPA admission policy" if os.environ.get("OPS_DEMO_OPA") == "1" else "fallback admission rules"
     writer.emit(Event("B", "S1", f"{engine} model admission", "ALLOWED", "admission gated on a safe format, a verified signature and a complete AI BOM", ("v1.01-C3.1.2", "v1.01-C6.1.3"), input_value=clean.name))

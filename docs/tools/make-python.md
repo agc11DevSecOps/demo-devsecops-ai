@@ -145,7 +145,7 @@ consistency checks.
 | `make inspect-eval` | Live Inspect check on an internal Docker network |
 | `make diagrams` | Re-extract the sanitized Archify SVGs |
 | `make GARAK_LIMIT=5 demo` | The full scenario catalogue |
-| `make pipeline` | The offline delivery pipeline |
+| `make pipeline` | The local delivery-gate rehearsal (no build or deploy) |
 | `make scorecard` | Derive the scorecard views |
 | `make compose-up` / `make compose-down` | The local gateway |
 
