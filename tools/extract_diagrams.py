@@ -49,11 +49,21 @@ def extract(name: str) -> tuple[Path, str]:
     if viewbox is None:
         raise SystemExit(f"missing viewBox in {source}")
     width, height = viewbox.group(3), viewbox.group(4)
-    svg = svg.replace("<svg ", f'<svg width="{width}" height="{height}" preserveAspectRatio="xMidYMid meet" ', 1)
+    attributes = [
+        'xmlns="http://www.w3.org/2000/svg"',
+        f'width="{width}"',
+        f'height="{height}"',
+        'preserveAspectRatio="xMidYMid meet"',
+    ]
+    if "xlink:" in svg:
+        attributes.insert(1, 'xmlns:xlink="http://www.w3.org/1999/xlink"')
+    svg = svg.replace("<svg ", "<svg " + " ".join(attributes) + " ", 1)
     try:
-        ET.fromstring(svg)
+        root = ET.fromstring(svg)
     except ET.ParseError as error:
         raise SystemExit(f"invalid SVG in {source}: {error}") from error
+    if root.tag != "{http://www.w3.org/2000/svg}svg":
+        raise SystemExit(f"missing SVG namespace in {source}")
     target = TARGET / f"{name}.svg"
     target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     target.write_text(svg + "\n", encoding="utf-8")
