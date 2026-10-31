@@ -45,7 +45,7 @@ CONTENT_TYPES = {
     ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript",
     ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml",
     ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".map": "application/json",
-    ".png": "image/png", ".ico": "image/x-icon",
+    ".png": "image/png", ".ico": "image/x-icon", ".eval": "application/octet-stream",
 }
 STRICT_CSP = "default-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; connect-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self'"
 VIEWER_CSP_FILE = "content-security-policy.json"
@@ -373,6 +373,75 @@ def _viewer_csp(bundle: Path) -> str:
     return "; ".join(parts)
 
 
+RANGE_HEADER = re.compile(r"^bytes=(\d*)-(\d*)$")
+
+
+def _parse_range(header: str | None, total: int) -> tuple[int, int] | str | None:
+    """Parse one byte range; return (start, end), "invalid" or None."""
+    if not header:
+        return None
+    match = RANGE_HEADER.fullmatch(header.strip())
+    if match is None:
+        return "invalid"
+    start_text, end_text = match.groups()
+    if start_text == "" and end_text == "":
+        return "invalid"
+    if start_text == "":
+        suffix = int(end_text)
+        if suffix <= 0 or total <= 0:
+            return "invalid"
+        return max(0, total - suffix), total - 1
+    start = int(start_text)
+    if start >= total:
+        return "invalid"
+    end = int(end_text) if end_text else total - 1
+    if end < start:
+        return "invalid"
+    return start, min(end, total - 1)
+
+
+def _serve_file(handler: BaseHTTPRequestHandler, path: Path, content_type: str, csp: str, *, head: bool = False) -> None:
+    """Serve a file with HEAD and single-range support (Inspect reads logs by range)."""
+    try:
+        total = path.stat().st_size
+    except OSError:
+        handler.send_error(HTTPStatus.NOT_FOUND)
+        return
+    parsed = _parse_range(handler.headers.get("Range"), total)
+    if parsed == "invalid":
+        handler.send_response(HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+        handler.send_header("Content-Range", f"bytes */{total}")
+        handler.send_header("Accept-Ranges", "bytes")
+        handler.send_header("Content-Length", "0")
+        handler.end_headers()
+        return
+    start, end = (0, total - 1) if parsed is None else parsed
+    status = HTTPStatus.OK if parsed is None else HTTPStatus.PARTIAL_CONTENT
+    length = end - start + 1 if total else 0
+    handler.send_response(status)
+    handler.send_header("Content-Type", content_type)
+    handler.send_header("Content-Length", str(length))
+    handler.send_header("Accept-Ranges", "bytes")
+    if status == HTTPStatus.PARTIAL_CONTENT:
+        handler.send_header("Content-Range", f"bytes {start}-{end}/{total}")
+    handler.send_header("Cache-Control", "no-store")
+    handler.send_header("Content-Security-Policy", csp)
+    handler.send_header("X-Content-Type-Options", "nosniff")
+    handler.send_header("X-Frame-Options", "DENY")
+    handler.end_headers()
+    if head or not length:
+        return
+    with path.open("rb") as handle:
+        handle.seek(start)
+        remaining = length
+        while remaining > 0:
+            chunk = handle.read(min(65_536, remaining))
+            if not chunk:
+                break
+            handler.wfile.write(chunk)
+            remaining -= len(chunk)
+
+
 class _ShowcaseHandler(BaseHTTPRequestHandler):
     """Serve only predeclared static bundle assets from loopback."""
 
@@ -382,6 +451,12 @@ class _ShowcaseHandler(BaseHTTPRequestHandler):
     csp: str = STRICT_CSP
 
     def do_GET(self) -> None:  # noqa: N802
+        self._serve(head=False)
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        self._serve(head=True)
+
+    def _serve(self, *, head: bool) -> None:
         requested = self.path.split("?", 1)[0]
         filename = "present.html" if requested == "/" else requested.removeprefix("/")
         if not _allowed(filename) or ".." in filename or "\\" in filename:
@@ -392,8 +467,8 @@ class _ShowcaseHandler(BaseHTTPRequestHandler):
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain; charset=utf-8")
             return
         content_type = CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream")
-        csp = _viewer_csp(self.bundle) if filename.startswith("inspect/") else self.csp
-        self._send(HTTPStatus.OK, path.read_bytes(), content_type, csp)
+        csp = _viewer_csp(self.bundle) if filename.startswith("inspect/") else STRICT_CSP
+        _serve_file(self, path, content_type, csp, head=head)
 
     def do_POST(self) -> None:  # noqa: N802
         self._send(HTTPStatus.METHOD_NOT_ALLOWED, b"method not allowed", "text/plain; charset=utf-8")
@@ -418,7 +493,7 @@ def serve_bundle(run_id: str, port: int = 8090, *, require_complete: bool = Fals
         raise ShowcaseError("invalid_showcase_port")
     verify_bundle(run_id, require_complete=require_complete)
     bundle = _bundle_dir(run_id)
-    handler = type("ShowcaseHandler", (_ShowcaseHandler,), {"bundle": bundle, "csp": _viewer_csp(bundle)})
+    handler = type("ShowcaseHandler", (_ShowcaseHandler,), {"bundle": bundle, "csp": STRICT_CSP})
     with ThreadingHTTPServer(("127.0.0.1", port), handler) as server:
         print(f"Recorded presentation: http://127.0.0.1:{server.server_address[1]}/ (read-only; Ctrl-C to stop)", flush=True)
         server.serve_forever()
@@ -434,6 +509,12 @@ class _LiveShowcaseHandler(BaseHTTPRequestHandler):
     }
 
     def do_GET(self) -> None:  # noqa: N802
+        self._serve(head=False)
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        self._serve(head=True)
+
+    def _serve(self, *, head: bool) -> None:
         path = self.path.split("?", 1)[0]
         if path in {"/live/observations.json"}:
             try:
@@ -457,7 +538,7 @@ class _LiveShowcaseHandler(BaseHTTPRequestHandler):
             if asset is None:
                 self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain; charset=utf-8")
                 return
-            self._send(HTTPStatus.OK, asset.read_bytes(), "image/svg+xml")
+            _serve_file(self, asset, "image/svg+xml", STRICT_CSP, head=head)
             return
         if path.startswith("/inspect/"):
             name = path.removeprefix("/inspect/")
@@ -465,7 +546,7 @@ class _LiveShowcaseHandler(BaseHTTPRequestHandler):
             if INSPECT_VIEW.resolve() not in target.parents or not target.is_file():
                 self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain; charset=utf-8")
                 return
-            self._send(HTTPStatus.OK, target.read_bytes(), CONTENT_TYPES.get(target.suffix.lower(), "application/octet-stream"), _viewer_csp(INSPECT_VIEW))
+            _serve_file(self, target, CONTENT_TYPES.get(target.suffix.lower(), "application/octet-stream"), _viewer_csp(INSPECT_VIEW), head=head)
             return
         filename = self.static_files.get(path)
         if filename is None:
@@ -475,7 +556,7 @@ class _LiveShowcaseHandler(BaseHTTPRequestHandler):
         if not asset.is_file():
             self._send(HTTPStatus.SERVICE_UNAVAILABLE, b"assets unavailable", "text/plain; charset=utf-8")
             return
-        self._send(HTTPStatus.OK, asset.read_bytes(), CONTENT_TYPES.get(asset.suffix.lower(), "application/octet-stream"))
+        _serve_file(self, asset, CONTENT_TYPES.get(asset.suffix.lower(), "application/octet-stream"), STRICT_CSP, head=head)
 
     def do_POST(self) -> None:  # noqa: N802
         self._send(HTTPStatus.METHOD_NOT_ALLOWED, b"method not allowed", "text/plain; charset=utf-8")

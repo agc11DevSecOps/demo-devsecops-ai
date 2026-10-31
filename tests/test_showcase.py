@@ -15,7 +15,7 @@ from unittest import mock
 from app import cli
 from app.common import sha256
 from app.evidence import Event, EvidenceWriter
-from app.showcase import ShowcaseError, _LiveShowcaseHandler, _load_challenge, _load_events, _load_visual_events, create_bundle, create_challenge, serve_live, verify_bundle
+from app.showcase import STRICT_CSP, ShowcaseError, _LiveShowcaseHandler, _ShowcaseHandler, _bundle_dir, _load_challenge, _load_events, _load_visual_events, create_bundle, create_challenge, serve_live, verify_bundle
 from app.workload import GenerationTrace, WorkloadError, _challenge_docs
 
 
@@ -72,6 +72,49 @@ class ShowcaseTests(unittest.TestCase):
                 run_id = create_bundle("demo-incomplete")
                 with self.assertRaisesRegex(ShowcaseError, "showcase_bundle_incomplete"):
                     verify_bundle(run_id, require_complete=True)
+
+    def test_bundle_server_supports_head_and_byte_ranges(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self._patch_roots(root):
+                run_id = create_bundle("demo-range")
+                bundle = _bundle_dir(run_id)
+                (bundle / "inspect" / "logs").mkdir(parents=True)
+                (bundle / "inspect" / "logs" / "x.eval").write_bytes(b"0123456789")
+            handler = type("RangeHandler", (_ShowcaseHandler,), {"bundle": bundle, "csp": STRICT_CSP})
+            server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+                connection.request("HEAD", "/present.js")
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.getheader("Accept-Ranges"), "bytes")
+                self.assertGreater(int(response.getheader("Content-Length")), 0)
+                self.assertEqual(response.read(), b"")
+                connection.request("GET", "/inspect/logs/x.eval", headers={"Range": "bytes=0-3"})
+                response = connection.getresponse()
+                self.assertEqual(response.status, 206)
+                self.assertEqual(response.read(), b"0123")
+                self.assertEqual(response.getheader("Content-Range"), "bytes 0-3/10")
+                connection.request("GET", "/inspect/logs/x.eval", headers={"Range": "bytes=-4"})
+                response = connection.getresponse()
+                self.assertEqual(response.status, 206)
+                self.assertEqual(response.read(), b"6789")
+                connection.request("GET", "/inspect/logs/x.eval", headers={"Range": "bytes=99-"})
+                response = connection.getresponse()
+                self.assertEqual(response.status, 416)
+                self.assertEqual(response.getheader("Content-Range"), "bytes */10")
+                connection.request("GET", "/inspect/logs/x.eval")
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.read(), b"0123456789")
+                connection.close()
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
 
     def test_challenge_rejects_non_allowlisted_nonce_and_path(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
