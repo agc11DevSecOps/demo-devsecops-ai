@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Run A: Prompt Injection Reaches the Model",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/prompt-injection-before.html"
+  },
+  "lanes": [
+    {"id": "request", "label": "Synthetic hostile prompt"},
+    {"id": "absent", "label": "Application controls absent", "variant": "exception"},
+    {"id": "model", "label": "Local model"},
+    {"id": "result", "label": "Recorded outcome"}
+  ],
+  "mainPath": ["prompt", "screen", "template", "model", "result"],
+  "nodes": [
+    {"id": "prompt", "lane": "request", "col": 0, "type": "frontend", "label": "Injection corpus", "sublabel": "plain and obfuscated prompts", "tag": "synthetic", "width": 144},
+    {"id": "screen", "lane": "absent", "col": 1, "type": "security", "label": "No injection screen", "sublabel": "no normalization or rules", "tag": "absent", "width": 154},
+    {"id": "template", "lane": "absent", "col": 2, "type": "security", "label": "Raw prompt", "sublabel": "placed in model template", "tag": "unscreened", "width": 136},
+    {"id": "model", "lane": "model", "col": 4, "type": "backend", "label": "FLAN-T5-small", "sublabel": "local CPU, offline", "tag": "unfiltered input", "width": 136},
+    {"id": "result", "lane": "result", "col": 5, "type": "backend", "label": "Recorded response", "sublabel": "honest outcome classification", "tag": "not a control", "width": 148}
+  ],
+  "edges": [
+    {"from": "prompt", "to": "screen", "label": "accepted raw"},
+    {"from": "screen", "to": "template", "label": "no inspection"},
+    {"from": "template", "to": "model", "label": "hostile text reaches model"},
+    {"from": "model", "to": "result", "label": "model output"}
+  ],
+  "cards": [
+    {"dot": "rose", "title": "What Is Missing", "items": ["No Unicode normalization or prompt-injection rules", "No Prompt Guard classifier before inference", "All eleven fixed prompts reach the local model"]},
+    {"dot": "amber", "title": "Interpretation", "items": ["A prompt reaching the model is an exposure, not automatic exploitation", "The recorded response determines the honest outcome label", "Lab containment remains active"]}
+  ]
+}

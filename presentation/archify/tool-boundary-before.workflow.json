@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Run A: Model Text Crosses the Missing Tool Boundary",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/tool-boundary-before.html"
+  },
+  "lanes": [
+    {"id": "request", "label": "Synthetic release question"},
+    {"id": "model", "label": "Retrieved context and local model"},
+    {"id": "absent", "label": "Authorization controls absent", "variant": "exception"},
+    {"id": "effect", "label": "Sandbox effects"}
+  ],
+  "mainPath": ["question", "context", "model", "agent", "effect"],
+  "nodes": [
+    {"id": "question", "lane": "request", "col": 0, "type": "frontend", "label": "Release question", "sublabel": "fixed synthetic request", "tag": "sandbox only", "width": 138},
+    {"id": "context", "lane": "model", "col": 1, "type": "database", "label": "Poisoned context", "sublabel": "tool names in retrieved text", "tag": "untrusted", "width": 148},
+    {"id": "model", "lane": "model", "col": 3, "type": "backend", "label": "FLAN-T5-small", "sublabel": "model text is untrusted", "tag": "local CPU", "width": 140},
+    {"id": "agent", "lane": "absent", "col": 4, "type": "security", "label": "No authorization gate", "sublabel": "naive agent recognizes tool text", "tag": "absent", "width": 162},
+    {"id": "effect", "lane": "effect", "col": 5, "type": "security", "label": "Sandbox tool effects", "sublabel": "delete_branch, export_customers", "tag": "contained", "width": 164}
+  ],
+  "edges": [
+    {"from": "question", "to": "context", "label": "retrieves release note"},
+    {"from": "context", "to": "model", "label": "context and question"},
+    {"from": "model", "to": "agent", "label": "model-proposed tool text"},
+    {"from": "agent", "to": "effect", "label": "acts without approval", "variant": "security"}
+  ],
+  "cards": [
+    {"dot": "rose", "title": "What Is Missing", "items": ["No OPA allow decision", "No approval bound to tool and parameters", "No scope, schema, output or quota gate"]},
+    {"dot": "amber", "title": "Safety Boundary", "items": ["Model text is never an authorization signal", "The baseline effects are fixed and synthetic", "The restricted runner confines effects to sandbox/"]}
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Run A: Raw Sensitive Data Reaches the User",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/pii-exposure-before.html"
+  },
+  "lanes": [
+    {"id": "source", "label": "Synthetic customer record"},
+    {"id": "absent", "label": "Application controls absent", "variant": "exception"},
+    {"id": "retrieval", "label": "Qdrant and local model"},
+    {"id": "result", "label": "User-visible answer"}
+  ],
+  "mainPath": ["record", "ingest", "retrieve", "model", "answer"],
+  "nodes": [
+    {"id": "record", "lane": "source", "col": 0, "type": "frontend", "label": "Customer fixture", "sublabel": "IBAN, email, phone, API key", "tag": "synthetic", "width": 152},
+    {"id": "ingest", "lane": "absent", "col": 1, "type": "security", "label": "No PII redaction", "sublabel": "raw record indexed", "tag": "absent", "width": 146},
+    {"id": "retrieve", "lane": "retrieval", "col": 3, "type": "database", "label": "Qdrant retrieval", "sublabel": "raw record in context", "tag": "unredacted", "width": 142},
+    {"id": "model", "lane": "retrieval", "col": 4, "type": "backend", "label": "FLAN-T5-small", "sublabel": "answers the fixed question", "tag": "local CPU", "width": 136},
+    {"id": "answer", "lane": "result", "col": 5, "type": "backend", "label": "Raw answer", "sublabel": "synthetic values returned", "tag": "PII exposed", "width": 138}
+  ],
+  "edges": [
+    {"from": "record", "to": "ingest", "label": "ingest raw"},
+    {"from": "ingest", "to": "retrieve", "label": "no masking"},
+    {"from": "retrieve", "to": "model", "label": "sensitive context"},
+    {"from": "model", "to": "answer", "label": "unvalidated output"}
+  ],
+  "cards": [
+    {"dot": "rose", "title": "What Is Missing", "items": ["No Presidio masking at ingestion", "No output redaction before the answer", "The raw fixture can enter retrieval context"]},
+    {"dot": "amber", "title": "Bounded Demonstration", "items": ["Values are synthetic demo data only", "The observation records whether the answer exposed them", "No production data or external service is used"]}
+  ]
+}

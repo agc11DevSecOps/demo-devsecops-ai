@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Run A: Untrusted Retrieval Can Steer the Agent",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/retrieval-poisoning-before-v2.html"
+  },
+  "lanes": [
+    {"id": "upload", "label": "Untrusted upload"},
+    {"id": "absent", "label": "Application controls absent", "variant": "exception"},
+    {"id": "model", "label": "Retrieval and local model"},
+    {"id": "effect", "label": "Naive agent and sandbox"}
+  ],
+  "mainPath": ["note", "admit", "retrieve", "model", "effect"],
+  "nodes": [
+    {"id": "note", "lane": "upload", "col": 0, "type": "frontend", "label": "Poisoned release note", "sublabel": "untrusted writer", "tag": "synthetic upload", "width": 148},
+    {"id": "admit", "lane": "absent", "col": 1, "type": "security", "label": "No writer admission", "sublabel": "indexed beside runbooks", "tag": "absent", "width": 154},
+    {"id": "retrieve", "lane": "model", "col": 2, "type": "database", "label": "Unfiltered Qdrant", "sublabel": "poisoned note retrieved", "tag": "no provenance filter", "width": 150},
+    {"id": "model", "lane": "model", "col": 4, "type": "backend", "label": "FLAN-T5-small", "sublabel": "receives hostile context", "tag": "local CPU", "width": 140},
+    {"id": "effect", "lane": "effect", "col": 5, "type": "security", "label": "Naive agent effect", "sublabel": "fixed tool text becomes a sandbox effect", "tag": "contained", "width": 172}
+  ],
+  "edges": [
+    {"from": "note", "to": "admit", "label": "uploaded"},
+    {"from": "admit", "to": "retrieve", "label": "accepted without provenance"},
+    {"from": "retrieve", "to": "model", "label": "hostile instructions in context"},
+    {"from": "model", "to": "effect", "label": "model text triggers a fixed tool"}
+  ],
+  "cards": [
+    {"dot": "rose", "title": "What Is Missing", "items": ["No trusted-writer allow-list or quarantine", "No Qdrant provenance filter", "No policy boundary before the naive agent"]},
+    {"dot": "amber", "title": "Containment Still Applies", "items": ["Only fixed synthetic tools and parameters are recognized", "Effects stay under sandbox/", "The runner has no network and a read-only root filesystem"]}
+  ]
+}

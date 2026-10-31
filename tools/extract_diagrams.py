@@ -22,6 +22,8 @@ NAMES = frozenset({
     "model-admission", "request-guardrails", "rag-provenance", "tool-boundary", "evidence-provenance",
     "model-admission-before", "ai-flow-unguarded", "ai-flow-guarded",
     "control-integration-map", "inspect-eval-topology",
+    "prompt-injection-before", "pii-exposure-before", "retrieval-poisoning-before-v2",
+    "tool-boundary-before", "input-output-bounds-before",
 })
 FORBIDDEN = (
     r"<script\b",

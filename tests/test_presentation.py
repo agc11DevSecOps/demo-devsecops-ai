@@ -242,7 +242,7 @@ class PresentationTests(unittest.TestCase):
         self.assertIsNone(diagram_path("not-in-catalog"))
 
     def test_every_diagram_is_present_and_sanitized(self) -> None:
-        self.assertEqual(len(DIAGRAMS), 10)
+        self.assertEqual(len(DIAGRAMS), 15)
         for name in DIAGRAMS:
             path = diagram_path(name)
             self.assertIsNotNone(path, name)
@@ -254,6 +254,16 @@ class PresentationTests(unittest.TestCase):
             self.assertIn("viewBox=", text)
             self.assertNotRegex(text, r"(?i)<script\b|<foreignObject\b|<iframe\b|\son[a-z]+\s*=|javascript\s*:")
             self.assertNotRegex(text, r"(?i)(href|src)\s*=\s*[\"']https?:")
+
+    def test_each_scenario_uses_its_own_before_diagram(self) -> None:
+        before = {scenario.scenario: scenario.diagram_before for scenario in SCENARIOS}
+        self.assertEqual(before["S0"], "ai-flow-unguarded")
+        self.assertEqual(before["S1"], "model-admission-before")
+        self.assertEqual(before["S2"], "prompt-injection-before")
+        self.assertEqual(before["S3"], "pii-exposure-before")
+        self.assertEqual(before["S4"], "retrieval-poisoning-before-v2")
+        self.assertEqual(before["S5"], "tool-boundary-before")
+        self.assertEqual(before["S8"], "input-output-bounds-before")
 
     def test_live_endpoint_serves_the_digest_free_projection(self) -> None:
         with tempfile.TemporaryDirectory() as directory, self._roots(Path(directory)):

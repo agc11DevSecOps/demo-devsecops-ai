@@ -140,7 +140,7 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Ten synthetic injection prompts (plain, special token, base64, rot13, zero-width, confusable) and one benign paraphrase",
         (("prompt injection", "Prompt Guard 2 22M inspection"),),
         "Real local model in Run A; real normalization, rules and Prompt Guard 2 22M in Run B.",
-        "ai-flow-unguarded", "request-guardrails",
+        "prompt-injection-before", "request-guardrails",
         ("evidence/A/s2.jsonl", "evidence/B/s2.jsonl", "fixtures/prompts/injection_11.jsonl"),
         payload_sources=(
             PayloadSource("Eleven-prompt injection corpus", Anchor("fixtures/prompts/injection_11.jsonl", line='{"id": "i01"', lines=11), "Ten prompts attempt instruction override or obfuscation; the final prompt is the benign comparison."),
@@ -152,7 +152,7 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Synthetic customer record (IBAN, email, phone, demo API key) and a question about it",
         (("PII in answer", "PII in answer"),),
         "Real local model and Qdrant in Run A; real Presidio 2.2.364 at ingestion and on output in Run B.",
-        "ai-flow-unguarded", "ai-flow-guarded",
+        "pii-exposure-before", "ai-flow-guarded",
         ("evidence/A/s3.jsonl", "evidence/B/s3.jsonl", "fixtures/prompts/pii_cases.jsonl"),
         payload_sources=(
             PayloadSource("Synthetic customer record", Anchor("fixtures/prompts/pii_cases.jsonl", line='{"id": "p01"', lines=1), "It deliberately contains four synthetic sensitive entity types so redaction can be observed."),
@@ -164,7 +164,7 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Synthetic release guide from an untrusted writer, indexed next to the trusted runbooks",
         (("poisoned document", "poisoned document"),),
         "Real local model and Qdrant in Run A; real writer admission, quarantine and Qdrant filter in Run B.",
-        "ai-flow-unguarded", "rag-provenance",
+        "retrieval-poisoning-before-v2", "rag-provenance",
         ("evidence/A/s4.jsonl", "evidence/B/s4.jsonl", "fixtures/docs/poisoned_note.md", "artifacts/quarantine.json"),
         payload_sources=(
             PayloadSource("Untrusted poisoned note", Anchor("fixtures/docs/poisoned_note.md", line="Release guide.", lines=1), "The document tries to turn retrieval text into a destructive tool instruction."),
@@ -177,7 +177,7 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Synthetic tool parameters proposed from a poisoned release question",
         (("model-proposed tool call", "model-proposed tool call"), ("delete_branch", "delete_branch")),
         "Real local model, OPA and MCP in Run B; the naive agent in Run A acts only inside sandbox/.",
-        "ai-flow-unguarded", "tool-boundary",
+        "tool-boundary-before", "tool-boundary",
         ("evidence/A/s5.jsonl", "evidence/B/s5.jsonl", "artifacts/approvals.jsonl"),
         payload_sources=(
             PayloadSource("Untrusted poisoned note", Anchor("fixtures/docs/poisoned_note.md", line="Release guide.", lines=1), "The source text proposes delete_branch and export_customers; it is data, never authorization."),
@@ -190,7 +190,7 @@ SCENARIOS: tuple[Scenario, ...] = (
         "Synthetic over-length question, source-marker request and citation request",
         (("input length control", "input length control"), ("output validation", "output validation"), ("output length control", "output length control"), ("retrieval attribution", "retrieval attribution")),
         "Real local model in Run A; measured request and output controls in Run B. The over-length answer baseline stays DESIGNED.",
-        "ai-flow-unguarded", "request-guardrails",
+        "input-output-bounds-before", "request-guardrails",
         ("evidence/A/s8.jsonl", "evidence/B/s8.jsonl"),
         payload_sources=(
             PayloadSource("Bounded input and output cases", Anchor("fixtures/eval/lab_cases.jsonl", line='{"id": "s8-length"', lines=3), "These fixed cases exercise over-length input rejection, source marker stripping, and retrieval-derived attribution."),

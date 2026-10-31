@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Run A: Input and Output Leave the Contract Unbounded",
+    "quality_profile": "showcase",
+    "output": "presentation/archify/out/input-output-bounds-before.html"
+  },
+  "lanes": [
+    {"id": "request", "label": "Synthetic boundary cases"},
+    {"id": "absent", "label": "Application controls absent", "variant": "exception"},
+    {"id": "model", "label": "Local model"},
+    {"id": "result", "label": "Returned output"}
+  ],
+  "mainPath": ["input", "contract", "model", "validation", "answer"],
+  "nodes": [
+    {"id": "input", "lane": "request", "col": 0, "type": "frontend", "label": "Boundary cases", "sublabel": "long input, marker, citation", "tag": "synthetic", "width": 148},
+    {"id": "contract", "lane": "absent", "col": 1, "type": "security", "label": "No input limit", "sublabel": "accepted as-is", "tag": "absent", "width": 138},
+    {"id": "model", "lane": "model", "col": 3, "type": "backend", "label": "FLAN-T5-small", "sublabel": "receives unchecked input", "tag": "local CPU", "width": 146},
+    {"id": "validation", "lane": "absent", "col": 4, "type": "security", "label": "No output validation", "sublabel": "no marker, length or attribution check", "tag": "absent", "width": 174},
+    {"id": "answer", "lane": "result", "col": 5, "type": "backend", "label": "Raw response", "sublabel": "model-written citation accepted", "tag": "unbounded contract", "width": 150}
+  ],
+  "edges": [
+    {"from": "input", "to": "contract", "label": "accepted"},
+    {"from": "contract", "to": "model", "label": "no bound or screen"},
+    {"from": "model", "to": "validation", "label": "raw model output"},
+    {"from": "validation", "to": "answer", "label": "returned unchanged"}
+  ],
+  "cards": [
+    {"dot": "rose", "title": "What Is Missing", "items": ["No 1,024-character request limit", "No source-marker or output-length validation", "No code-derived retrieval attribution"]},
+    {"dot": "amber", "title": "Honest Baseline", "items": ["FLAN-T5 output remains capped by the lab adapter", "The 1,200-character output case is DESIGNED, not observed", "The remaining cases are recorded observations"]}
+  ]
+}
