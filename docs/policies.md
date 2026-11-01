@@ -27,8 +27,9 @@ repository a policy is:
   evidence; the policy consumes facts derived from that evidence.
 - It is not a standard. See
   [`standards-and-policy-mapping.md`](standards-and-policy-mapping.md).
-- It is not a substitute for human approval. An allowed high-impact tool call
-  becomes `REVIEW`, never execution.
+- It is not a substitute for approval. An allowed high-impact tool call becomes
+  `REVIEW`, never execution. In this demo the approver is synthetic; the token
+  binding and single-use consumption are the properties under test.
 
 ## The Two Active Policies
 
@@ -153,10 +154,11 @@ The wrapper never returns "maybe". A broken policy denies.
 matches and a valid grant exists. The policy answers "may this call proceed to
 the approval stage". It does not answer "may this call happen".
 
-`app/security/tool_boundary.py` maps the allow result to `REVIEW`, which means
-a human must approve out of band through `approve_cli.py`. The approval token
-is bound to the exact tool, canonical parameters, requester, descriptor digest
-and expiry, and it is single use.
+`app/security/tool_boundary.py` maps the allow result to `REVIEW`. In this demo
+the approver is synthetic: the approval token is bound to the exact tool,
+canonical parameters, requester, descriptor digest and expiry, and the boundary
+verifies and consumes it so a replay is denied. `approve_cli.py` is an optional
+operator tool, not an automatic execution path.
 
 Three separate things are therefore distinct:
 
@@ -164,7 +166,7 @@ Three separate things are therefore distinct:
 | --- | --- | --- |
 | Detection | "Does this artifact look dangerous?" | Fickling, ModelScan, Prompt Guard, Presidio |
 | Policy | "Given validated facts, may this proceed?" | OPA |
-| Approval | "Has a human authorised this exact action?" | `app/approvals.py` and the operator |
+| Approval | "Has an approver authorised this exact action?" | `app/approvals.py`; synthetic approver in the demo |
 | Execution | "Do it." | Not present in this repository |
 
 The demo has no execution layer for the answer lane at all. See

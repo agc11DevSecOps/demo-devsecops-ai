@@ -36,8 +36,9 @@
 - Local FLAN-T5-small generation is measured only when the mounted weights pass
   the pinned hash check. The scripted adapter remains available for unit tests
   only and is never presented as live inference.
-- A fast Garak run covers 5/55 prompts and is labelled `PARTIAL`; only the full
-  55-prompt campaign can produce a `BLOCKED` S7 event.
+- A fast Garak run covers 5/55 prompts and is labelled `PARTIAL`; the full
+  55-prompt campaign produces a `REVIEW` S7 event based on detector results, not
+  a count of application blocks.
 - Garak currently exercises the loopback endpoint through the scripted adapter.
   Its aggregate is a detector result count, not a count of application blocks,
   and it is not evidence of FLAN-T5 jailbreak resistance.

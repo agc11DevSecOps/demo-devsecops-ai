@@ -17,7 +17,7 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `Dockerfile` | Pinned, no-network runtime and Garak images. | `make container-build`, `make demo`. |
 | `docker-compose.yml` | Optional loopback gateway composition. | `make compose-up`. |
 | `LICENSE` | Repository license. | Distribution. |
-| `DECISIONS.md` | Architecture and security decisions D-001 through D-018. | Review and maintenance. |
+| `DECISIONS.md` | Historical architecture and security decisions D-001 through D-019; current behavior is documented in the current guides. | Review and maintenance. |
 | `LIMITATIONS.md` | Explicit non-claims and remaining constraints. | Review and presentation. |
 | `REHEARSAL.md` | Live-demo run of show. | `make present` operators. |
 | `docs/demo-10min.md` | Terminal-only, Run-B-only fallback narrative. | Presenters without a recorded bundle. |
@@ -135,8 +135,8 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `scripts/demo_record.sh`, `scripts/demo_record_appendix.sh`, `scripts/inspect_live.sh` | Timed recording, S7 appendix and internal-network Inspect run. | `make demo-record`, `make demo-record-appendix`, `make inspect-eval`. |
 | `docs/visual-presentation-requirements.md`, `…-design.md`, `…-tasks.md` | Revised capability records for the recorded presentation. | Design traceability. |
 | `tests/test_presentation.py`, `tests/test_live_evaluation.py` | Projection, control catalog, lab gating and evaluation-target tests. | `make test`. |
-| `specs/core/design.md`, `requirements.md`, `tasks.md` | Original core capability records. | Design traceability. |
-| `specs/policy-tooling-documentation/design.md`, `requirements.md`, `tasks.md` | Policy documentation and template catalogue records. | Design traceability. |
+| `specs/core/design.md`, `requirements.md`, `tasks.md` | Historical core capability records; not current behavior. | Design traceability. |
+| `specs/policy-tooling-documentation/design.md`, `requirements.md`, `tasks.md` | Historical policy documentation and template catalogue records; not current behavior. | Design traceability. |
 | `docs/architecture.mmd`, `docs/pipeline.mmd` | Source diagrams for the answer lane and pipeline. | Documentation. |
 | `docs/control-register.md`, `evidence-ledger.md`, `fixtures-and-fallbacks.md`, `tool-action-boundary.md` | Control, authority, fixture, and action-boundary references. | Review and navigation. |
 | `docs/tools/*.md` | One operational guide per direct integration. | Operators and newcomers. |
@@ -150,7 +150,7 @@ CI, or a test; generated paths are intentionally ignored by Git.
 | `tests/test_fetch_models.py` | Model fetcher argument handling across Python versions. | `make test`. |
 | `tests/test_no_secrets.py` | Guards that keep credentials out of the repository. | `make test`. |
 | `tests/test_gateway.py` | Optional gateway contract tests. | `make test`. |
-| `tests/test_pipeline.py` | Delivery-pipeline and gate tests. | `make test`. |
+| `tests/test_pipeline.py` | Local delivery-gate rehearsal and gate tests. | `make test`. |
 | `tests/test_policy_templates.py` | Policy template catalogue and generator tests. | `make policy-template-test`. |
 | `tests/test_standards_mapping.py` | Standards register and mapping tests. | `make policy-template-test`. |
 | `tests/test_present.py` | Presentation filter tests. | `make test`. |

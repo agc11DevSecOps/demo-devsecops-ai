@@ -13,12 +13,18 @@ production architecture or a security certification.
 - [Standards and policy mapping](standards-and-policy-mapping.md) maps policy patterns to control objectives and states the limits.
 - [Tool guides](tools/README.md) is the guided path to every direct integration.
 - [Architecture](architecture.mmd) separates the read-only answer lane from the S5 authorization lab.
-- [Pipeline](pipeline.mmd) shows the offline 11-stage pipeline and its current stage labels.
+- [Pipeline](pipeline.mmd) shows the local 11-stage delivery-gate rehearsal and its current labels. It does not build or deploy.
 - [Control register](control-register.md) maps scenarios to controls, implementation paths, and evidence.
 - [Evidence ledger](evidence-ledger.md) identifies authoritative evidence and derived outputs.
 - [Fixtures and fallbacks](fixtures-and-fallbacks.md) describes the synthetic inputs and labelled substitutes.
 - [Tool/action boundary](tool-action-boundary.md) defines the separation between answers, authorization decisions, and execution.
 - [Repository navigation](navigation.md) inventories each retained path, its purpose, and its runtime status.
+
+## Current Baseline
+
+- Final recorded bundle: `record/showcase-runs/showcase-20261101T001159Z`.
+- Last verified state: 228 tests, 15 diagrams, 61 presentation checks, Inspect View included.
+- S6 remains `NOT TESTED`; S7 is an appendix and is not part of the main ten-minute recording.
 
 ## Module Map
 
@@ -49,7 +55,7 @@ production architecture or a security certification.
 | `MEASURED` | This repository executed the control in the recorded run. |
 | `RECORDED` | A validated external evidence package produced the result; no campaign ran here. |
 | `SCRIPTED` | A deterministic test double produced the result; it is not a measured external model or tool result. |
-| `PARTIAL` | Evidence exists but coverage is incomplete and cannot support the full claim. A `GARAK_LIMIT=5` run is `PARTIAL`; the recorded full campaign is 55/55. |
+| `PARTIAL` | Evidence exists but coverage is incomplete and cannot support the full claim. A `GARAK_LIMIT=5` run is `PARTIAL`; the recorded full campaign is 55/55 detector results and yields `REVIEW`, not a block count. |
 | `NOT TESTED` | Applicable evidence is absent. S6 is currently `NOT TESTED`: no Strix package has been admitted. |
 | `DESIGNED` | Specified but not executed. |
 

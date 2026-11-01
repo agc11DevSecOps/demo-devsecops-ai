@@ -133,24 +133,29 @@ never pass. The secrets and static-analysis stages gate the flow and fail closed
 the red-team stage enforces `redteam.max_success_rate` from
 `controls/ci/gates.yaml`. Pipeline events deliberately carry no AISVS ids so they
 cannot alter the AISVS scorecard, which is derived only from scenario evidence.
-`make pipeline` runs all stages; `make stage-N` runs one.
+`make pipeline` runs all stages; `make stage-N` runs one. It is a local gate
+rehearsal, not a CI/CD build or deployment pipeline: CI does not run it, stage 4
+verifies the vendored wheel bytes, and stage 6 signs a synthetic pipeline artifact.
 
-## D-016: Human approvals are cryptographically bound and logged
+## D-016: Approval tokens are cryptographically bound and consumed once
 
 `app/approvals.py` binds an approval to the exact tool, canonical parameters,
 requester, pinned descriptor digest and an expiry, signed with an HMAC key kept
 outside the agent (`OPS_DEMO_APPROVAL_KEY` or the sandbox signing key). A changed
 parameter, requester, descriptor, expired token or tampered body fails
-verification. Every approval decision is appended to a hash-only
+verification. `ToolBoundary.decide()` verifies and consumes the token before authorization, so
+a replay is denied. Every approval decision is appended to a hash-only
 `artifacts/approvals.jsonl` audit record (approver and parameter digests only).
-`approve_cli.py` issues and verifies tokens without trusting model output.
+The demo approver is synthetic; `approve_cli.py` is an optional operator tool,
+not an automatic execution path.
 
 ## D-017: S1 signs the AI BOM and gates admission on it
 
-The S1 admission path publishes a machine-readable AI BOM (C6.2.1), signs it with
+The S1 admission path generates a machine-readable AI BOM (C6.2.1), signs it with
 the same pinned offline signer used for the model and verifies it before
-deployment (C6.2.2), and fails closed when component metadata is missing
-(C6.2.3). Model admission itself is a pure policy decision
+admission (C6.2.2), and fails closed when component metadata is missing
+(C6.2.3). The BOM is a generated artifact, not a tracked file. Model admission
+itself is a pure policy decision
 (`policies/admission.rego` via OPA, or the deterministic fallback) over three
 facts -- safe format, verified signature, complete BOM -- and the policy denies
 the unsafe-format variant. Vectors are embedded with a deterministic local

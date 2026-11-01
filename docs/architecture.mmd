@@ -19,7 +19,7 @@ flowchart LR
     Q[Fixed synthetic S5 request] --> B[Tool boundary]
     B -->|read-only request allowed| M[Local MCP search_docs]
     B -->|high-impact request denied| D[Decision recorded; not forwarded]
-    H[Out-of-band human approval] --> B
+    H[Synthetic single-use approval token] --> B
     B -->|approval result| V[REVIEW only; no executor]
   end
 

@@ -43,7 +43,8 @@ synthetic payload:
   `sandbox/`. Its outcome is classified as `EXPLOITED`, `EXPOSED IN CONTEXT` or
   `NOT EXPLOITED BY THIS MODEL`.
 - **Run B** is the same request with Prompt Guard, Presidio, provenance
-  quarantine and filtering, output validation, OPA, approval binding and MCP.
+  quarantine and filtering, output validation, OPA, a synthetic single-use
+  approval token and MCP.
 - **Inspect AI** then drives both flows live on an internal Docker network with
   a fixed dataset, and its transcripts are frozen into the bundle.
 
@@ -67,6 +68,9 @@ See [`docs/visual-presentation-requirements.md`](docs/visual-presentation-requir
 capability records, and [`docs/demo-runbook.md`](docs/demo-runbook.md) for the
 full presenter script and contingencies.
 
+The final recorded baseline is `showcase-20261101T001159Z`: S7 appendix,
+Inspect View and 61 presentation checks included. S6 remains `NOT TESTED`.
+
 A terminal-only, Run-B-only fallback remains available as `make demo-10m`; see
 [`docs/demo-10min.md`](docs/demo-10min.md). `make demo` still runs the complete
 scenario catalogue, including the `PARTIAL` S7 campaign and the `NOT TESTED` S6
@@ -77,7 +81,7 @@ appendix.
 Read these files in order:
 
 1. [`docs/code-tour.md`](docs/code-tour.md): five-minute source navigation.
-2. [`docs/architecture.mmd`](docs/architecture.mmd): runtime and delivery flow.
+2. [`docs/architecture.mmd`](docs/architecture.mmd): runtime and local gate-rehearsal flow.
 3. [`app/workload.py`](app/workload.py): bounded RAG request path.
 4. [`app/flow.py`](app/flow.py), [`app/unguarded.py`](app/unguarded.py) and
    [`app/guarded.py`](app/guarded.py): the shared stage trace, the real Run A

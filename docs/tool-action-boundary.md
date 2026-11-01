@@ -17,8 +17,9 @@ canonical parameters, requester, descriptor digest, and expiry.
 
 The only forwarded MCP interaction demonstrated by S5 is the allowed
 read-only `search_docs` call over local stdio. A high-impact request such as
-`delete_branch` is denied before forwarding. A policy result of `REVIEW` waits
-for out-of-band human approval; it is not execution. The local MCP server's
+`delete_branch` is denied before forwarding. A policy result of `REVIEW` is not execution. In this laboratory the approval
+token is synthetic, bound to the exact call and consumed once by the boundary;
+the operator CLI is optional. The local MCP server's
 `delete_branch` handler itself returns a refusal and performs no deletion.
 
 There is no action vertical in this repository. In particular, there is no

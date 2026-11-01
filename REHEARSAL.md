@@ -9,16 +9,16 @@ This page is the one-page checklist to print and follow.
 make provision              # one command: tools, models, image, preflight
 make test                   -> OK
 make test-policy            -> PASS: 14/14
-make demo-record            -> total: ~177s (limit 900s) + verified bundle
+make demo-record            -> total: ~186s (limit 900s) + verified bundle
 make demo-record-appendix   # optional: full 55-prompt Garak appendix
 ```
 
 `make provision` is idempotent and asks for the Hugging Face token once,
 stored in the git-ignored `.env` file with owner-only permissions.
 
-`make demo-record` executes the real local flows: every A/B pair, the delivery
-pipeline and the live Inspect check. It is timed and refuses to present a
-partial or over-budget recording. `make demo-record-appendix` adds S7 with the
+`make demo-record` executes the real local flows: every A/B pair, the local
+delivery-gate rehearsal and the live Inspect check. It is timed and refuses to
+present a partial or over-budget recording. `make demo-record-appendix` adds S7 with the
 full 55-prompt campaign; a reduced campaign stays `PARTIAL`.
 
 ## The Room
@@ -27,6 +27,7 @@ full 55-prompt campaign; a reduced campaign stays `PARTIAL`.
 | --- | --- | --- |
 | Browser | `make present-visual` | recorded cards: payload, Run A, control configuration, Run B, result, Inspect transcripts |
 | Static bundle | `record/showcase-runs/<id>/` | the same presentation with a verified manifest |
+| Final recorded baseline | `showcase-20261101T001159Z` | S7 appendix and Inspect View included |
 
 `make present-visual` never executes a scenario, a model or a tool. It verifies
 the latest bundle and serves it on loopback. Keys: `→`/`←` step, `↑`/`↓`
@@ -53,7 +54,7 @@ version and the behaviour without the control.
 ## Appendices (only if there is time)
 
 ```bash
-make pipeline                        # delivery stages
+make pipeline                        # local gate rehearsal; no build or deploy
 make compose-up                      # the local HTTP gateway
 make policy-template TEMPLATE=model-admission ID=payments-model
 ```

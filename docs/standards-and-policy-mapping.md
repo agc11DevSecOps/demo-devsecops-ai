@@ -75,6 +75,10 @@ identifiers, and the objective in this demo's own words. Three rules apply:
 - OWASP ASVS `V4`: access control is enforced outside the model and is
   auditable.
 
+These are control objectives, not a claim that a production identity provider or
+human approver is integrated. In this demo the approver is synthetic; the token
+binding and single-use consumption are the implemented properties.
+
 ### RAG admission
 
 - AISVS `v1.01-C8.1.2`, `v1.01-C8.2.4`, `v1.01-C8.3.3`: only documents from an

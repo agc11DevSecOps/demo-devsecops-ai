@@ -12,13 +12,13 @@
 | S5 approval audit | `artifacts/approvals.jsonl` | Hash-only approval decision record | Supporting audit record; authorization evidence remains in S5 JSONL |
 | Garak aggregate | `artifacts/garak-s7.json` | Schema-checked campaign aggregate used to emit S7 evidence | Supporting input, not scorecard input by itself |
 | S6 package | `record/s6/` | Schema- and hash-validated external evidence package | Absent, so S6 is `NOT TESTED`; a package cannot create a B `PASS` alone |
-| Pipeline events | `app/pipeline.py` writes `evidence/B/pipeline.jsonl` when run | Offline delivery-stage observations | No AISVS IDs; cannot affect the AISVS scorecard |
+| Pipeline events | `app/pipeline.py` writes `evidence/B/pipeline.jsonl` when run | Local delivery-gate rehearsal observations; no build or deploy | No AISVS IDs; cannot affect the AISVS scorecard |
 
 The scorecard reads AISVS IDs from `evidence/A/*.jsonl` and
 `evidence/B/*.jsonl`. For Run B, a matching `BLOCKED`, `DENIED`, `REVIEW`, or
 `ALLOWED` decision is the implemented scorecard input; absent matching evidence
 is `NOT TESTED`. Labels retain the provenance and coverage context. The recorded full Garak aggregate covers 55 of 55 prompts and yields a
-`BLOCKED` S7 event. A `GARAK_LIMIT=5` run remains `PARTIAL` with decision
+`REVIEW` S7 event: detector evidence, not a count of application blocks. A `GARAK_LIMIT=5` run remains `PARTIAL` with decision
 `NOT TESTED` and is never presented as the full campaign.
 
 ## Freshness And Authority

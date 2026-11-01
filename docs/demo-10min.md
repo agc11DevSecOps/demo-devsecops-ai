@@ -22,7 +22,7 @@ while this fallback runs; the page is display-only.
 | 4:30-5:30 | `app/security/retrieval.py` and S4 | A document from an untrusted writer is rejected before indexing; Qdrant searches only admitted text. The forced test shows what happens without the filter. |
 | 5:30-6:30 | S5 | MCP and OPA are real, but this is an optional authorization lab. A high-impact call is denied before forwarding, and an allowed one becomes `REVIEW`. |
 | 6:30-7:30 | S8 and `app/security/output.py` | Output is bounded and treated as untrusted; citations are generated from retrieval metadata. |
-| 7:30-8:30 | `make pipeline` or `docs/pipeline.mmd` | Delivery gates use real tools in the container profile; deferred stages retain their labels. |
+| 7:30-8:30 | `make pipeline` or `docs/pipeline.mmd` | The local gate rehearsal uses real tools in the container profile and builds/deploys nothing; deferred stages retain their labels. |
 | 8:30-10:00 | Live viewer, `LIMITATIONS.md` | Evidence is hash-bound and labels are honest. This is not a production security verdict. |
 
 `make demo-10m` executes the core sequence: the verbose policy tests, S1, S2,

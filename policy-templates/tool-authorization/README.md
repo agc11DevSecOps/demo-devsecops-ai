@@ -69,8 +69,8 @@ allowed.
 ## What This Policy Cannot Do
 
 - It cannot execute a tool. The caller decides what an allow means.
-- It cannot grant approval. A grant is issued out of band by a human through
-  `approve_cli.py`.
+- It cannot grant approval. A grant is issued out of band by an approver through
+  `approve_cli.py`; the demo implementation uses a synthetic approver.
 - It cannot verify a grant. It only receives the boolean result.
 - It cannot widen a scope. It only receives the boolean result.
 

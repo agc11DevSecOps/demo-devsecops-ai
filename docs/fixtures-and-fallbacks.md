@@ -12,7 +12,7 @@ or reusable attack content.
 | S5 tool descriptors and requests | Defined in `app/security/tool_boundary.py` | Fixed synthetic laboratory inputs, not workload output. |
 | Run A lab corpus and cases | `app/flow.py` (`lab_corpus`), `fixtures/docs/poisoned_note.md`, `fixtures/prompts/pii_cases.jsonl`, `fixtures/eval/lab_cases.jsonl` | The unguarded flow indexes the untrusted upload and the raw customer record; `lab_cases.jsonl` is the single source for Run A, Run B and the Inspect dataset. |
 | Inspect dataset | `evals/dataset.json` | Exported from the fixed lab cases and checked by `tests/test_live_evaluation.py`. |
-| S7 campaign result | `artifacts/garak-s7.json` | Generated aggregate only: `GARAK_LIMIT=5` is 5/55 and `PARTIAL`; a full 55/55 run records `BLOCKED`. Artifacts are ignored by Git. |
+| S7 campaign result | `artifacts/garak-s7.json` | Generated aggregate only: `GARAK_LIMIT=5` is 5/55 and `PARTIAL`; a full 55/55 run records `REVIEW` because it is detector evidence, not a count of application blocks. Artifacts are ignored by Git. |
 
 ## Fallback Rules
 

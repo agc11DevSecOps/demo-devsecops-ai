@@ -87,9 +87,9 @@ reset -> B`), the local delivery-gate rehearsal and the live Inspect check. It w
 refuses to accept a recording over the budget. Measured on this machine:
 
 ```text
-recording: preflight 2s, scenarios 130s, inspect 45s
-total: 177s (limit 900s)
-Bundle: record/showcase-runs/showcase-...
+recording: preflight 1s, scenarios 134s, inspect 51s
+total: 186s (limit 900s)
+Bundle: record/showcase-runs/showcase-20261101T001159Z
 ```
 
 The optional red-team appendix runs separately, because the full 55-prompt
@@ -110,6 +110,7 @@ the viewer.
 | Surface | What it shows | How to open it |
 | --- | --- | --- |
 | Browser | Recorded cards: payload, Run A, control configuration, Run B, result and Inspect transcripts | `make present-visual` opens `http://127.0.0.1:8091/` |
+| Inspect detail | Frozen transcript for one sample | `make showcase-serve SHOWCASE_RUN_ID=showcase-20261101T001159Z`, then open the pattern below |
 
 ```bash
 make present-visual
@@ -125,6 +126,16 @@ declared files. The viewer states the recording time and the durations. Use
 Keys: `→` / `←` move step, `↑` / `↓` move scenario, `O` opens the overview and
 `M` the control integration map. In the Result step, each Inspect check links
 to the recorded Run A and Run B transcript for that exact sample.
+
+The frozen Inspect URL pattern is:
+
+```text
+http://127.0.0.1:8090/inspect/index.html#/logs/<guarded|unguarded>/<file>.eval/samples/sample/<sample-id>/1
+```
+
+For the final baseline, the S0 sample is available on both sides with the exact
+log file names stored in the bundle projection. The viewer links to it directly;
+this pattern is for opening one sample manually.
 
 To rehearse the underlying run again without overwriting the presented bundle,
 use a separate evidence run in a terminal:
