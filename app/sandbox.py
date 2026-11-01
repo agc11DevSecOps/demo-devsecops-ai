@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import shutil
+import tempfile
+from pathlib import Path
 
 from app.common import ARTIFACTS, EVIDENCE, SANDBOX, VISUAL_EVIDENCE, safe_sandbox_path
 
@@ -42,17 +44,20 @@ def reset(*, clear_evidence: bool = True) -> None:
             path = EVIDENCE / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
-    # Supporting artifacts (Garak aggregate, approvals, scanner reports) are part
-    # of the evidence surface, so preserve them when evidence is preserved.
-    preserved = {
-        path.name: path.read_bytes()
-        for path in ARTIFACTS.glob("*")
-        if not clear_evidence and path.is_file()
-    }
+    # Supporting artifacts (Garak aggregate, scans, approvals, Inspect View and
+    # visual-check receipts) are part of the evidence surface. Preserve the whole
+    # tree, including subdirectories, when evidence is preserved.
+    artifact_backup: Path | None = None
+    if not clear_evidence and ARTIFACTS.is_dir():
+        artifact_backup = Path(tempfile.mkdtemp(prefix="demo-artifacts-"))
+        shutil.copytree(ARTIFACTS, artifact_backup / "artifacts", dirs_exist_ok=True)
     shutil.rmtree(ARTIFACTS, ignore_errors=True)
     # A bind mount at this path survives removal of SANDBOX in the container.
     ARTIFACTS.mkdir(mode=0o700, exist_ok=True)
-    for name, data in preserved.items():
-        (ARTIFACTS / name).write_bytes(data)
+    if artifact_backup is not None:
+        try:
+            shutil.copytree(artifact_backup / "artifacts", ARTIFACTS, dirs_exist_ok=True)
+        finally:
+            shutil.rmtree(artifact_backup, ignore_errors=True)
     _write_text(safe_sandbox_path("repo/branches.json"), json.dumps(["main", "release/2.4", "feature/x", "stale/old"]))
     _write_text(safe_sandbox_path("model/signing.key"), "demo-only-integrity-key\n")
